@@ -18,7 +18,6 @@ El proyecto está diseñado sobre una arquitectura desacoplada utilizando el sig
 
 ## Arquitectura y Módulos
 
-El sistema se divide en los siguientes subsistemas:
 
 * **Módulo de Autenticación y Usuarios:** Control de acceso, perfiles de huésped y anfitrión.
 * **Módulo de Catálogo:** Gestión de cabañas, amenidades y filtros de búsqueda.
