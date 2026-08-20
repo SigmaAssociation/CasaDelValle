@@ -13,7 +13,7 @@ El proyecto está diseñado sobre una arquitectura desacoplada utilizando el sig
 * **Backend:** [Go / Golang](https://go.dev/) (API REST)
 * **Base de Datos:** [PostgreSQL](https://www.postgresql.org/) (Base de datos relacional)
 * **Contenedorización:** [Docker](https://www.docker.com/) & Docker Compose
-
+* **Diagrama ER:** [Enlace al diagrama ER](https://drive.google.com/file/d/1gaKiyiXwn-TsxSD6TGDgG0UB_bjFq39I/view?usp=drivesdk)
 ---
 
 ## Arquitectura y Módulos
