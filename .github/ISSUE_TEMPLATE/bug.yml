@@ -1,0 +1,81 @@
+name: 🐛 Bug
+description: Reportar un error del sistema
+title: "[BUG] "
+labels:
+  - "Bug"
+
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Reporte de Bug
+
+        Describe el problema de forma que otro integrante
+        pueda reproducirlo.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Frontend
+        - Backend
+        - Database
+        - Infrastructure
+        - Documentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      options:
+        - P1 - Alta
+        - P2 - Media
+        - P3 - Baja
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción
+      description: ¿Qué está ocurriendo?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducir
+      placeholder: |
+        1. Ir a...
+        2. Presionar...
+        3. Introducir...
+        4. Observar...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Resultado esperado
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Resultado actual
+    validations:
+      required: true
+
+  - type: upload
+    id: screenshots
+    attributes:
+      label: Evidencia
+      description: Adjunta capturas de pantalla, logs u otra evidencia.
+    validations:
+      required: false
