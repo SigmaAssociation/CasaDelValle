@@ -34,7 +34,42 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 
 ### Prerrequisitos
 
+- [Docker](https://www.docker.com/products/docker-desktop/) instalado
+- [Docker Compose](https://docs.docker.com/compose/) disponible
+
 
 ### Pasos para iniciar el entorno de desarrollo
 
 1. **Clonar el repositorio:**
+   ```bash
+   git clone https://github.com/SigmaAssociation/CasaDelValle.git
+   ```
+2. **Clonar también el frontend en la carpeta hermana esperada por `docker-compose.yml`:**
+   ```bash
+   git clone https://github.com/SigmaAssociation/CDV_Frontend.git
+   ```
+
+   ```bash
+   # Estructura esperada
+   <carpeta-base>/
+   ├── CasaDelValle
+   └── CDV_Frontend/
+       └── Casa-Del-Valle-FE
+   ```
+
+3. **Desde este repositorio (`CasaDelValle`), iniciar los servicios:**
+
+   ```bash
+   docker compose up --build
+   ```
+
+4. **Acceder a los servicios:**
+   - Frontend: `http://localhost:4200`
+   - Backend API: `http://localhost:8080`
+   - PostgreSQL: `localhost:5432`
+
+5. **Detener el entorno:**
+
+   ```bash
+   docker compose down
+   ```
