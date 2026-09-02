@@ -1,0 +1,50 @@
+services:
+  # Servicio de Base de Datos
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: devuser
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_DB: appdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+
+  # Servicio del Backend (Go)
+  backend-api:
+    build:
+      context: ./cdv-api # Ruta a la carpeta de tu repositorio de Go
+      dockerfile: Dockerfile.dev
+    container_name: go_api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres-db
+      DB_PORT: 5432
+      DB_USER: devuser
+      DB_PASSWORD: devpassword
+      DB_NAME: appdb
+    volumes:
+      - ./cdv-api:/app
+    depends_on:
+      - postgres-db
+
+  # Servicio del Frontend (Angular)
+  frontend-app:
+    build:
+      context: ../CDV_Frontend/Casa-Del-Valle-FE
+      dockerfile: Dockerfile.dev
+    container_name: angular_frontend
+    ports:
+      - "4200:4200"
+    volumes:
+      - ../CDV_Frontend/Casa-Del-Valle-FE:/app
+      - /app/node_modules
+    depends_on:
+      - backend-api
+
+volumes:
+  pgdata:
