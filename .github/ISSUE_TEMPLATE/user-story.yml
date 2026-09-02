@@ -1,0 +1,136 @@
+name: 📝 User Story
+description: Crear una nueva historia de usuario
+title: "[US] "
+labels:
+  - "User Story"
+
+body:
+
+  - type: markdown
+    attributes:
+      value: |
+        ## 📋 User Story
+
+        Toda User Story debe cumplir con:
+
+        **Contexto + Criterios de Aceptación**
+
+        Recuerda escribirla desde la perspectiva del usuario.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: Selecciona el tipo de trabajo.
+      options:
+        - User Story
+        - Epic
+        - Task
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      description: ¿Qué área está principalmente involucrada?
+      options:
+        - Frontend
+        - Backend
+        - Database
+        - Infrastructure
+        - Documentation
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: ¿Qué prioridad tiene este trabajo?
+      options:
+        - P1 - Alta
+        - P2 - Media
+        - P3 - Baja
+    validations:
+      required: true
+
+  - type: input
+    id: role
+    attributes:
+      label: Como
+      description: ¿Qué tipo de usuario necesita esta funcionalidad?
+      placeholder: "Ej. cliente, administrador, empleado..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: functionality
+    attributes:
+      label: Quiero
+      description: ¿Qué acción o funcionalidad necesita?
+      placeholder: "Ej. iniciar sesión utilizando mi correo y contraseña."
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Para
+      description: ¿Qué beneficio obtiene el usuario?
+      placeholder: "Ej. acceder de forma segura a su cuenta."
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto
+      description: Explica brevemente el problema o situación.
+      placeholder: |
+        Describe qué ocurre actualmente,
+        por qué se necesita esta funcionalidad
+        y cualquier información importante.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Define las condiciones que deben cumplirse para considerar terminada la User Story.
+      placeholder: |
+        - [ ] El usuario puede...
+        - [ ] El sistema debe...
+        - [ ] Si ocurre X, entonces...
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks iniciales
+      description: Lista las tareas técnicas que podrían ser necesarias.
+      placeholder: |
+        - [ ] Crear endpoint...
+        - [ ] Crear componente...
+        - [ ] Crear tabla...
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: ready
+    attributes:
+      label: Definition of Ready
+      description: Verifica que la historia esté lista para entrar al Sprint.
+      options:
+        - label: La historia tiene formato Como / Quiero / Para.
+          required: true
+        - label: Tiene contexto suficiente.
+          required: true
+        - label: Tiene criterios de aceptación verificables.
+          required: true
+        - label: La funcionalidad está suficientemente delimitada.
+          required: true
+        - label: El equipo entiende lo que se debe desarrollar.
+          required: true
