@@ -51,21 +51,30 @@ ALTER TABLE cabanas
 ADD CONSTRAINT fk_cabana_comision 
     FOREIGN KEY (id_comision) REFERENCES comisiones(id) ON DELETE SET NULL;
     
--- Añadí la tabla valoraciones     
-CREATE TABLE valoraciones (
+-- Valoraciones cabañas y usuarios   
+CREATE TABLE valoracion_cabana (
     id SERIAL PRIMARY KEY,
     puntuacion INT NOT NULL CHECK (puntuacion >= 1 AND puntuacion <= 5),
-    id_usuario INT NOT NULL,
-    id_cabana INT,
-    id_usuario_valorado INT,
+    id_usuario_emisor INT NOT NULL,
+    id_cabana INT NOT NULL,
     
-    CONSTRAINT fk_valoracion_usuario 
-        FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_vc_usuario_emisor 
+        FOREIGN KEY (id_usuario_emisor) REFERENCES usuarios(id) ON DELETE CASCADE,
         
-    CONSTRAINT fk_valoracion_cabana 
-        FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE,
+    CONSTRAINT fk_vc_cabana 
+        FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE
+);
+
+CREATE TABLE valoracion_usuario (
+    id SERIAL PRIMARY KEY,
+    puntuacion INT NOT NULL CHECK (puntuacion >= 1 AND puntuacion <= 5),
+    id_usuario_emisor INT NOT NULL,
+    id_usuario_valorado INT NOT NULL,
+    
+    CONSTRAINT fk_vu_usuario_emisor 
+        FOREIGN KEY (id_usuario_emisor) REFERENCES usuarios(id) ON DELETE CASCADE,
         
-    CONSTRAINT fk_valoracion_usuario_valorado 
+    CONSTRAINT fk_vu_usuario_valorado 
         FOREIGN KEY (id_usuario_valorado) REFERENCES usuarios(id) ON DELETE CASCADE
 );
 
@@ -131,3 +140,7 @@ CREATE TABLE comentario (
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE -- Cambie la ñ por n
 );
 
+INSERT INTO roles (id, tipo) VALUES 
+(1, 'Administrador'), 
+(2, 'Propietario'), 
+(3, 'Huesped');
