@@ -1,8 +1,7 @@
-package services
+package users
 
 import (
-	"cdv-api/models"
-	"cdv-api/repositories"
+	"context"
 	"errors"
 	"regexp"
 	"strings"
@@ -10,19 +9,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type UserService struct {
-	repo *repositories.UserRepository
+type Service struct {
+	repository *Repository
 }
 
-func NewUserService(repo *repositories.UserRepository) *UserService {
-	return &UserService{repo: repo}
+func NewService(repository *Repository) *Service {
+	return &Service{
+		repository: repository,
+	}
 }
 
-func (s *UserService) GetUsers() ([]models.User, error) {
-	return s.repo.GetUsers()
+func (s *Service) GetUsers(ctx context.Context) ([]User, error) {
+	return s.repository.GetAll(ctx)
 }
 
-func (s *UserService) RegisterUser(req models.RegisterRequest) (int, error) {
+func (s *Service) RegisterUser(ctx context.Context, req RegisterRequest) (int, error) {
 	if strings.TrimSpace(req.Name) == "" || len(req.Name) > 150 { // Validacion de nombre
 		return 0, errors.New("Nombre inválido: debe tener entre 1 y 150 caracteres")
 	}
@@ -52,12 +53,9 @@ func (s *UserService) RegisterUser(req models.RegisterRequest) (int, error) {
 	if hasSpecial := regexp.MustCompile(`[!@#~$%^&*()+|_.,<>?/\\-]`).MatchString(req.Password); !hasSpecial {
 		return 0, errors.New("Contraseña inválida: debe contener al menos un carácter especial")
 	}
-	if req.IDRole < 1 || req.IDRole > 3 { // Validacion de rol
-		return 0, errors.New("Rol inválido: debe ser 1(Administrador), 2(Propietario) o 3(Huesped)")
-	}
 	hashBytes, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost) // Hasheo de contraseña
 	if err != nil {
 		return 0, errors.New("Error al procesar la contraseña")
 	}
-	return s.repo.CreateUser(req, string(hashBytes))
+	return s.repository.CreateUser(ctx, req, string(hashBytes))
 }

@@ -1,9 +1,9 @@
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id SERIAL PRIMARY KEY,
     tipo VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE usuarios (
+CREATE TABLE IF NOT EXISTS usuarios (
     id SERIAL PRIMARY KEY,
     nombre VARCHAR(150) NOT NULL,
     telefono VARCHAR(20),
@@ -17,7 +17,7 @@ CREATE TABLE usuarios (
 );
 
 -- Añadí Cabañas 
-CREATE TABLE cabanas (
+CREATE TABLE IF NOT EXISTS cabanas (
     id SERIAL PRIMARY KEY,
     direccion VARCHAR(255) NOT NULL,
     precio NUMERIC(10, 2) NOT NULL,
@@ -32,7 +32,7 @@ CREATE TABLE cabanas (
 );
 
 -- Añadí Comisiones 
-CREATE TABLE comisiones (
+CREATE TABLE IF NOT EXISTS comisiones (
     id SERIAL PRIMARY KEY,
     id_cabana INT NOT NULL,
     id_usuario INT NOT NULL,
@@ -47,12 +47,12 @@ CREATE TABLE comisiones (
 );
 
 -- Relación Cabañas con Comisiones 
-ALTER TABLE cabanas 
+ALTER TABLE cabanas
 ADD CONSTRAINT fk_cabana_comision 
     FOREIGN KEY (id_comision) REFERENCES comisiones(id) ON DELETE SET NULL;
     
--- Valoraciones cabañas y usuarios   
-CREATE TABLE valoracion_cabana (
+-- Valoraciones cabañas y usuarios     
+CREATE TABLE IF NOT EXISTS valoracion_cabana (
     id SERIAL PRIMARY KEY,
     puntuacion INT NOT NULL CHECK (puntuacion >= 1 AND puntuacion <= 5),
     id_usuario_emisor INT NOT NULL,
@@ -65,7 +65,7 @@ CREATE TABLE valoracion_cabana (
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE
 );
 
-CREATE TABLE valoracion_usuario (
+CREATE TABLE IF NOT EXISTS valoracion_usuario (
     id SERIAL PRIMARY KEY,
     puntuacion INT NOT NULL CHECK (puntuacion >= 1 AND puntuacion <= 5),
     id_usuario_emisor INT NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE valoracion_usuario (
 );
 
 -- Añadi tabla imagenes
-CREATE TABLE imagenes (
+CREATE TABLE IF NOT EXISTS imagenes (
     id SERIAL PRIMARY KEY,
     ruta VARCHAR(255) NOT NULL,
     id_usuario INT,
@@ -92,7 +92,7 @@ CREATE TABLE imagenes (
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE
 );
 
-CREATE TABLE reservaciones (
+CREATE TABLE IF NOT EXISTS reservaciones (
     id SERIAL PRIMARY KEY,
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
@@ -103,13 +103,13 @@ CREATE TABLE reservaciones (
     CONSTRAINT fk_reservacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
     
 -- Añadí esta fk
-CONSTRAINT fk_reservacion_cabana 
+CONSTRAINT fk_reservacion_cabana
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE RESTRICT,
     
     CONSTRAINT chk_fechas CHECK (fecha_fin >= fecha_inicio)
 );
 
-CREATE TABLE pagos (
+CREATE TABLE IF NOT EXISTS pagos (
     id SERIAL PRIMARY KEY,
     id_usuario INT NOT NULL,
     cantidad NUMERIC(10, 2) NOT NULL,
@@ -122,7 +122,7 @@ CREATE TABLE pagos (
     CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT
 );
 
-CREATE TABLE comentario (
+CREATE TABLE IF NOT EXISTS comentario (
     id SERIAL PRIMARY KEY,
     id_usuario INT NOT NULL,          
     id_usuario_comentado INT NOT NULL,  
@@ -142,5 +142,7 @@ CREATE TABLE comentario (
 
 INSERT INTO roles (id, tipo) VALUES 
 (1, 'Administrador'), 
-(2, 'Propietario'), 
-(3, 'Huesped');
+(2, 'Usuario');
+
+INSERT INTO usuarios (nombre, telefono, direccion, dpi, correo, contrasena, id_rol) VALUES 
+('Admin', '123456789', 'Direccion Admin', '1234567890123', 'admin@admin.com', 'password', 1);
