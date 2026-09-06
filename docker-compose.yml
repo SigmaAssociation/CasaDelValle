@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U devuser -d appdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -21,7 +21,7 @@ services:
   # Servicio del Backend (Go)
   backend-api:
     build:
-      context: ./cdv-api # Ruta a la carpeta de tu repositorio de Go
+      context: ./cdv-api
       dockerfile: Dockerfile.dev
     container_name: go_api
     ports:
