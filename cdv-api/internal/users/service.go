@@ -3,9 +3,12 @@ package users
 import (
 	"context"
 	"errors"
+	"os"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -58,4 +61,53 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterRequest) (int, e
 		return 0, errors.New("Error al procesar la contraseña")
 	}
 	return s.repository.CreateUser(ctx, req, string(hashBytes))
+}
+
+func (s *Service) AuthenticateUser(ctx context.Context, loginRequest UserLoginRequest) (string, error) {
+	user, err := s.repository.GetUserAuthInfo(ctx, loginRequest.Email)
+	if err != nil {
+		return "", errors.New("Usuario no encontrado")
+	}
+
+	if (CheckPassword(loginRequest.Password, user.Password)) == false {
+		return "", errors.New("Contraseña incorrecta")
+	}
+
+	jwtSecret := os.Getenv("JWT_SECRET")
+	token, err := GenerateToken(user, jwtSecret)
+	if err != nil {
+		return "", errors.New("Error al generar el token")
+	}
+
+	return token, nil
+}
+
+func CheckPassword(password string, hash string) bool {
+	err := bcrypt.CompareHashAndPassword(
+		[]byte(hash),
+		[]byte(password),
+	)
+
+	return err == nil
+}
+
+func GenerateToken(
+	loginRequest UserAuth,
+	secret string,
+) (string, error) {
+
+	claims := jwt.MapClaims{
+		"sub":   loginRequest.ID,
+		"email": loginRequest.Email,
+		"role":  loginRequest.IDRole,
+		"name":  loginRequest.Name,
+		"exp":   time.Now().Add(24 * time.Hour).Unix(),
+	}
+
+	token := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		claims,
+	)
+
+	return token.SignedString([]byte(secret))
 }

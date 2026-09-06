@@ -4,9 +4,9 @@ services:
     image: postgres:16-alpine
     container_name: postgres_db
     environment:
-      POSTGRES_USER: devuser
-      POSTGRES_PASSWORD: devpassword
-      POSTGRES_DB: appdb
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     ports:
       - "5432:5432"
     healthcheck:
@@ -27,11 +27,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_HOST: postgres-db
-      DB_PORT: 5432
-      DB_USER: devuser
-      DB_PASSWORD: devpassword
-      DB_NAME: appdb
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET}
     volumes:
       - ./cdv-api:/app
     depends_on:

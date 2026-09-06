@@ -42,6 +42,7 @@ func main() {
 	// -------------------------
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /cdv-api/users", userController.GetUsers)
+	mux.HandleFunc("POST /cdv-api/login", userController.LoginUser)
 	mux.HandleFunc("POST /cdv-api/users", userController.RegisterUser)
 
 	// -------------------------
