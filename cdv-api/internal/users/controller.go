@@ -87,7 +87,7 @@ func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
 		status := http.StatusBadRequest
 		message := err.Error()
 		if err.Error() == "Error al generar el token" {
-			status = http.StatusConflict
+			status = http.StatusInternalServerError
 			message = "Error interno del servidor"
 		}
 		if err.Error() == "Contraseña incorrecta" || err.Error() == "Usuario no encontrado" {
@@ -98,7 +98,7 @@ func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(UserLoginResponse{Message: message, Token: ""})
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(UserLoginResponse{
 		Message: "Usuario autenticado exitosamente",
 		Token:   token,
