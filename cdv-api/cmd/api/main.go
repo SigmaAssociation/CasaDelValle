@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"cdv-api/internal/database"
+	"cdv-api/internal/middleware"
 	"cdv-api/internal/users"
 )
 
@@ -40,20 +41,19 @@ func main() {
 	// Router
 	// -------------------------
 	mux := http.NewServeMux()
-	mux.HandleFunc(
-		"GET /cdv-api/users",
-		userController.GetUsers,
-	)
+	mux.HandleFunc("GET /cdv-api/users", userController.GetUsers)
+	mux.HandleFunc("POST /cdv-api/login", userController.LoginUser)
+	mux.HandleFunc("POST /cdv-api/users", userController.RegisterUser)
 
 	// -------------------------
 	// Server
 	// -------------------------
 
-	log.Println(
-		"Servidor escuchando en http://localhost:8080",
-	)
+	handler := middleware.CORS(mux)
 
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	log.Println("Servidor escuchando en :8080")
+
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		log.Fatal(err)
 	}
 }
