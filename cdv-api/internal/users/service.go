@@ -111,3 +111,10 @@ func GenerateToken(
 
 	return token.SignedString([]byte(secret))
 }
+
+func (s *Service) GetUserByID(ctx context.Context, id int) (User, error) {
+	// Pendiente de verificar si el usuario tiene permisos para acceder a la información del usuario con el ID proporcionado.
+	// Esto podría implicar verificar el rol del usuario autenticado y compararlo con el ID del usuario solicitado.
+	// Si el usuario no tiene permisos, se debería retornar un error de autorización.
+	return s.repository.GetUserByID(ctx, id)
+}

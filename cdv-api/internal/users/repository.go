@@ -94,3 +94,24 @@ func (r *Repository) GetUserAuthInfo(ctx context.Context, email string) (UserAut
 
 	return user, nil
 }
+
+func (r *Repository) GetUserByID(ctx context.Context, id int) (User, error) {
+	var user User
+
+	query := "SELECT id, nombre, telefono, direccion, dpi, correo, id_rol FROM usuarios WHERE id = $1"
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Phone,
+		&user.Address,
+		&user.DPI,
+		&user.Email,
+		&user.IDRole,
+	)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
+}
