@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 type Controller struct {
@@ -103,4 +104,40 @@ func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
 		Message: "Usuario autenticado exitosamente",
 		Token:   token,
 	})
+}
+
+func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		http.Error(w, "ID de usuario no proporcionado", http.StatusBadRequest)
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		http.Error(w, "ID de usuario inválido", http.StatusBadRequest)
+		return
+	}
+
+	user, err := c.service.GetUserByID(r.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		message := "Error al obtener el usuario"
+		if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
+			message = "Usuario no encontrado"
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": message})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }

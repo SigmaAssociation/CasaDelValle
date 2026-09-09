@@ -44,6 +44,7 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/users", userController.GetUsers)
 	mux.HandleFunc("POST /cdv-api/login", userController.LoginUser)
 	mux.HandleFunc("POST /cdv-api/users", userController.RegisterUser)
+	mux.HandleFunc("GET /cdv-api/users/", userController.GetUserByID)
 
 	// -------------------------
 	// Server
