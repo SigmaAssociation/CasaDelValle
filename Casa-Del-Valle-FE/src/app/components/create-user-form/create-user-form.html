@@ -1,0 +1,182 @@
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+  <h2 class="text-3xl mb-2">Crear Cuenta</h2>
+  <p class="text-gray-500 text-sm mb-6 font-sans">Únete a nuestra plataforma.</p>
+
+  <form [formGroup]="userForm" (ngSubmit)="create()" class="space-y-5">
+    
+    <!-- NOMBRE -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+      <input
+        type="text"
+        maxlength="150"
+        formControlName="name"
+        autocomplete="name"
+        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+        [class.border-red-500]="isInvalid('name')"
+      />
+      @if (isInvalid('name')) {
+        <p class="text-xs text-red-500 mt-1">El nombre es obligatorio.</p>
+      }
+    </div>
+
+    <!-- DIRECCIÓN -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+      <input
+        type="text"
+        maxlength="255"
+        formControlName="address"
+        autocomplete="street-address"
+        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+        [class.border-red-500]="isInvalid('address')"
+      />
+      @if (isInvalid('address')) {
+        <p class="text-xs text-red-500 mt-1">La dirección es obligatoria.</p>
+      }
+    </div>
+
+    <!-- TELÉFONO Y DPI -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+        <input
+          type="tel"
+          maxlength="8"
+          formControlName="phone"
+          autocomplete="tel"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+          [class.border-red-500]="isInvalid('phone')"
+        />
+        @if (isInvalid('phone')) {
+          <p class="text-xs text-red-500 mt-1">Ingresa 8 dígitos válidos.</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">DPI</label>
+        <input
+          type="text"
+          maxlength="13"
+          formControlName="dpi"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+          [class.border-red-500]="isInvalid('dpi')"
+        />
+        @if (isInvalid('dpi')) {
+          <p class="text-xs text-red-500 mt-1">Ingresa 13 caracteres numéricos.</p>
+        }
+      </div>
+    </div>
+
+    <!-- CORREO Y CONTRASEÑA -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+        <input
+          type="email"
+          maxlength="150"
+          formControlName="email"
+          autocomplete="email"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+          [class.border-red-500]="isInvalid('email')"
+        />
+        @if (isInvalid('email')) {
+          <p class="text-xs text-red-500 mt-1">Correo electrónico inválido.</p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+        <input
+          type="password"
+          maxlength="255"
+          formControlName="password"
+          autocomplete="new-password"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+          [class.border-red-500]="isInvalid('password')"
+        />
+      </div>
+    </div>
+
+    <!-- CHECKLIST DE CONTRASEÑA -->
+    @if (showPasswordChecklist) {
+      <div class="space-y-1 -mt-3">
+        <p class="text-xs flex items-center gap-2" [class.text-green-600]="passwordMeets('hasUpperCase')" [class.text-gray-400]="!passwordMeets('hasUpperCase')">
+          <input type="checkbox" disabled [checked]="passwordMeets('hasUpperCase')" class="rounded border-gray-300" />
+          Tiene al menos una letra mayúscula
+        </p>
+        <p class="text-xs flex items-center gap-2" [class.text-green-600]="passwordMeets('hasLowerCase')" [class.text-gray-400]="!passwordMeets('hasLowerCase')">
+          <input type="checkbox" disabled [checked]="passwordMeets('hasLowerCase')" class="rounded border-gray-300" />
+          Tiene al menos una letra minúscula
+        </p>
+        <p class="text-xs flex items-center gap-2" [class.text-green-600]="passwordMeets('hasDigit')" [class.text-gray-400]="!passwordMeets('hasDigit')">
+          <input type="checkbox" disabled [checked]="passwordMeets('hasDigit')" class="rounded border-gray-300" />
+          Tiene al menos un dígito
+        </p>
+        <p class="text-xs flex items-center gap-2" [class.text-green-600]="passwordMeets('hasSpecialChar')" [class.text-gray-400]="!passwordMeets('hasSpecialChar')">
+          <input type="checkbox" disabled [checked]="passwordMeets('hasSpecialChar')" class="rounded border-gray-300" />
+          Tiene un carácter especial
+        </p>
+        <p class="text-xs flex items-center gap-2" [class.text-green-600]="passwordMeets('hasMinLength')" [class.text-gray-400]="!passwordMeets('hasMinLength')">
+          <input type="checkbox" disabled [checked]="passwordMeets('hasMinLength')" class="rounded border-gray-300" />
+          No es menor de 8 caracteres
+        </p>
+      </div>
+    }
+
+    <!-- BOTÓN -->
+    <button
+      type="submit"
+      [disabled]="userForm.invalid"
+      class="w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Registrarse
+    </button>
+  </form>
+</div>
+
+<!-- MODAL DE ÉXITO -->
+@if (isCreated()) {
+  <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 max-w-sm w-full p-6 text-center transform transition-all animate-in fade-in zoom-in duration-200">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-orange/10 mb-4">
+        <svg class="h-6 w-6 text-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <h3 class="text-xl font-medium text-gray-900 mb-1">¡Cuenta Creada!</h3>
+      <p class="text-sm text-gray-500 font-sans mb-6">
+        El usuario se ha registrado correctamente en Casa del Valle.
+      </p>
+      <button 
+        type="button" 
+        (click)="isCreated.set(false)"
+        class="w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange focus:ring-offset-2">
+        Aceptar
+      </button>
+    </div>
+  </div>
+}
+
+<!-- MODAL DE ERROR -->
+@if (isError()) {
+  <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-xl shadow-lg border border-gray-100 max-w-sm w-full p-6 text-center transform transition-all animate-in fade-in zoom-in duration-200">
+      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <h3 class="text-xl font-medium text-gray-900 mb-1">Error al registrarse</h3>
+      <p class="text-sm text-gray-500 font-sans mb-6">
+        {{ errorMessage() }}
+      </p>
+      <button 
+        type="button" 
+        (click)="isError.set(false)"
+        class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+        Entendido
+      </button>
+    </div>
+  </div>
+}

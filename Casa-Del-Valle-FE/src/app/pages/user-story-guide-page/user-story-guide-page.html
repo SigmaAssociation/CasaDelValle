@@ -1,0 +1,893 @@
+<div class="principal">
+    <section>
+        <h2>1. Objetivo de esta guía</h2>
+
+        <p>
+            Esta guía establece una forma estándar para crear, organizar y completar
+            historias de usuario dentro de GitHub Projects.
+        </p>
+
+        <p>
+            El objetivo es que todos los integrantes del equipo entiendan:
+        </p>
+
+        <ul>
+            <li>Qué debe contener una User Story.</li>
+            <li>Cuándo crear una User Story, Task, Bug o Epic.</li>
+            <li>Cómo escribir criterios de aceptación.</li>
+            <li>Cómo utilizar los campos del tablero.</li>
+            <li>Cuándo una tarjeta puede considerarse completada.</li>
+            <li>Cómo evitar historias demasiado grandes, ambiguas o técnicas.</li>
+        </ul>
+
+        <div class="rule">
+            <strong>Regla principal:</strong>
+            Toda User Story debe cumplir con
+            <strong>Contexto + Criterios de Aceptación</strong>.
+        </div>
+    </section>
+
+
+    <!-- ESTRUCTURA -->
+    <section>
+        <h2>2. Estructura de una User Story</h2>
+
+        <p>
+            Una User Story debe describir una necesidad desde la perspectiva
+            de quien utilizará el sistema.
+        </p>
+
+        <p>La estructura obligatoria es:</p>
+
+        <div class="template">
+            <p><strong>Como</strong> [tipo de usuario / rol]</p>
+
+            <p><strong>Quiero</strong> [hacer una acción o tener una funcionalidad]</p>
+
+            <p><strong>Para</strong> [obtener este beneficio o valor]</p>
+        </div>
+
+        <h3>Ejemplo correcto</h3>
+
+        <div class="success">
+            <p><strong>Como</strong> cliente</p>
+            <p><strong>Quiero</strong> iniciar sesión utilizando mi correo y contraseña</p>
+            <p><strong>Para</strong> acceder de forma segura a las funcionalidades de mi cuenta</p>
+        </div>
+
+        <h3>Ejemplo incorrecto</h3>
+
+        <div class="danger">
+            <p>
+                <strong>Crear endpoint POST /login.</strong>
+            </p>
+
+            <p>
+                Esto describe una tarea técnica y no una necesidad del usuario.
+                Puede convertirse en una <strong>Task</strong> asociada a una User Story.
+            </p>
+        </div>
+    </section>
+
+
+    <!-- CONTEXTO -->
+    <section>
+        <h2>3. El contexto de la User Story</h2>
+
+        <p>
+            La frase "Como / Quiero / Para" explica qué se necesita y por qué,
+            pero el equipo puede necesitar información adicional para entender
+            correctamente el problema.
+        </p>
+
+        <p>
+            Por eso, una buena User Story puede incluir una sección de
+            <strong>Contexto</strong>.
+        </p>
+
+        <h3>Ejemplo</h3>
+
+        <div class="card">
+            <p><strong>Como:</strong> cliente</p>
+
+            <p><strong>Quiero:</strong> iniciar sesión utilizando mi correo y contraseña</p>
+
+            <p><strong>Para:</strong> acceder de forma segura a las funcionalidades de mi cuenta</p>
+
+            <h4>Contexto</h4>
+
+            <p>
+                Actualmente el sistema no permite autenticar usuarios.
+                El usuario debe poder ingresar sus credenciales desde el formulario
+                de inicio de sesión para acceder a las funcionalidades correspondientes
+                a su rol.
+            </p>
+        </div>
+
+        <div class="rule">
+            <strong>Importante:</strong>
+            El contexto explica el problema o situación.
+            No debe convertirse en una explicación técnica de cómo implementar
+            la solución.
+        </div>
+    </section>
+
+
+    <!-- CRITERIOS -->
+    <section>
+        <h2>4. Criterios de aceptación</h2>
+
+        <p>
+            Los criterios de aceptación son las condiciones que deben cumplirse
+            para considerar terminada una User Story.
+        </p>
+
+        <p>
+            Funcionan como una lista de pruebas que el equipo puede utilizar
+            para verificar que la funcionalidad cumple con lo solicitado.
+        </p>
+
+        <div class="danger">
+            <strong>Regla de oro:</strong>
+            Una User Story sin criterios de aceptación no está completa
+            y debe ser rechazada antes de pasar al desarrollo.
+        </div>
+
+        <h3>Características de buenos criterios</h3>
+
+        <ul>
+            <li>Deben ser claros.</li>
+            <li>Deben poder comprobarse.</li>
+            <li>No deben depender de interpretaciones.</li>
+            <li>Deben describir el comportamiento esperado.</li>
+            <li>Deben indicar qué ocurre en casos normales y relevantes.</li>
+            <li>Deben incluir errores importantes cuando corresponda.</li>
+        </ul>
+
+        <h3>Ejemplo</h3>
+
+        <div class="card">
+
+            <p><strong>User Story:</strong></p>
+
+            <p>
+                Como cliente quiero iniciar sesión utilizando mi correo y contraseña
+                para acceder de forma segura a mi cuenta.
+            </p>
+
+            <p><strong>Criterios de aceptación:</strong></p>
+
+            <ul>
+                <li>El formulario debe solicitar correo y contraseña.</li>
+                <li>El sistema debe validar que ambos campos hayan sido ingresados.</li>
+                <li>Las credenciales correctas deben permitir el acceso al sistema.</li>
+                <li>Las credenciales incorrectas deben mostrar un mensaje de error.</li>
+                <li>El usuario debe ser redirigido a la página correspondiente después de iniciar sesión.</li>
+                <li>La contraseña no debe mostrarse como texto visible.</li>
+            </ul>
+
+        </div>
+    </section>
+
+
+    <!-- GIVEN WHEN THEN -->
+    <section>
+        <h2>5. Formato recomendado: Given / When / Then</h2>
+
+        <p>
+            Cuando una historia tenga comportamientos complejos,
+            los criterios pueden escribirse utilizando el formato
+            <strong>Given / When / Then</strong>.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Elemento</th>
+                    <th>Significado</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td><strong>Given</strong></td>
+                    <td>Situación inicial.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>When</strong></td>
+                    <td>Acción realizada por el usuario.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Then</strong></td>
+                    <td>Resultado esperado.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <pre>
+
+Given que el usuario tiene una cuenta registrada
+When introduce un correo y contraseña válidos
+Then el sistema debe permitirle acceder a su cuenta
+</pre>
+
+        <p>
+            Este formato es especialmente útil para funcionalidades que
+            posteriormente serán probadas de forma manual o automatizada.
+        </p>
+    </section>
+
+
+    <!-- CATEGORÍAS -->
+    <section>
+        <h2>6. Uso de los campos en GitHub Projects</h2>
+
+        <p>
+            Los campos del proyecto deben utilizarse de manera consistente.
+            Esto permite filtrar, ordenar y visualizar el trabajo del equipo.
+        </p>
+
+        <h3>Category</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Categoría</th>
+                    <th>Uso</th>
+                    <th>Ejemplo</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td><span class="badge">Epic</span></td>
+                    <td>
+                        Módulo o funcionalidad grande que agrupa varias User Stories.
+                    </td>
+                    <td>
+                        Sistema de Autenticación
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><span class="badge">User Story</span></td>
+                    <td>
+                        Funcionalidad que aporta valor directo al usuario.
+                    </td>
+                    <td>
+                        Iniciar sesión
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><span class="badge">Task</span></td>
+                    <td>
+                        Trabajo técnico necesario para implementar una funcionalidad.
+                    </td>
+                    <td>
+                        Crear endpoint POST /login
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><span class="badge">Bug</span></td>
+                    <td>
+                        Error inesperado del sistema que debe corregirse.
+                    </td>
+                    <td>
+                        El botón de login no responde
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+
+        <div class="warning">
+            <strong>Regla práctica:</strong>
+            Si el elemento describe algo que el usuario necesita,
+            probablemente sea una User Story.
+            Si describe algo que el desarrollador necesita hacer para construirla,
+            probablemente sea una Task.
+        </div>
+    </section>
+
+
+    <!-- AREA -->
+    <section>
+        <h2>7. Campo Area</h2>
+
+        <p>
+            El campo <strong>Area</strong> indica qué parte del proyecto
+            está principalmente involucrada.
+        </p>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Area</th>
+                    <th>Ejemplos</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td><strong>Frontend</strong></td>
+                    <td>Angular, interfaces, componentes, formularios.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Backend</strong></td>
+                    <td>API, lógica de negocio, endpoints.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Database</strong></td>
+                    <td>PostgreSQL, tablas, relaciones, consultas.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Infrastructure</strong></td>
+                    <td>Docker, CI/CD, servidores, despliegues.</td>
+                </tr>
+
+                <tr>
+                    <td><strong>Documentation</strong></td>
+                    <td>Manuals, documentación técnica, diagramas.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <p>
+            Si una User Story requiere varias áreas, se recomienda asignar
+            el área principal a la historia y utilizar Tasks específicas
+            para cada área involucrada.
+        </p>
+    </section>
+
+
+    <!-- PRIORIDAD -->
+    <section>
+        <h2>8. Campo Priority</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Prioridad</th>
+                    <th>Significado</th>
+                    <th>Ejemplos</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td><strong>P1 - Alta</strong></td>
+                    <td>
+                        Trabajo crítico o que bloquea otras partes del proyecto.
+                    </td>
+                    <td>
+                        Docker, CI/CD, autenticación necesaria para continuar.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>P2 - Media</strong></td>
+                    <td>
+                        Funcionalidad importante que forma parte del objetivo del Sprint.
+                    </td>
+                    <td>
+                        CRUD principal, búsqueda, reportes.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>P3 - Baja</strong></td>
+                    <td>
+                        Mejoras que pueden esperar sin afectar el objetivo principal.
+                    </td>
+                    <td>
+                        Mejoras visuales, refactorización, pequeños ajustes.
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="warning">
+            <strong>P1 no significa "quiero terminarlo primero".</strong>
+            Debe utilizarse cuando el trabajo tenga un impacto crítico,
+            sea un bloqueo o sea necesario para que otras funcionalidades puedan avanzar.
+        </div>
+    </section>
+
+
+    <!-- TITULOS -->
+    <section>
+        <h2>9. Cómo nombrar las tarjetas</h2>
+
+        <p>
+            El título debe ser corto y permitir identificar rápidamente
+            qué se está trabajando.
+        </p>
+
+        <h3>Recomendado</h3>
+
+        <ul>
+            <li>Iniciar sesión</li>
+            <li>Registrar usuario</li>
+            <li>Consultar productos</li>
+            <li>Crear pedido</li>
+            <li>Editar perfil</li>
+        </ul>
+
+        <h3>Evitar</h3>
+
+        <ul>
+            <li>Hacer login</li>
+            <li>Implementar todo el backend del usuario</li>
+            <li>Arreglar varias cosas</li>
+            <li>CRUD usuarios completo</li>
+        </ul>
+
+        <p>
+            El título identifica la tarjeta. La descripción contiene
+            la información necesaria para comprender y validar el trabajo.
+        </p>
+    </section>
+
+
+    <!-- TAMAÑO -->
+    <section>
+        <h2>10. Tamaño de una User Story</h2>
+
+        <p>
+            Una User Story debe ser suficientemente pequeña para poder
+            completarse dentro de un Sprint.
+        </p>
+
+        <div class="danger">
+            <strong>Señal de alerta:</strong>
+            Si una historia contiene demasiadas funcionalidades,
+            probablemente debe dividirse.
+        </div>
+
+        <h3>Ejemplo demasiado grande</h3>
+
+        <div class="card">
+            <strong>Gestionar usuarios</strong>
+
+            <p>
+                Registrar usuarios, iniciar sesión, editar perfiles,
+                cambiar contraseñas, eliminar usuarios, asignar roles,
+                recuperar contraseñas y consultar usuarios.
+            </p>
+        </div>
+
+        <h3>Mejor división</h3>
+
+        <ol>
+            <li>Registrar usuario.</li>
+            <li>Iniciar sesión.</li>
+            <li>Editar perfil.</li>
+            <li>Cambiar contraseña.</li>
+            <li>Recuperar contraseña.</li>
+            <li>Consultar usuarios.</li>
+            <li>Asignar roles.</li>
+            <li>Eliminar usuario.</li>
+        </ol>
+    </section>
+
+
+    <!-- TASKS -->
+    <section>
+        <h2>11. Cómo dividir una User Story en Tasks</h2>
+
+        <p>
+            Las Tasks representan el trabajo necesario para implementar
+            una User Story.
+        </p>
+
+        <h3>Ejemplo</h3>
+
+        <div class="card">
+
+            <h3>User Story: Iniciar sesión</h3>
+
+            <p>
+                Como cliente quiero iniciar sesión utilizando mi correo
+                y contraseña para acceder de forma segura a mi cuenta.
+            </p>
+
+            <h4>Tasks</h4>
+
+            <ul>
+                <li>Crear formulario de login en Angular.</li>
+                <li>Crear endpoint de autenticación en Go.</li>
+                <li>Implementar validación de credenciales.</li>
+                <li>Implementar generación del token.</li>
+                <li>Conectar el frontend con el endpoint.</li>
+                <li>Mostrar mensajes de error.</li>
+                <li>Realizar pruebas.</li>
+            </ul>
+
+        </div>
+
+        <div class="rule">
+            Las Tasks pueden ser técnicas.
+            La User Story no debería convertirse en una lista de Tasks.
+        </div>
+    </section>
+
+
+    <!-- BUGS -->
+    <section>
+        <h2>12. Cómo reportar un Bug</h2>
+
+        <p>
+            Un Bug representa un comportamiento que no funciona como debería.
+        </p>
+
+        <h3>Estructura recomendada</h3>
+
+        <ul>
+            <li><strong>Descripción:</strong> qué está ocurriendo.</li>
+            <li><strong>Pasos para reproducir:</strong> cómo provocar el error.</li>
+            <li><strong>Resultado actual:</strong> qué sucede.</li>
+            <li><strong>Resultado esperado:</strong> qué debería suceder.</li>
+            <li><strong>Impacto:</strong> qué tan grave es el problema.</li>
+        </ul>
+
+        <h3>Ejemplo</h3>
+
+        <div class="card">
+
+            <p><strong>Bug:</strong> El formulario permite iniciar sesión con campos vacíos.</p>
+
+            <p><strong>Pasos:</strong></p>
+
+            <ol>
+                <li>Abrir la página de inicio de sesión.</li>
+                <li>Dejar correo y contraseña vacíos.</li>
+                <li>Presionar "Iniciar sesión".</li>
+            </ol>
+
+            <p>
+                <strong>Resultado actual:</strong>
+                El sistema intenta realizar la autenticación.
+            </p>
+
+            <p>
+                <strong>Resultado esperado:</strong>
+                El sistema debe solicitar que los campos sean completados.
+            </p>
+
+        </div>
+    </section>
+
+
+    <!-- DEFINITION OF DONE -->
+    <section>
+        <h2>13. Definition of Done (DoD)</h2>
+
+        <p>
+            Los criterios de aceptación indican cuándo una funcionalidad
+            cumple con los requisitos.
+            La <strong>Definition of Done</strong> indica cuándo el trabajo
+            está realmente terminado desde el punto de vista del equipo.
+        </p>
+
+        <p>
+            Una tarjeta no debería pasar a <strong>Completado</strong>
+            solamente porque "el código funciona en la computadora del desarrollador".
+        </p>
+
+        <h3>Checklist recomendado</h3>
+
+        <ul>
+            <li>☐ Todos los criterios de aceptación se cumplen.</li>
+            <li>☐ El código fue revisado por otro integrante.</li>
+            <li>☐ Se realizaron las pruebas correspondientes.</li>
+            <li>☐ No existen errores conocidos que impidan utilizar la funcionalidad.</li>
+            <li>☐ Los cambios fueron integrados correctamente mediante Git.</li>
+            <li>☐ La documentación necesaria fue actualizada.</li>
+            <li>☐ La funcionalidad puede ejecutarse en el entorno correspondiente.</li>
+            <li>☐ La Pull Request fue revisada y aprobada.</li>
+        </ul>
+
+        <div class="success">
+            <strong>Definition of Done:</strong>
+            Una tarjeta se mueve a "Completado" solamente cuando cumple
+            los criterios de aceptación y la Definition of Done del equipo.
+        </div>
+    </section>
+
+
+    <!-- FLUJO -->
+    <section>
+        <h2>14. Flujo de trabajo recomendado</h2>
+
+        <p>
+            Para mantener el tablero organizado, se recomienda utilizar
+            un flujo similar al siguiente:
+        </p>
+
+        <ol>
+            <li>
+                <strong>Idea / Backlog:</strong>
+                Se identifica una necesidad.
+            </li>
+
+            <li>
+                <strong>Refinamiento:</strong>
+                El equipo analiza la historia y aclara dudas.
+            </li>
+
+            <li>
+                <strong>Ready:</strong>
+                La historia tiene contexto, criterios de aceptación,
+                prioridad y área.
+            </li>
+
+            <li>
+                <strong>In Progress:</strong>
+                Un integrante comienza el desarrollo.
+            </li>
+
+            <li>
+                <strong>Review:</strong>
+                Se realiza Pull Request y revisión de código.
+            </li>
+
+            <li>
+                <strong>Testing:</strong>
+                Se verifican los criterios de aceptación.
+            </li>
+
+            <li>
+                <strong>Done:</strong>
+                Cumple los criterios de aceptación y Definition of Done.
+            </li>
+        </ol>
+    </section>
+
+
+    <!-- REFINAMIENTO -->
+    <section>
+        <h2>15. Definition of Ready</h2>
+
+        <p>
+            Antes de comenzar una User Story, el equipo debe comprobar
+            que está suficientemente preparada.
+        </p>
+
+        <h3>Checklist</h3>
+
+        <ul>
+            <li>☐ Tiene un título claro.</li>
+            <li>☐ Tiene estructura Como / Quiero / Para.</li>
+            <li>☐ Tiene contexto cuando sea necesario.</li>
+            <li>☐ Tiene criterios de aceptación.</li>
+            <li>☐ Se entiende qué resultado espera el usuario.</li>
+            <li>☐ Tiene Category.</li>
+            <li>☐ Tiene Area.</li>
+            <li>☐ Tiene Priority.</li>
+            <li>☐ Es suficientemente pequeña para el Sprint.</li>
+            <li>☐ No existen dudas importantes sin resolver.</li>
+        </ul>
+
+        <div class="rule">
+            Si una historia no está lista para ser desarrollada,
+            no debería entrar al Sprint solamente para "tener algo que hacer".
+        </div>
+    </section>
+
+
+    <!-- RESPONSABILIDADES -->
+    <section>
+        <h2>16. Responsabilidades del equipo</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Rol</th>
+                    <th>Responsabilidad</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td><strong>Scrum Master</strong></td>
+                    <td>
+                        Facilitar el proceso, ayudar a mantener el tablero
+                        organizado y asegurar que se respeten las reglas acordadas.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>Equipo de desarrollo</strong></td>
+                    <td>
+                        Analizar la historia, identificar Tasks,
+                        estimar el trabajo, desarrollar, probar y revisar.
+                    </td>
+                </tr>
+
+                <tr>
+                    <td><strong>Product Owner</strong></td>
+                    <td>
+                        Priorizar necesidades y aclarar el valor esperado
+                        para el usuario.
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+
+        <div class="warning">
+            El Scrum Master no debería convertirse en la única persona
+            responsable de escribir y mantener todas las historias.
+            El equipo debe participar en el refinamiento.
+        </div>
+    </section>
+
+
+    <!-- EJEMPLO COMPLETO -->
+    <section>
+        <h2>17. Ejemplo completo para GitHub Projects</h2>
+
+        <div class="card">
+
+            <h3>US-001: Iniciar sesión</h3>
+
+            <p><strong>Category:</strong> User Story</p>
+            <p><strong>Area:</strong> Backend / Frontend</p>
+            <p><strong>Priority:</strong> P1 - Alta</p>
+
+            <hr>
+
+            <p><strong>Como:</strong> usuario registrado</p>
+
+            <p>
+                <strong>Quiero:</strong>
+                iniciar sesión utilizando mi correo y contraseña
+            </p>
+
+            <p>
+                <strong>Para:</strong>
+                acceder de forma segura a las funcionalidades de mi cuenta
+            </p>
+
+            <h4>Contexto</h4>
+
+            <p>
+                El sistema necesita permitir que los usuarios registrados
+                puedan autenticarse antes de acceder a las funcionalidades
+                protegidas de la aplicación.
+            </p>
+
+            <h4>Criterios de aceptación</h4>
+
+            <ul>
+                <li>El formulario debe solicitar correo y contraseña.</li>
+                <li>Ambos campos deben ser obligatorios.</li>
+                <li>Las credenciales válidas deben permitir el acceso.</li>
+                <li>Las credenciales inválidas deben mostrar un mensaje de error.</li>
+                <li>La contraseña debe ocultarse visualmente.</li>
+                <li>Después de autenticarse, el usuario debe acceder a su página principal.</li>
+            </ul>
+
+            <h4>Tasks</h4>
+
+            <ul>
+                <li>Crear formulario de login.</li>
+                <li>Crear endpoint de autenticación.</li>
+                <li>Implementar validación.</li>
+                <li>Implementar generación de token.</li>
+                <li>Conectar frontend y backend.</li>
+                <li>Agregar pruebas.</li>
+            </ul>
+
+        </div>
+    </section>
+
+
+    <!-- REGLAS RÁPIDAS -->
+    <section>
+        <h2>18. Reglas rápidas del equipo</h2>
+
+        <ol>
+            <li>
+                <strong>Sin criterios de aceptación, no hay User Story válida.</strong>
+            </li>
+
+            <li>
+                <strong>Una User Story debe expresar valor.</strong>
+            </li>
+
+            <li>
+                <strong>Las Tasks pueden ser técnicas.</strong>
+            </li>
+
+            <li>
+                <strong>No mezclar múltiples funcionalidades grandes
+                    en una sola historia.</strong>
+            </li>
+
+            <li>
+                <strong>Todo trabajo debe tener una tarjeta.</strong>
+            </li>
+
+            <li>
+                <strong>No mover una tarjeta a Done solamente porque
+                    terminó la programación.</strong>
+            </li>
+
+            <li>
+                <strong>La Pull Request debe estar relacionada con
+                    la tarjeta correspondiente.</strong>
+            </li>
+
+            <li>
+                <strong>El tablero debe representar el estado real
+                    del trabajo.</strong>
+            </li>
+
+            <li>
+                <strong>Las historias deben refinarse antes del Sprint
+                    cuando sea posible.</strong>
+            </li>
+
+            <li>
+                <strong>Si una historia no se entiende, se pregunta
+                    antes de comenzar a programar.</strong>
+            </li>
+        </ol>
+    </section>
+
+
+    <!-- PLANTILLA -->
+    <section>
+        <h2>19. Plantilla para copiar en GitHub</h2>
+
+        <p>
+            Esta plantilla puede utilizarse directamente en la descripción
+            de una User Story.
+        </p>
+
+        <pre>
+
+## User Story
+
+**Como:** [tipo de usuario / rol]
+
+**Quiero:** [acción o funcionalidad]
+
+**Para:** [beneficio / valor]
+
+## Contexto
+
+[Explicación breve del problema o situación]
+
+## Criterios de aceptación
+
+* [ ] [Criterio verificable 1]
+* [ ] [Criterio verificable 2]
+* [ ] [Criterio verificable 3]
+* [ ] [Criterio verificable 4]
+
+## Tasks
+
+* [ ] [Task técnica 1]
+* [ ] [Task técnica 2]
+* [ ] [Task técnica 3]
+
+## Definition of Done
+
+* [ ] Cumple todos los criterios de aceptación.
+* [ ] Código revisado.
+* [ ] Pruebas realizadas.
+* [ ] Pull Request aprobada.
+    </pre>
+    </section>
+</div>

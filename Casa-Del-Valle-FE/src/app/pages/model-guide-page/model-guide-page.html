@@ -1,0 +1,141 @@
+<div class="container">
+    <h1>Estandarización de API: Go & Angular</h1>
+    <p>Esta guía define las reglas de comunicación entre el equipo de Frontend (FE) y Backend (BE) para garantizar
+        consistencia y reducir errores de integración.</p>
+
+    <h2>1. Arquitectura de Modelos (Structs)</h2>
+    <p>En el backend, debemos separar estrictamente los datos que viajan por la red de los datos que procesamos
+        internamente o guardamos en la base de datos.
+        <br>En otras palabras, se debe crear los Structs para request y response necesarios, ademas del struct principal
+        que puede contener logica.
+    </p>
+    <div class="alert">
+        <strong>Importante:</strong><br>
+        <p>En Go, los campos deben iniciar con Mayúscula para ser "públicos".<br>La etiqueta `json:"..."` le dice a Go
+            cómo buscar esa llave en el JSON entrante.</p>
+    </div>
+
+    <h3>A. Structs de Request/Response (DTOs)</h3>
+    <p>Son los objetos que serializamos/deserializamos. Llevan etiquetas <code>`json:"..."`</code>.</p>
+    <pre><code><span class="comment">// DTO para recibir datos del Frontend</span>
+type CreateUserRequest struct &#123;
+    Name     string <span class="string">`json:"name"`</span>
+    Email    string <span class="string">`json:"email"`</span>
+    Password string <span class="string">`json:"password"`</span>
+&#125;
+
+<span class="comment">// DTO para enviar datos al Frontend (oculta información sensible)</span>
+type UserResponse struct &#123;
+    ID    int    <span class="string">`json:"id"`</span>
+    Name  string <span class="string">`json:"name"`</span>
+    Email string <span class="string">`json:"email"`</span>
+&#125;</code></pre>
+
+    <h3>B. Struct de Lógica Interna (Dominio/BD)</h3>
+    <p>Modelo utilizado para lógica de negocio o guardar en PostgreSQL. No lleva etiquetas JSON porque no se expone a
+        internet.</p>
+    <pre><code>type User struct &#123;
+    ID           int
+    FullName     string
+    EmailAddress string
+    PasswordHash string
+    CreatedAt    time.Time
+&#125;</code></pre>
+
+    <h3>C. Mapeo (Conversión entre Structs)</h3>
+    <p>Nunca guardes un Request directamente en la base de datos ni expongas un modelo de BD directamente en un
+        Response. Realiza la conversión manualmente en el controlador/servicio.</p>
+    <pre><code><span class="comment">// Función de conversión de Request a Modelo de BD</span>
+func ToUserDomain(req CreateUserRequest) User &#123;
+    return User &#123;
+        FullName:     req.Name,
+        EmailAddress: req.Email,
+        <span class="comment">// Aquí se aplicaría el hashing a la contraseña</span>
+        PasswordHash: req.Password, 
+        CreatedAt:    time.Now(),
+    &#125;
+&#125;</code></pre>
+
+    <h2>2. Serialización y Deserialización en Go</h2>
+    <p>Utilizamos el paquete nativo <code>encoding/json</code>.</p>
+    <ul>
+        <li><strong>Deserializar (JSON a Struct):</strong> Usar
+            <code>json.NewDecoder(r.Body).Decode(&amp;miStruct)</code>
+        </li>
+        <li><strong>Serializar (Struct a JSON):</strong> Usar <code>json.NewEncoder(w).Encode(miStruct)</code></li>
+    </ul>
+
+    <h2>3. Sincronización de Modelos entre BE y FE</h2>
+    <p>Dado que el BE está en Go y el FE en TypeScript, no podemos compartir el código directamente. Se aplicará el
+        siguiente estándar:</p>
+    <div class="alert">
+        <strong>Estrategia Contract-First:</strong><br>
+        El equipo de Backend debe generar los structs en la carpeta de modelos correspondiente en
+        <code>models/public</code>.
+        El equipo de Frontend generará sus Interfaces de TypeScript (<code>export interface UserResponse &#123;...&#125;</code>)
+        basándose estrictamente en los structs de request response ubicados en la carpeta <code>models/public</code>, no
+        en suposiciones. Cuando el BE cambie un contrato, se debe notificar mediante un <strong>Pull Request</strong> en
+        el repositorio BE que incluya la actualización de la documentación, etiquetando a los desarrolladores de FE para
+        su revisión.
+    </div>
+
+    <h2>4. Ejemplos Básicos: GET y POST</h2>
+
+    <pre><code>package main
+
+import (
+    <span class="string">"encoding/json"</span>
+    <span class="string">"net/http"</span>
+)
+
+<span class="comment">// POST: Recibir JSON, mapear a dominio y responder JSON</span>
+func CreateUserHandler(w http.ResponseWriter, r *http.Request) &#123;
+    <span class="comment">// 1. Deserializar Request (JSON -> Struct)</span>
+    var req CreateUserRequest
+    if err := json.NewDecoder(r.Body).Decode(&amp;req); err != nil &#123;
+        http.Error(w, <span class="string">"Error procesando JSON"</span>, http.StatusBadRequest)
+        return
+    &#125;
+
+    <span class="comment">// 2. Mapear DTO a Modelo de Dominio Interno</span>
+    user := ToUserDomain(req)
+
+    <span class="comment">// (Simulación: Aquí user se guardaría en PostgreSQL y obtendría un ID)</span>
+    user.ID = 1 
+
+    <span class="comment">// 3. Mapear Modelo de Dominio a Response DTO</span>
+    res := UserResponse&#123;
+        ID:    user.ID,
+        Name:  user.FullName,
+        Email: user.EmailAddress,
+    &#125;
+
+    <span class="comment">// 4. Serializar Response (Struct -> JSON)</span>
+    w.Header().Set(<span class="string">"Content-Type"</span>, <span class="string">"application/json"</span>)
+    w.WriteHeader(http.StatusCreated)
+    json.NewEncoder(w).Encode(res)
+&#125;
+
+<span class="comment">// GET: Enviar datos al Frontend</span>
+func GetUserHandler(w http.ResponseWriter, r *http.Request) &#123;
+    <span class="comment">// (Simulación: Obtener modelo desde la base de datos)</span>
+    dbUser := User&#123;
+        ID: 1,
+        FullName: <span class="string">"Josecarlos"</span>,
+        EmailAddress: <span class="string">"jose@ejemplo.com"</span>,
+    &#125;
+
+    <span class="comment">// Mapear a DTO Response</span>
+    res := UserResponse&#123;
+        ID:    dbUser.ID,
+        Name:  dbUser.FullName,
+        Email: dbUser.EmailAddress,
+    &#125;
+
+    <span class="comment">// Enviar JSON</span>
+    w.Header().Set(<span class="string">"Content-Type"</span>, <span class="string">"application/json"</span>)
+    json.NewEncoder(w).Encode(res)
+&#125;
+</code>
+</pre>
+</div>

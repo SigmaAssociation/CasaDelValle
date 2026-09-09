@@ -1,0 +1,736 @@
+<div class="root">
+    <section class="hero">
+        <div class="hero-inner">
+            <span class="eyebrow">Frontend Design System</span>
+            <h1>Guía de Diseño Frontend</h1>
+            <div class="hero-rule"></div>
+
+            <p>
+                Estándar visual para mantener una interfaz consistente, minimalista
+                y acogedora en Casa Del Valle. Esta guía define colores, tipografía,
+                espaciado, componentes, formularios, navegación y reglas de uso.
+            </p>
+
+            <div class="principle-grid">
+                <div class="principle">
+                    <strong>Minimalista</strong>
+                    <span>Reducir elementos innecesarios y priorizar el contenido.</span>
+                </div>
+
+                <div class="principle">
+                    <strong>Acogedor</strong>
+                    <span>Usar tonos cálidos, espacios generosos y formas suaves.</span>
+                </div>
+
+                <div class="principle">
+                    <strong>Consistente</strong>
+                    <span>Los mismos patrones deben repetirse en toda la aplicación.</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main>
+
+        <!-- IDENTIDAD -->
+        <section id="identidad">
+            <div class="section-heading">
+                <span class="eyebrow">01 — Identidad visual</span>
+                <h2>La personalidad de Casa Del Valle</h2>
+                <p>
+                    La interfaz debe transmitir una sensación de hogar, confianza,
+                    tranquilidad y sencillez. El diseño no debe sentirse tecnológico
+                    o agresivo; debe sentirse cercano.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Calidez</h3>
+                    <p>
+                        El fondo crema y el marrón deben aportar una sensación
+                        natural y confortable.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Naturalidad</h3>
+                    <p>
+                        El verde funciona como color institucional y debe aparecer
+                        principalmente en navegación, elementos secundarios y estados.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Énfasis</h3>
+                    <p>
+                        El naranja es el color de acción. Debe utilizarse con
+                        moderación para llamar la atención sobre acciones importantes.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- COLORES -->
+        <section id="colores">
+            <div class="section-heading">
+                <span class="eyebrow">02 — Color</span>
+                <h2>Paleta oficial</h2>
+                <p>
+                    Estos cinco colores forman la identidad visual principal.
+                    No se deben introducir colores arbitrarios sin una razón de diseño.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="swatch-grid">
+                    <div class="swatch">
+                        <div class="swatch-color green"></div>
+                        <div class="swatch-info">
+                            <span class="swatch-name">Verde Valle</span>
+                            <span class="swatch-code">#4F5D2F</span>
+                        </div>
+                    </div>
+
+                    <div class="swatch">
+                        <div class="swatch-color brown"></div>
+                        <div class="swatch-info">
+                            <span class="swatch-name">Marrón Tierra</span>
+                            <span class="swatch-code">#423629</span>
+                        </div>
+                    </div>
+
+                    <div class="swatch">
+                        <div class="swatch-color orange"></div>
+                        <div class="swatch-info">
+                            <span class="swatch-name">Naranja Acción</span>
+                            <span class="swatch-code">#EC4E20</span>
+                        </div>
+                    </div>
+
+                    <div class="swatch">
+                        <div class="swatch-color cream"></div>
+                        <div class="swatch-info">
+                            <span class="swatch-name">Crema</span>
+                            <span class="swatch-code">#EFE6D2</span>
+                        </div>
+                    </div>
+
+                    <div class="swatch">
+                        <div class="swatch-color black"></div>
+                        <div class="swatch-info">
+                            <span class="swatch-name">Negro</span>
+                            <span class="swatch-code">#151515</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="color-usage">
+                    <div class="usage-green">
+                        <strong>Verde #4F5D2F:</strong>
+                        navegación, encabezados institucionales, botones secundarios,
+                        estados positivos y elementos de identidad.
+                    </div>
+
+                    <div class="usage-brown">
+                        <strong>Marrón #423629:</strong>
+                        títulos, footer, bloques de código y elementos que necesiten
+                        una apariencia más cálida.
+                    </div>
+
+                    <div class="usage-orange">
+                        <strong>Naranja #EC4E20:</strong>
+                        acciones principales, botones CTA, indicadores de atención
+                        y estados de error.
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-warning">
+                <strong>Regla:</strong>
+                El naranja es un color de énfasis. Evitar utilizarlo como color
+                dominante de toda una página.
+            </div>
+        </section>
+
+        <!-- TIPOGRAFÍA -->
+        <section id="tipografia">
+            <div class="section-heading">
+                <span class="eyebrow">03 — Tipografía</span>
+                <h2>Serif para identidad, Sans para claridad</h2>
+                <p>
+                    La combinación de Serif y Sans-serif permite mantener una
+                    personalidad clásica en los títulos sin sacrificar legibilidad
+                    en formularios y contenido.
+                </p>
+            </div>
+
+            <div class="grid-2">
+                <div class="panel">
+                    <h3>Serif — Títulos</h3>
+
+                    <div class="type-display">
+                        <div class="type-title">Casa Del Valle</div>
+                        <div class="type-body">
+                            La tipografía Serif se utiliza en títulos, nombre de marca
+                            y encabezados importantes.
+                        </div>
+                        <span class="type-label">Georgia / Times New Roman</span>
+                    </div>
+
+                    <ul>
+                        <li>H1: 2rem — 3.5rem</li>
+                        <li>H2: 1.6rem — 2.2rem</li>
+                        <li>H3: alrededor de 1.35rem</li>
+                        <li>Evitar utilizar Serif en bloques largos de texto.</li>
+                    </ul>
+                </div>
+
+                <div class="panel">
+                    <h3>Sans-serif — Contenido</h3>
+
+                    <div class="type-display">
+                        <div class="type-body">
+                            Los formularios, botones, navegación, párrafos, mensajes
+                            y datos deben utilizar una tipografía Sans-serif limpia.
+                        </div>
+                        <span class="type-label">Arial / Helvetica</span>
+                    </div>
+
+                    <ul>
+                        <li>Texto base: 15–16px.</li>
+                        <li>Labels: 14–15px.</li>
+                        <li>Botones: 14–15px.</li>
+                        <li>Line-height recomendado: 1.5–1.7.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ESPACIADO -->
+        <section id="espaciado">
+            <div class="section-heading">
+                <span class="eyebrow">04 — Espaciado</span>
+                <h2>El espacio también comunica</h2>
+                <p>
+                    Una interfaz minimalista necesita espacio suficiente para que
+                    cada elemento pueda respirar. Evitar llenar toda la pantalla.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="spacing-list">
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-1</span>
+                        <div class="spacing-bar" style="width: 8%;"></div>
+                        <span class="spacing-value">4px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-2</span>
+                        <div class="spacing-bar" style="width: 14%;"></div>
+                        <span class="spacing-value">8px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-3</span>
+                        <div class="spacing-bar" style="width: 20%;"></div>
+                        <span class="spacing-value">12px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-4</span>
+                        <div class="spacing-bar" style="width: 27%;"></div>
+                        <span class="spacing-value">16px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-5</span>
+                        <div class="spacing-bar" style="width: 40%;"></div>
+                        <span class="spacing-value">24px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-6</span>
+                        <div class="spacing-bar" style="width: 53%;"></div>
+                        <span class="spacing-value">32px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-7</span>
+                        <div class="spacing-bar" style="width: 70%;"></div>
+                        <span class="spacing-value">48px</span>
+                    </div>
+
+                    <div class="spacing-row">
+                        <span class="spacing-name">space-8</span>
+                        <div class="spacing-bar" style="width: 92%;"></div>
+                        <span class="spacing-value">64px</span>
+                    </div>
+                </div>
+
+                <div class="alert alert-info" style="margin-top: 24px;">
+                    <strong>Regla:</strong>
+                    Preferir múltiplos de la escala anterior antes de inventar
+                    valores como 13px, 27px o 43px.
+                </div>
+            </div>
+        </section>
+
+        <!-- FORMAS / SUPERFICIES -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">05 — Superficies</span>
+                <h2>Bordes, sombras y esquinas</h2>
+                <p>
+                    Los componentes deben sentirse suaves y discretos. Las sombras
+                    sirven para separar superficies, no para decorar.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Border radius</h3>
+                    <p>
+                        Usar 6px para controles pequeños, 10px para componentes
+                        y hasta 16px para contenedores grandes.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Sombras</h3>
+                    <p>
+                        Utilizar sombras suaves y difusas. Evitar sombras negras
+                        fuertes alrededor de cada elemento.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Bordes</h3>
+                    <p>
+                        Preferir bordes sutiles en tonos marrones claros antes que
+                        líneas negras gruesas.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- COMPONENTES -->
+        <section id="componentes">
+            <div class="section-heading">
+                <span class="eyebrow">06 — Componentes</span>
+                <h2>Componentes principales</h2>
+                <p>
+                    Los componentes deben conservar el mismo lenguaje visual
+                    independientemente de la página donde aparezcan.
+                </p>
+            </div>
+
+            <div class="panel">
+                <h3>Botones</h3>
+
+                <div class="component-demo">
+                    <div class="button-row">
+                        <a href="#" class="btn btn-primary">Acción principal</a>
+                        <a href="#" class="btn btn-secondary">Acción secundaria</a>
+                        <a href="#" class="btn btn-outline">Cancelar</a>
+                    </div>
+                </div>
+
+                <h4>Uso</h4>
+
+                <ul>
+                    <li><strong>Naranja:</strong> acción principal de la pantalla.</li>
+                    <li><strong>Verde:</strong> acción secundaria o institucional.</li>
+                    <li><strong>Outline:</strong> acciones de menor prioridad.</li>
+                    <li>No utilizar cinco botones con el mismo nivel de importancia.</li>
+                </ul>
+
+                <h3>Formularios</h3>
+
+                <div class="component-demo">
+                    <form class="form-demo" onsubmit="return false;">
+                        <div class="form-group">
+                            <label for="name">
+                                Nombre <span class="required">*</span>
+                            </label>
+                            <input id="name" type="text" placeholder="Ingresa tu nombre">
+                            <span class="helper">Usar instrucciones cortas cuando sean necesarias.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email">
+                                Correo electrónico <span class="required">*</span>
+                            </label>
+                            <input id="email" type="email" placeholder="correo@ejemplo.com">
+                        </div>
+
+                        <button class="btn btn-primary" type="submit">
+                            Guardar cambios
+                        </button>
+                    </form>
+                </div>
+
+                <h4>Reglas de formularios</h4>
+
+                <ul>
+                    <li>Labels siempre visibles.</li>
+                    <li>Campos con altura suficiente para interacción cómoda.</li>
+                    <li>Placeholder no sustituye al label.</li>
+                    <li>Mostrar claramente estados de error y éxito.</li>
+                    <li>Utilizar el mismo estilo de input en toda la aplicación.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- NAVEGACIÓN -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">07 — Navegación</span>
+                <h2>Header y navegación</h2>
+                <p>
+                    La navegación debe ser simple. El usuario debe poder identificar
+                    rápidamente dónde está y a dónde puede ir.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="mini-nav">
+                    <span class="mini-brand">Casa Del Valle</span>
+
+                    <div class="mini-links">
+                        <span>Inicio</span>
+                        <span>Ingresar</span>
+                    </div>
+                </div>
+
+                <h3>Reglas</h3>
+
+                <ul>
+                    <li>Fondo principal: <code>#4F5D2F</code>.</li>
+                    <li>Texto de navegación: blanco.</li>
+                    <li>Logo o nombre: Serif.</li>
+                    <li>Enlaces: Sans-serif.</li>
+                    <li>Evitar llenar el header con demasiadas opciones.</li>
+                    <li>En móvil, reorganizar los enlaces en lugar de reducirlos excesivamente.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">08 — Footer</span>
+                <h2>Un cierre visual consistente</h2>
+            </div>
+
+            <div class="panel">
+                <div style="background:#423629;color:#fff;padding:28px;border-radius:10px;text-align:center;">
+                    <div style="font-family:Georgia,serif;font-weight:700;font-size:1.1rem;">
+                        Casa Del Valle
+                    </div>
+                    <div style="margin-top:8px;color:#E4DED6;font-size:.85rem;">
+                        © 2026 Casa Del Valle. Todos los derechos reservados.
+                    </div>
+                </div>
+
+                <p style="margin-top:20px;">
+                    El footer debe utilizar <strong>#423629</strong> como fondo,
+                    texto blanco o crema y una estructura sencilla.
+                </p>
+            </div>
+        </section>
+
+        <!-- ESTADOS -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">09 — Estados</span>
+                <h2>Mensajes y estados de la interfaz</h2>
+                <p>
+                    Los estados deben ser visibles sin romper la estética general.
+                    No introducir colores completamente nuevos para cada situación.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="alert alert-success">
+                    <strong>Éxito:</strong> Los cambios se guardaron correctamente.
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Información:</strong> Puedes modificar estos datos más adelante.
+                </div>
+
+                <div class="alert alert-warning">
+                    <strong>Advertencia:</strong> Esta acción puede afectar otros datos.
+                </div>
+
+                <div class="alert alert-error">
+                    <strong>Error:</strong> No fue posible completar la operación.
+                </div>
+
+                <h3>Regla importante</h3>
+
+                <p>
+                    Los estados deben apoyarse también en texto o iconografía.
+                    Nunca depender únicamente del color para comunicar un error,
+                    éxito o advertencia.
+                </p>
+            </div>
+        </section>
+
+        <!-- RESPONSIVE -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">10 — Responsive</span>
+                <h2>Diseñar primero para contenido</h2>
+                <p>
+                    El diseño debe funcionar correctamente en escritorio,
+                    tablet y móvil sin perder la identidad visual.
+                </p>
+            </div>
+
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Desktop</h3>
+                    <p>
+                        Aprovechar el espacio mediante contenedores centrados.
+                        Evitar líneas de texto excesivamente largas.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Tablet</h3>
+                    <p>
+                        Reducir columnas y mantener suficiente espacio entre
+                        elementos interactivos.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <h3>Móvil</h3>
+                    <p>
+                        Convertir grids en una sola columna y permitir que la
+                        navegación se reorganice naturalmente.
+                    </p>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <strong>Regla:</strong>
+                Nunca diseñar una interfaz únicamente para la resolución de la
+                computadora del desarrollador.
+            </div>
+        </section>
+
+        <!-- ACCESIBILIDAD -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">11 — Accesibilidad</span>
+                <h2>Minimalista también significa usable</h2>
+                <p>
+                    Una interfaz bonita no sirve si una persona no puede utilizarla
+                    correctamente.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="checklist">
+                    <div class="check">Todos los inputs tienen un label.</div>
+                    <div class="check">Los botones tienen texto comprensible.</div>
+                    <div class="check">El teclado puede recorrer los elementos interactivos.</div>
+                    <div class="check">Los estados de error no dependen únicamente del color.</div>
+                    <div class="check">El texto tiene suficiente contraste con el fondo.</div>
+                    <div class="check">Las imágenes importantes tienen texto alternativo.</div>
+                    <div class="check">Los elementos interactivos tienen un área cómoda para pulsar.</div>
+                    <div class="check">Se respeta la preferencia de reducir movimiento cuando corresponde.</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DO / DON'T -->
+        <section id="reglas">
+            <div class="section-heading">
+                <span class="eyebrow">12 — Reglas de diseño</span>
+                <h2>Qué hacer y qué evitar</h2>
+            </div>
+
+            <div class="do-dont">
+                <div class="do">
+                    <h3>✓ Sí hacer</h3>
+                    <ul>
+                        <li>Usar la paleta oficial.</li>
+                        <li>Mantener bastante espacio en blanco.</li>
+                        <li>Usar Serif en títulos y Sans-serif en contenido.</li>
+                        <li>Reutilizar componentes existentes.</li>
+                        <li>Utilizar naranja para acciones importantes.</li>
+                        <li>Mantener formularios simples.</li>
+                        <li>Diseñar pensando en móvil.</li>
+                        <li>Mantener consistencia entre páginas.</li>
+                    </ul>
+                </div>
+
+                <div class="dont">
+                    <h3>✕ Evitar</h3>
+                    <ul>
+                        <li>Introducir colores arbitrarios.</li>
+                        <li>Usar demasiadas sombras.</li>
+                        <li>Utilizar gradientes llamativos.</li>
+                        <li>Hacer botones gigantes sin necesidad.</li>
+                        <li>Llenar una pantalla con tarjetas.</li>
+                        <li>Usar Serif para párrafos largos.</li>
+                        <li>Ocultar labels dentro de placeholders.</li>
+                        <li>Crear estilos diferentes para cada página.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- ARQUITECTURA CSS -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">13 — Implementación</span>
+                <h2>Variables CSS obligatorias</h2>
+                <p>
+                    Los colores y medidas principales deben centralizarse mediante
+                    variables para evitar valores duplicados.
+                </p>
+            </div>
+
+            <pre><code>:root &#123;
+    --green: #4F5D2F;
+    --brown: #423629;
+    --orange: #EC4E20;
+    --cream: #EFE6D2;
+    --black: #151515;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+    --space-8: 64px;
+&#125;</code></pre>
+
+            <div class="alert alert-warning" style="margin-top:20px;">
+                <strong>Regla:</strong>
+                Si necesitas cambiar un color institucional, debe cambiarse
+                desde las variables globales y no modificando cientos de componentes.
+            </div>
+        </section>
+
+        <!-- COMPONENTE DE EJEMPLO -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">14 — Ejemplo práctico</span>
+                <h2>Una pantalla siguiendo el sistema</h2>
+            </div>
+
+            <div class="panel">
+                <div style="
+                max-width: 520px;
+                margin: 0 auto;
+                background: #FFFFFF;
+                border: 1px solid rgba(66,54,41,.12);
+                border-radius: 16px;
+                padding: 32px;
+                box-shadow: 0 8px 24px rgba(66,54,41,.12);
+            ">
+                    <h2 style="margin-bottom:8px;">Crear Cuenta</h2>
+
+                    <p class="muted" style="font-size:.9rem;">
+                        Únete a nuestra plataforma.
+                    </p>
+
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" placeholder="Tu nombre">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Correo electrónico</label>
+                        <input type="email" placeholder="correo@ejemplo.com">
+                    </div>
+
+                    <button class="btn btn-primary" style="width:100%;">
+                        Registrarse
+                    </button>
+                </div>
+            </div>
+
+            <p style="margin-top:20px;">
+                Este patrón representa directamente el estilo de referencia:
+                fondo crema, contenedor blanco, título Serif, contenido Sans-serif,
+                botón naranja, bordes suaves y sombra discreta.
+            </p>
+        </section>
+
+        <!-- CHECKLIST -->
+        <section>
+            <div class="section-heading">
+                <span class="eyebrow">15 — Checklist</span>
+                <h2>Antes de aprobar una pantalla</h2>
+                <p>
+                    El equipo frontend puede utilizar esta lista durante las
+                    Pull Requests y revisiones de diseño.
+                </p>
+            </div>
+
+            <div class="panel">
+                <div class="checklist">
+                    <div class="check">¿Utiliza únicamente la paleta definida?</div>
+                    <div class="check">¿Los títulos utilizan Serif?</div>
+                    <div class="check">¿El contenido y formularios utilizan Sans-serif?</div>
+                    <div class="check">¿Existe suficiente espacio entre elementos?</div>
+                    <div class="check">¿Los botones respetan los colores y jerarquía?</div>
+                    <div class="check">¿Los formularios tienen labels visibles?</div>
+                    <div class="check">¿La pantalla funciona en móvil?</div>
+                    <div class="check">¿Los estados de error y éxito son claros?</div>
+                    <div class="check">¿Los componentes reutilizan estilos existentes?</div>
+                    <div class="check">¿La pantalla se siente parte de Casa Del Valle?</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PRINCIPIO FINAL -->
+        <section>
+            <div class="panel" style="
+            background: var(--brown);
+            color: var(--white);
+            border: none;
+            box-shadow: var(--shadow-lg);
+        ">
+                <span class="eyebrow" style="color:#E8EBDD;">Principio final</span>
+
+                <h2 style="color:var(--white);">
+                    Diseñar menos, pero diseñarlo bien.
+                </h2>
+
+                <p style="color:#E8E0D7;max-width:760px;">
+                    Cada pantalla debe sentirse como parte del mismo producto.
+                    Si un componente nuevo necesita demasiados colores, sombras,
+                    tamaños o excepciones para funcionar, probablemente el diseño
+                    puede simplificarse.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <footer>
+        <div class="footer-inner">
+            <div>
+                <strong>Casa Del Valle</strong><br>
+                <small>Guía interna de diseño frontend</small>
+            </div>
+
+            <small>Design System · 2026</small>
+        </div>
+    </footer>
+</div>
