@@ -1,0 +1,654 @@
+<div class="body">
+
+    <div class="hero container">
+        <div class="eyebrow">Guía de desarrollo · Go + PostgreSQL</div>
+        <h1>Backend limpio y reutilizable</h1>
+        <p class="lead">
+            Guía interna para trabajar con la estructura <strong>Controller → Service → Repository → pgxPool →
+                PostgreSQL</strong>.
+            El objetivo es que cualquier integrante pueda crear una nueva entidad siguiendo el mismo patrón sin duplicar
+            conexiones ni mezclar responsabilidades.
+        </p>
+        <div>
+            <span class="badge">Go 1.25</span>
+            <span class="badge">pgx v5</span>
+            <span class="badge">PostgreSQL</span>
+            <span class="badge">Docker</span>
+        </div>
+    </div>
+
+    <div class="container">
+
+        <section id="arquitectura">
+            <h2>1. Arquitectura del backend</h2>
+            <p>La aplicación está organizada por responsabilidades. Una petición HTTP atraviesa las capas en este orden:
+            </p>
+            <div class="flow">
+                <span>HTTP</span><b class="arrow">→</b>
+                <span>Controller</span><b class="arrow">→</b>
+                <span>Service</span><b class="arrow">→</b>
+                <span>Repository</span><b class="arrow">→</b>
+                <span>pgxPool</span><b class="arrow">→</b>
+                <span>PostgreSQL</span>
+            </div>
+            <div class="card-grid">
+                <div class="card"><strong>Controller</strong><br>Recibe HTTP, valida lo básico, llama al servicio y
+                    construye la respuesta JSON.</div>
+                <div class="card"><strong>Service</strong><br>Contiene las reglas de negocio y coordina operaciones.
+                </div>
+                <div class="card"><strong>Repository</strong><br>Es responsable de SQL y acceso a datos.</div>
+                <div class="card"><strong>pgxPool</strong><br>Administra y reutiliza conexiones hacia PostgreSQL.</div>
+            </div>
+            <div class="note"><strong>Idea clave:</strong> el pool se crea una sola vez al iniciar la aplicación y se
+                comparte con todos los repositories. No se crea un pool por entidad ni por endpoint.</div>
+        </section>
+
+        <section id="estructura">
+            <h2>2. Estructura de <code>internal/</code></h2>
+            <p>La estructura recomendada para el proyecto actual es:</p>
+            <pre><code>cdv-api/
+├── cmd/
+│   └── api/
+│       └── main.go
+│
+├── internal/
+│   ├── database/
+│   │   └── postgres.go
+│   │
+│   ├── users/
+│   │   ├── model.go
+│   │   ├── repository.go
+│   │   ├── service.go
+│   │   └── controller.go
+│   │
+│   ├── products/
+│   │   ├── model.go
+│   │   ├── repository.go
+│   │   ├── service.go
+│   │   └── controller.go
+│   │
+│   └── orders/
+│       ├── model.go
+│       ├── repository.go
+│       ├── service.go
+│       └── controller.go
+│
+├── .env
+├── .air.toml
+├── go.mod
+├── go.sum
+├── Dockerfile
+└── Dockerfile.dev</code></pre>
+
+            <div class="tip"><strong>¿Por qué una carpeta por entidad?</strong> Porque evita terminar con carpetas
+                globales gigantes como <code>controllers/</code>, <code>services/</code> y <code>repositories/</code>
+                que contienen decenas de archivos. Todo lo relacionado con una entidad queda junto.</div>
+
+            <h3>¿Qué significa <code>internal/</code>?</h3>
+            <p>
+                En Go, <code>internal</code> es una convención con una regla especial del lenguaje: los paquetes dentro
+                de un directorio <code>internal</code> no pueden ser importados desde código externo al árbol de su
+                módulo.
+                Para nuestro proyecto esto ayuda a mantener la lógica interna del backend encapsulada.
+            </p>
+        </section>
+
+        <section id="config">
+            <h2>3. Configuración de PostgreSQL</h2>
+            <p>Las credenciales y datos de conexión no deben estar escritos directamente en el código.</p>
+
+            <h3>Variables utilizadas</h3>
+            <table>
+                <tr>
+                    <th>Variable</th>
+                    <th>Ejemplo local</th>
+                    <th>Dentro de Docker</th>
+                </tr>
+                <tr>
+                    <td><code>DB_HOST</code></td>
+                    <td><code>localhost</code></td>
+                    <td><code>postgres-db</code></td>
+                </tr>
+                <tr>
+                    <td><code>DB_PORT</code></td>
+                    <td><code>5432</code></td>
+                    <td><code>5432</code></td>
+                </tr>
+                <tr>
+                    <td><code>DB_USER</code></td>
+                    <td><code>appuser</code></td>
+                    <td><code>devuser</code></td>
+                </tr>
+                <tr>
+                    <td><code>DB_PASSWORD</code></td>
+                    <td>contraseña local</td>
+                    <td>contraseña del servicio</td>
+                </tr>
+                <tr>
+                    <td><code>DB_NAME</code></td>
+                    <td><code>mi_app</code></td>
+                    <td><code>appdb</code></td>
+                </tr>
+            </table>
+
+            <p>Ejemplo de <code>.env</code> para ejecución local:</p>
+            <pre><code>DB_HOST=localhost
+DB_PORT=5432
+DB_USER=appuser
+DB_PASSWORD=tu_password
+DB_NAME=mi_app</code></pre>
+
+            <div class="warning"><strong>Importante:</strong> <code>localhost</code> cambia según dónde corre Go. Desde
+                el contenedor del backend, <code>localhost</code> apunta al propio contenedor. Para PostgreSQL en
+                Compose se utiliza el nombre del servicio: <code>postgres-db</code>.</div>
+
+            <h3>Dependencias</h3>
+            <pre><code>github.com/jackc/pgx/v5
+github.com/joho/godotenv</code></pre>
+        </section>
+
+        <section id="pool">
+            <h2>4. Crear y reutilizar el pgxPool</h2>
+            <p>El pool administra un conjunto de conexiones reutilizables. La aplicación debe tener un único pool
+                compartido.</p>
+
+            <h3><code>internal/database/postgres.go</code></h3>
+            <pre><code>package database
+
+import (
+    "context"
+    "fmt"
+    "os"
+    "time"
+
+    "github.com/jackc/pgx/v5/pgxpool"
+)
+
+func NewPostgresPool(ctx context.Context) (*pgxpool.Pool, error) &#123;
+    host := os.Getenv("DB_HOST")
+    port := os.Getenv("DB_PORT")
+    user := os.Getenv("DB_USER")
+    password := os.Getenv("DB_PASSWORD")
+    dbname := os.Getenv("DB_NAME")
+
+    dsn := fmt.Sprintf(
+        "postgres://%s:%s@%s:%s/%s",
+        user,
+        password,
+        host,
+        port,
+        dbname,
+    )
+
+    config, err := pgxpool.ParseConfig(dsn)
+    if err != nil &#123;
+        return nil, err
+    &#125;
+
+    config.MaxConns = 10
+    config.MinConns = 2
+    config.MaxConnLifetime = time.Hour
+
+    pool, err := pgxpool.NewWithConfig(ctx, config)
+    if err != nil &#123;
+        return nil, err
+    &#125;
+
+    if err := pool.Ping(ctx); err != nil &#123;
+        pool.Close()
+        return nil, err
+    &#125;
+
+    return pool, nil
+&#125;</code></pre>
+
+            <h3>¿Qué está pasando?</h3>
+            <ul class="check">
+                <li><code>context.Context</code> acompaña la operación y permite manejar cancelación y límites de
+                    tiempo.</li>
+                <li><code>os.Getenv()</code> obtiene las variables de entorno.</li>
+                <li>El DSN describe cómo conectarse a PostgreSQL.</li>
+                <li><code>pgxpool.ParseConfig()</code> convierte el DSN en configuración.</li>
+                <li><code>pgxpool.NewWithConfig()</code> crea el pool.</li>
+                <li><code>Ping()</code> verifica que realmente podamos comunicarnos con PostgreSQL.</li>
+                <li>La función devuelve <code>(*pgxpool.Pool, error)</code>: resultado si todo salió bien o error si
+                    falló.</li>
+            </ul>
+
+            <div class="note"><strong>No hagan esto:</strong> crear <code>pgxpool.New...</code> dentro de cada
+                repository, método o endpoint. El pool es un recurso compartido de toda la aplicación.</div>
+        </section>
+
+        <section id="main">
+            <h2>5. Crear el pool en <code>main.go</code></h2>
+            <p><code>main.go</code> es el punto donde se construye la aplicación y se conectan sus dependencias.</p>
+            <pre><code>package main
+
+import (
+    "context"
+    "log"
+    "net/http"
+
+    "github.com/joho/godotenv"
+
+    "github.com/tu-organizacion/cdv-api/internal/database"
+    "github.com/tu-organizacion/cdv-api/internal/users"
+)
+
+func main() &#123;
+    if err := godotenv.Load(); err != nil &#123;
+        log.Println("No se encontró .env; se usarán variables del entorno")
+    &#125;
+
+    ctx := context.Background()
+
+    pool, err := database.NewPostgresPool(ctx)
+    if err != nil &#123;
+        log.Fatalf("Error conectando a PostgreSQL: %v", err)
+    &#125;
+    defer pool.Close()
+
+    userRepository := users.NewRepository(pool)
+    userService := users.NewService(userRepository)
+    userController := users.NewController(userService)
+
+    mux := http.NewServeMux()
+
+    mux.HandleFunc(
+        "GET /usuarios",
+        userController.GetUsers,
+    )
+
+    log.Println("Servidor escuchando en :8080")
+
+    if err := http.ListenAndServe(":8080", mux); err != nil &#123;
+        log.Fatal(err)
+    &#125;
+&#125;</code></pre>
+
+            <div class="tip"><strong>Este patrón se llama inyección de dependencias:</strong> <code>main</code> crea las
+                dependencias y se las entrega a las capas que las necesitan. Así los repositories no tienen que saber
+                cómo crear la conexión.</div>
+
+            <h3>El flujo</h3>
+            <pre><code>main
+ │
+ ├── crea pool
+ │
+ ├── Repository(pool)
+ │       ↓
+ ├── Service(repository)
+ │       ↓
+ └── Controller(service)
+         ↓
+       HTTP</code></pre>
+        </section>
+
+        <section id="model">
+            <h2>6. Crear el modelo de una entidad</h2>
+            <p>Ejemplo para <code>users</code>:</p>
+            <pre><code>package users
+
+type User struct &#123;
+    ID     int64  `json:"id"`
+    Nombre string `json:"nombre"`
+    Email  string `json:"email"`
+&#125;</code></pre>
+
+            <p>
+                Un <code>struct</code> agrupa datos relacionados. Los tags <code>json</code> indican cómo se representan
+                los campos al convertirlos a JSON.
+            </p>
+        </section>
+
+        <section id="repository">
+            <h2>7. Repository: acceso a PostgreSQL</h2>
+            <p>El repository es la capa donde vive el SQL. Recibe el pool que creó <code>main</code>.</p>
+
+            <pre><code>package users
+
+import (
+    "context"
+
+    "github.com/jackc/pgx/v5/pgxpool"
+)
+
+type Repository struct &#123;
+    pool *pgxpool.Pool
+&#125;
+
+func NewRepository(pool *pgxpool.Pool) *Repository &#123;
+    return &Repository&#123;
+        pool: pool,
+    &#125;
+&#125;
+
+func (r *Repository) GetAll(ctx context.Context) ([]User, error) &#123;
+    rows, err := r.pool.Query(
+        ctx,
+        `SELECT id, nombre, email
+         FROM usuarios
+         ORDER BY id`,
+    )
+
+    if err != nil &#123;
+        return nil, err
+    &#125;
+
+    defer rows.Close()
+
+    var usuarios []User
+
+    for rows.Next() &#123;
+        var user User
+
+        if err := rows.Scan(
+            &user.ID,
+            &user.Nombre,
+            &user.Email,
+        ); err != nil &#123;
+            return nil, err
+        &#125;
+
+        usuarios = append(usuarios, user)
+    &#125;
+
+    if err := rows.Err(); err != nil &#123;
+        return nil, err
+    &#125;
+
+    return usuarios, nil
+&#125;</code></pre>
+
+            <h3>Reglas para SQL</h3>
+            <div class="warning"><strong>Nunca concatenen datos del usuario en SQL.</strong></div>
+            <p>Incorrecto:</p>
+            <pre><code>query := "SELECT * FROM usuarios WHERE email = '" + email + "'"</code></pre>
+
+            <p>Correcto:</p>
+            <pre><code>query := `
+    SELECT id, nombre, email
+    FROM usuarios
+    WHERE email = $1
+`
+
+row := r.pool.QueryRow(ctx, query, email)</code></pre>
+
+            <p>Los parámetros <code>$1</code>, <code>$2</code>, etc. deben utilizarse para valores provenientes de
+                peticiones, formularios o cualquier otra entrada externa.</p>
+
+            <h3>Métodos principales de pgxPool</h3>
+            <table>
+                <tr>
+                    <th>Método</th>
+                    <th>Uso</th>
+                </tr>
+                <tr>
+                    <td><code>Query()</code></td>
+                    <td>Cuando esperamos múltiples filas.</td>
+                </tr>
+                <tr>
+                    <td><code>QueryRow()</code></td>
+                    <td>Cuando esperamos una sola fila.</td>
+                </tr>
+                <tr>
+                    <td><code>Exec()</code></td>
+                    <td>INSERT, UPDATE, DELETE u operaciones sin filas de resultado.</td>
+                </tr>
+                <tr>
+                    <td><code>Ping()</code></td>
+                    <td>Comprobar conectividad.</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="service">
+            <h2>8. Service: reglas de negocio</h2>
+            <p>El service no debería contener SQL. Su responsabilidad es aplicar reglas de negocio y coordinar
+                repositories.</p>
+
+            <pre><code>package users
+
+import "context"
+
+type Service struct &#123;
+    repository *Repository
+&#125;
+
+func NewService(repository *Repository) *Service &#123;
+    return &Service&#123;
+        repository: repository,
+    &#125;
+&#125;
+
+func (s *Service) GetUsers(ctx context.Context) ([]User, error) &#123;
+    return s.repository.GetAll(ctx)
+&#125;</code></pre>
+
+            <p>
+                Al principio puede parecer que el service solo "pasa" la llamada al repository. Está bien.
+                Su valor aparece cuando necesitamos reglas como validar estados, comprobar permisos, combinar varias
+                operaciones o coordinar diferentes repositories.
+            </p>
+        </section>
+
+        <section id="controller">
+            <h2>9. Controller: HTTP y JSON</h2>
+            <p>El controller conoce HTTP; no debería contener consultas SQL.</p>
+
+            <pre><code>package users
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type Controller struct &#123;
+    service *Service
+&#125;
+
+func NewController(service *Service) *Controller &#123;
+    return &Controller&#123;
+        service: service,
+    &#125;
+&#125;
+
+func (c *Controller) GetUsers(
+    w http.ResponseWriter,
+    r *http.Request,
+) &#123;
+    usuarios, err := c.service.GetUsers(r.Context())
+
+    if err != nil &#123;
+        http.Error(
+            w,
+            "Error al obtener usuarios",
+            http.StatusInternalServerError,
+        )
+        return
+    &#125;
+
+    w.Header().Set(
+        "Content-Type",
+        "application/json",
+    )
+
+    json.NewEncoder(w).Encode(usuarios)
+&#125;</code></pre>
+
+            <div class="note">
+                <strong>Importante:</strong> <code>r.Context()</code> permite pasar el contexto de la petición HTTP
+                hasta PostgreSQL:
+                <br><br>
+                HTTP → Controller → Service → Repository → pgxPool → PostgreSQL.
+                <br><br>
+                Si la petición se cancela, las operaciones que respetan ese contexto pueden detenerse.
+            </div>
+        </section>
+
+        <section id="crud">
+            <h2>10. ¿Cómo crear una nueva entidad?</h2>
+            <p>Cuando llegue una nueva entidad, por ejemplo <code>products</code>, no se modifica el pool. Se reutiliza.
+            </p>
+
+            <pre><code>internal/
+├── database/
+│   └── postgres.go
+│
+├── users/
+│   ├── model.go
+│   ├── repository.go
+│   ├── service.go
+│   └── controller.go
+│
+└── products/
+    ├── model.go
+    ├── repository.go
+    ├── service.go
+    └── controller.go</code></pre>
+
+            <p>En <code>main.go</code>:</p>
+            <pre><code>productRepository := products.NewRepository(pool)
+productService := products.NewService(productRepository)
+productController := products.NewController(productService)</code></pre>
+
+            <p>Observa que ambos reciben <strong>el mismo pool</strong>:</p>
+            <pre><code>                 ┌── users.Repository
+                 │
+pgxPool ─────────┼── products.Repository
+                 │
+                 └── orders.Repository</code></pre>
+
+            <h3>Checklist para una entidad</h3>
+            <ul class="check">
+                <li>Crear carpeta <code>internal/&lt;entidad&gt;</code>.</li>
+                <li>Crear <code>model.go</code>.</li>
+                <li>Crear <code>repository.go</code> con SQL.</li>
+                <li>Crear <code>service.go</code> con reglas de negocio.</li>
+                <li>Crear <code>controller.go</code> con endpoints HTTP.</li>
+                <li>Crear las dependencias en <code>main.go</code>.</li>
+                <li>Registrar las rutas en el router.</li>
+                <li>Reutilizar el pool existente.</li>
+            </ul>
+        </section>
+
+        <section id="transactions">
+            <h2>11. Transacciones</h2>
+            <p>Cuando una operación de negocio necesite varias consultas que deben completarse juntas, se utilizará una
+                transacción.</p>
+
+            <pre><code>tx, err := pool.Begin(ctx)
+if err != nil &#123;
+    return err
+&#125;
+
+defer tx.Rollback(ctx)
+
+// INSERT / UPDATE / DELETE ...
+
+if err := tx.Commit(ctx); err != nil &#123;
+    return err
+&#125;
+
+return nil</code></pre>
+
+            <div class="warning">
+                No hagan <code>Commit()</code> inmediatamente después de cada consulta si todas forman parte de una
+                única operación lógica. Una transacción permite que las operaciones se confirmen juntas o se reviertan.
+            </div>
+            <p>Para operaciones complejas, la estrategia de transacciones debe definirse junto con la lógica del service
+                y el diseño de repositories, evitando abrir y cerrar conexiones manualmente.</p>
+        </section>
+
+        <section id="errores">
+            <h2>12. Manejo de errores</h2>
+            <p>Go utiliza explícitamente valores <code>error</code> en lugar de depender de excepciones como en Java.
+            </p>
+
+            <pre><code>resultado, err := algunaOperacion()
+
+if err != nil &#123;
+    return nil, err
+&#125;</code></pre>
+
+            <p>Una regla sencilla para el equipo:</p>
+            <pre><code>si una función devuelve error:
+    comprobar el error inmediatamente
+    decidir si se devuelve, transforma o maneja
+    no ignorarlo sin una razón</code></pre>
+
+            <p>El repository puede devolver el error al service; el service puede devolverlo al controller; y el
+                controller decide qué respuesta HTTP corresponde.</p>
+        </section>
+
+        <section id="reglas">
+            <h2>13. Reglas del equipo</h2>
+            <div class="card-grid">
+                <div class="card"><strong>1. Un solo pool</strong><br>El pool se crea al iniciar la aplicación y se
+                    comparte.</div>
+                <div class="card"><strong>2. SQL en Repository</strong><br>No colocar consultas SQL en controllers ni
+                    services.</div>
+                <div class="card"><strong>3. Negocio en Service</strong><br>Las reglas de negocio pertenecen al service.
+                </div>
+                <div class="card"><strong>4. HTTP en Controller</strong><br>El controller maneja request, response,
+                    status codes y JSON.</div>
+                <div class="card"><strong>5. Context siempre</strong><br>Pasar <code>r.Context()</code> hasta las
+                    operaciones de base de datos.</div>
+                <div class="card"><strong>6. Parámetros SQL</strong><br>Usar <code>$1</code>, <code>$2</code>, etc.;
+                    nunca concatenar entrada del usuario.</div>
+                <div class="card"><strong>7. Configuración externa</strong><br>Credenciales mediante variables de
+                    entorno, no hardcodeadas.</div>
+                <div class="card"><strong>8. Entidades aisladas</strong><br>Cada entidad mantiene juntos su model,
+                    repository, service y controller.</div>
+            </div>
+
+            <h3>Antes de hacer un Pull Request</h3>
+            <ul class="check">
+                <li>¿La entidad está dentro de <code>internal/</code>?</li>
+                <li>¿El repository recibe el pool existente?</li>
+                <li>¿No se creó otro pool?</li>
+                <li>¿El SQL usa parámetros?</li>
+                <li>¿Se utiliza <code>context.Context</code>?</li>
+                <li>¿La lógica de negocio está en service?</li>
+                <li>¿El controller solamente maneja HTTP/JSON?</li>
+                <li>¿Las credenciales están fuera del código?</li>
+                <li>¿Los errores se comprueban?</li>
+                <li>¿La nueva dependencia fue conectada desde <code>main.go</code>?</li>
+            </ul>
+        </section>
+
+        <section id="resumen">
+            <h2>14. Resumen visual</h2>
+            <pre><code>                    main.go
+                       │
+             ┌─────────┴─────────┐
+             │                   │
+        NewPostgresPool()     HTTP Router
+             │                   │
+             ▼                   ▼
+         pgxPool             Controller
+             │                   │
+             │                Service
+             │                   │
+             ├────────────── Repository
+             │                   │
+             └────────────── PostgreSQL
+
+
+Para una nueva entidad:
+
+internal/products/
+├── model.go       → datos
+├── repository.go  → SQL + pgxPool
+├── service.go     → reglas de negocio
+└── controller.go  → HTTP + JSON</code></pre>
+
+            <div class="note">
+                <strong>Principio fundamental:</strong> las capas conocen hacia abajo, no hacia arriba. El controller
+                llama al service; el service llama al repository; el repository usa el pool. El repository no debe saber
+                nada de HTTP y el controller no debe saber cómo funciona PostgreSQL.
+            </div>
+        </section>
+
+    </div>
+</div>
