@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { provideHttpClient } from '@angular/common/http';
 import { StartPage } from './start-page';
 
 describe('StartPage', () => {
@@ -8,6 +10,7 @@ describe('StartPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StartPage],
+      providers: [provideRouter([]), provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StartPage);
