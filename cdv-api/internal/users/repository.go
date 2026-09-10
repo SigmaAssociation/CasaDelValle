@@ -31,6 +31,35 @@ func (r *Repository) CreateUser(ctx context.Context, req RegisterRequest, hashPa
 	return id, nil
 }
 
+func (r *Repository) UpdateUser(ctx context.Context, userUpdate UserUpdate) (int, error) {
+	query := `
+		UPDATE usuarios 
+		SET nombre = $1, 
+		    correo = $2, 
+		    direccion = $3, 
+		    telefono = $4 
+		WHERE id = $5
+	`
+
+	result, err := r.pool.Exec(ctx, query,
+		userUpdate.Name,
+		userUpdate.Email,
+		userUpdate.Address,
+		userUpdate.Phone,
+		userUpdate.ID,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, errors.New("el correo ya está registrado por otro usuario")
+		}
+		return 0, err
+	}
+
+	return int(result.RowsAffected()), nil
+}
+
+
 func (r *Repository) GetAll(ctx context.Context) ([]User, error) {
 
 	rows, err := r.pool.Query(
@@ -74,4 +103,44 @@ func (r *Repository) GetAll(ctx context.Context) ([]User, error) {
 	}
 
 	return usuarios, nil
+}
+
+func (r *Repository) GetUserAuthInfo(ctx context.Context, email string) (UserAuth, error) {
+	var user UserAuth
+
+	query := "SELECT id, nombre, correo, contrasena, id_rol FROM usuarios WHERE correo = $1"
+	err := r.pool.QueryRow(ctx, query, email).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.IDRole,
+	)
+
+	if err != nil {
+		return UserAuth{}, err
+	}
+
+	return user, nil
+}
+
+func (r *Repository) GetUserByID(ctx context.Context, id int) (User, error) {
+	var user User
+
+	query := "SELECT id, nombre, telefono, direccion, dpi, correo, id_rol FROM usuarios WHERE id = $1"
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Phone,
+		&user.Address,
+		&user.DPI,
+		&user.Email,
+		&user.IDRole,
+	)
+
+	if err != nil {
+		return User{}, err
+	}
+
+	return user, nil
 }

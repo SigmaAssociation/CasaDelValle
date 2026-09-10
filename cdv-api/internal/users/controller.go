@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 type Controller struct {
@@ -65,4 +66,130 @@ func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		Message: "Usuario registrado exitosamente",
 		UserID:  userID,
 	})
+}
+
+func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido en la URL"})
+		return
+	}
+
+	var req UserUpdate
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Datos de entrada inválidos"})
+		return
+	}
+
+	req.ID = uint(userID)
+
+	rowsAffected, err := c.service.UpdateUser(r.Context(), req)
+	if err != nil {
+		status := http.StatusBadRequest
+
+		if err.Error() == "el correo ya está registrado por otro usuario" {
+			status = http.StatusConflict
+		} else if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
+		}
+
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":       "Usuario actualizado exitosamente",
+		"rows_affected": rowsAffected,
+	})
+}
+
+/*
+Intenta autenticar a un usuario con el correo y la contraseña proporcionados en la solicitud.
+Si la autenticación es exitosa, devuelve un mensaje y el token JWT. Si falla, devuelve un mensaje de error.
+*/
+func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPost {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+	var req UserLoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Datos de entrada inválidos", http.StatusBadRequest)
+		return
+	}
+	token, err := c.service.AuthenticateUser(r.Context(), req)
+	if err != nil {
+		status := http.StatusBadRequest
+		message := err.Error()
+		if err.Error() == "Error al generar el token" {
+			status = http.StatusInternalServerError
+			message = "Error interno del servidor"
+		}
+		if err.Error() == "Contraseña incorrecta" || err.Error() == "Usuario no encontrado" {
+			status = http.StatusUnauthorized
+			message = "Correo o contraseña incorrectos"
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(UserLoginResponse{Message: message, Token: ""})
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(UserLoginResponse{
+		Message: "Usuario autenticado exitosamente",
+		Token:   token,
+	})
+}
+
+func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodGet {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+	if idParam == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario no proporcionado"})
+		return
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido"})
+		return
+	}
+
+	user, err := c.service.GetUserByID(r.Context(), id)
+	if err != nil {
+		status := http.StatusInternalServerError
+		message := "Error al obtener el usuario"
+		if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
+			message = "Usuario no encontrado"
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": message})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(user)
 }

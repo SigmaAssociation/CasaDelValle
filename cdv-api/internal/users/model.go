@@ -23,3 +23,29 @@ type User struct {
 	Email   string `json:"email"`
 	IDRole  uint   `json:"id_role"`
 }
+
+type UserAuth struct {
+	ID       uint   `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	IDRole   uint   `json:"id_role"`
+	Name     string `json:"name"`
+}
+
+type UserLoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UserLoginResponse struct {
+	Message string `json:"message"`
+	Token   string `json:"token,omitempty"`
+}
+
+type UserUpdate struct{
+	ID      uint   `json:"id"`
+	Name    string `json:"name"`
+	Phone   string `json:"phone"`
+	Address string `json:"address"`
+	Email   string `json:"email"`
+}
