@@ -68,10 +68,9 @@ func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-
 func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	if r.Method != http.MethodPut {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 		return
@@ -92,17 +91,16 @@ func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
-	req.ID = uint(userID) 
+	req.ID = uint(userID)
 
 	rowsAffected, err := c.service.UpdateUser(r.Context(), req)
 	if err != nil {
-		status := http.StatusBadRequest 
+		status := http.StatusBadRequest
 
 		if err.Error() == "el correo ya está registrado por otro usuario" {
-			status = http.StatusConflict 
-		} else if err.Error() == "usuario no encontrado" {
-			status = http.StatusNotFound 
+			status = http.StatusConflict
+		} else if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
 		}
 
 		w.WriteHeader(status)
@@ -162,15 +160,20 @@ func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	idParam := r.URL.Query().Get("id")
+	idParam := r.PathValue("id")
 	if idParam == "" {
-		http.Error(w, "ID de usuario no proporcionado", http.StatusBadRequest)
+		idParam = r.URL.Query().Get("id")
+	}
+	if idParam == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario no proporcionado"})
 		return
 	}
 
 	id, err := strconv.Atoi(idParam)
-	if err != nil {
-		http.Error(w, "ID de usuario inválido", http.StatusBadRequest)
+	if err != nil || id <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido"})
 		return
 	}
 
