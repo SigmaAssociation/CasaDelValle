@@ -1,5 +1,5 @@
 import { HttpClient } from "@angular/common/http";
-import { RestConstants } from "../shared/rest-constants";
+import { RestConstants } from "../components/rest-constants";
 import { UserRequest } from "../models/create-user";
 import { UpdateUserRequest } from "../models/update-user";
 import { User } from "../models/user";
