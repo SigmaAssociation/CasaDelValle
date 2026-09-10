@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { EditUserForm } from '../../components/edit-user-form/edit-user-form';
@@ -16,11 +16,13 @@ export class Perfil implements OnInit {
   userId: number | null = null;
   user: User | null = null;
   isLoading = false;
+  editMode = false;
   errorMessage: string | null = null;
 
   constructor(
     private auth: AuthService,
-    private userService: UserService
+    private userService: UserService,
+    private cd: ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -40,10 +42,12 @@ export class Perfil implements OnInit {
       next: (user) => {
         this.user = user;
         this.isLoading = false;
+        this.cd.detectChanges();
       },
       error: () => {
         this.errorMessage = 'No se pudo cargar la información del perfil.';
         this.isLoading = false;
+        this.cd.detectChanges();
       },
     });
   }

@@ -47,25 +47,27 @@ export class CabinListPage implements OnInit {
       },
     });
   }
-
+  
   loadByUser(userId: number): void {
     if (!userId || userId <= 0) {
       this.loadAll();
       return;
     }
-
+    
     this.isLoading = true;
     this.errorMessage = null;
-
+    
     this.cabinService.getCabinsByUserId(userId).subscribe({
       next: (cabins) => {
         this.cabins = cabins;
         this.isLoading = false;
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error al obtener las cabañas del usuario:', err);
         this.errorMessage = 'No se pudieron cargar las cabañas del usuario.';
         this.isLoading = false;
+        this.cd.detectChanges();
       },
     });
   }

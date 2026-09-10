@@ -1,74 +1,72 @@
-<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
-  <h2 class="text-3xl mb-2">Iniciar Sesión</h2>
-  <p class="text-gray-500 text-sm mb-6 font-sans">Bienvenido de nuevo a Casa del Valle.</p>
+<section class="max-w-md mx-auto">
+  <div class="bg-white p-8 rounded-[16px] shadow-sm border border-brown/10">
+    <h2 class="font-serif text-brown text-3xl mb-2">Iniciar sesión</h2>
+    <p class="text-[#665D53] text-sm mb-6 font-sans">Accede a tu cuenta para continuar.</p>
 
-  <form [formGroup]="loginForm" (ngSubmit)="submit()" class="space-y-5">
-    <!-- CORREO -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-      <input
-        type="email"
-        maxlength="150"
-        formControlName="email"
-        autocomplete="email"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('email')"
-      />
-      @if (isInvalid('email')) {
-        <p class="text-xs text-red-500 mt-1">Correo electrónico inválido.</p>
-      }
-    </div>
-
-    <!-- CONTRASEÑA -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-      <input
-        type="password"
-        formControlName="password"
-        autocomplete="current-password"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('password')"
-      />
-      @if (isInvalid('password')) {
-        <p class="text-xs text-red-500 mt-1">La contraseña es obligatoria.</p>
-      }
-    </div>
-
-    <!-- BOTÓN -->
-    <button
-      type="submit"
-      [disabled]="loginForm.invalid || isLoading()"
-      class="w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      {{ isLoading() ? 'Ingresando…' : 'Entrar' }}
-    </button>
-  </form>
-
-  <p class="text-sm text-gray-500 text-center mt-6 font-sans">
-    ¿No tienes cuenta?
-    <a routerLink="/registro" class="text-orange font-medium hover:underline">Regístrate aquí</a>
-  </p>
-</div>
-
-<!-- MODAL DE ERROR -->
-@if (isError()) {
-  <div class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="bg-white rounded-xl shadow-lg border border-gray-100 max-w-sm w-full p-6 text-center">
-      <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-        <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
+    <form #loginForm="ngForm" (ngSubmit)="onSubmit(loginForm)" class="space-y-5">
+      <div class="space-y-1">
+        <label for="email" class="block text-sm font-semibold text-black mb-1">
+          Correo electrónico<span class="text-orange"> *</span>
+        </label>
+        <input id="email" name="email" type="email" placeholder="correo@ejemplo.com" ngModel #email="ngModel" required
+          maxlength="150" pattern="[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}"
+          class="w-full rounded-[6px] border border-[#D7D0C4] bg-white text-black px-3.5 py-2.5 transition focus:border-green focus:ring-[3px] focus:ring-green/10 focus:outline-none placeholder:text-[#958C80]" />
+        @if (email.invalid && (email.touched || submitted())) {
+        <p class="text-xs text-orange mt-1">
+          @if (email.errors?.['required']) {
+          El correo es obligatorio.
+          } @else if (email.errors?.['maxlength']) {
+          El correo no puede superar los 150 caracteres.
+          } @else {
+          El correo no tiene un formato válido.
+          }
+        </p>
+        }
       </div>
-      <h3 class="text-xl font-medium text-gray-900 mb-1">Error al iniciar sesión</h3>
-      <p class="text-sm text-gray-500 font-sans mb-6">
-        {{ errorMessage() }}
-      </p>
-      <button
-        type="button"
-        (click)="isError.set(false)"
-        class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors">
-        Entendido
+
+      <div class="space-y-1">
+        <label for="password" class="block text-sm font-semibold text-black mb-1">
+          Contraseña<span class="text-orange"> *</span>
+        </label>
+        <input id="password" name="password" type="password" placeholder="••••••••" ngModel #password="ngModel" required
+          minlength="8"
+          class="w-full rounded-[6px] border border-[#D7D0C4] bg-white text-black px-3.5 py-2.5 transition focus:border-green focus:ring-[3px] focus:ring-green/10 focus:outline-none placeholder:text-[#958C80]" />
+        @if (password.invalid && (password.touched || submitted())) {
+        <p class="text-xs text-orange mt-1">
+          @if (password.errors?.['required']) {
+          La contraseña es obligatoria.
+          } @else {
+          La contraseña debe tener al menos 8 caracteres.
+          }
+        </p>
+        }
+      </div>
+
+      @if (errorMessage()) {
+      <div role="alert"
+        class="flex items-start gap-2 px-4 py-3 rounded-[10px] bg-[#FCE0D7] border-l-4 border-orange text-sm text-black">
+        <span class="font-semibold">Error:</span>
+        <span>{{ errorMessage() }}</span>
+      </div>
+      }
+
+      @if (successMessage()) {
+      <div role="status"
+        class="flex items-start gap-2 px-4 py-3 rounded-[10px] bg-[#E2EBDC] border-l-4 border-green text-sm text-black">
+        <span class="font-semibold">Éxito:</span>
+        <span>{{ successMessage() }}</span>
+      </div>
+      }
+
+      <button type="submit" [disabled]="loginForm.invalid || isLoading()"
+        class="w-full min-h-[44px] bg-orange hover:opacity-90 text-white font-bold py-2.5 px-4 rounded-md transition disabled:opacity-50 disabled:cursor-not-allowed">
+        {{ isLoading() ? 'Ingresando...' : 'Ingresar' }}
       </button>
-    </div>
+    </form>
+
+    <p class="text-sm text-[#665D53] text-center mt-6 font-sans">
+      ¿No tienes cuenta?
+      <a routerLink="/registro" class="text-orange font-semibold hover:underline">Regístrate aquí</a>
+    </p>
   </div>
-}
+</section>

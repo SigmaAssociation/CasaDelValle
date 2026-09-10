@@ -3,35 +3,41 @@
   <p class="text-gray-500 text-sm mb-6 font-sans">Información de tu cuenta en Casa del Valle.</p>
 
   @if (isLoading) {
-    <p class="text-sm text-gray-500">Cargando perfil…</p>
+  <p class="text-sm text-gray-500">Cargando perfil…</p>
   } @else if (errorMessage) {
-    <p class="text-sm text-red-500">{{ errorMessage }}</p>
+  <p class="text-sm text-red-500">{{ errorMessage }}</p>
   } @else if (user) {
-    <dl class="space-y-3 text-sm">
-      <div class="flex justify-between border-b border-gray-100 pb-2">
-        <dt class="font-medium text-gray-500">Nombre</dt>
-        <dd class="text-gray-800">{{ user.name }}</dd>
-      </div>
-      <div class="flex justify-between border-b border-gray-100 pb-2">
-        <dt class="font-medium text-gray-500">Correo</dt>
-        <dd class="text-gray-800">{{ user.email }}</dd>
-      </div>
-      <div class="flex justify-between border-b border-gray-100 pb-2">
-        <dt class="font-medium text-gray-500">Teléfono</dt>
-        <dd class="text-gray-800">{{ user.phone }}</dd>
-      </div>
-      <div class="flex justify-between border-b border-gray-100 pb-2">
-        <dt class="font-medium text-gray-500">Dirección</dt>
-        <dd class="text-gray-800 text-right">{{ user.address }}</dd>
-      </div>
-      <div class="flex justify-between">
-        <dt class="font-medium text-gray-500">DPI</dt>
-        <dd class="text-gray-800">{{ user.dpi }}</dd>
-      </div>
-    </dl>
+  <dl class="space-y-3 text-sm">
+    <div class="flex justify-between border-b border-gray-100 pb-2">
+      <dt class="font-medium text-gray-500">Nombre</dt>
+      <dd class="text-gray-800">{{ user.name }}</dd>
+    </div>
+    <div class="flex justify-between border-b border-gray-100 pb-2">
+      <dt class="font-medium text-gray-500">Correo</dt>
+      <dd class="text-gray-800">{{ user.email }}</dd>
+    </div>
+    <div class="flex justify-between border-b border-gray-100 pb-2">
+      <dt class="font-medium text-gray-500">Teléfono</dt>
+      <dd class="text-gray-800">{{ user.phone }}</dd>
+    </div>
+    <div class="flex justify-between border-b border-gray-100 pb-2">
+      <dt class="font-medium text-gray-500">Dirección</dt>
+      <dd class="text-gray-800 text-right">{{ user.address }}</dd>
+    </div>
+    <div class="flex justify-between">
+      <dt class="font-medium text-gray-500">DPI</dt>
+      <dd class="text-gray-800">{{ user.dpi }}</dd>
+    </div>
+  </dl>
   }
 </div>
+<div class="justify-center text-center flex">
+  <button *ngIf="userId" (click)="editMode = !editMode"
+    class="px-4 py-2 mb-4 rounded-md bg-orange text-white hover:bg-orange/90 transition-colors">
+    {{ editMode ? 'Cancelar edición' : 'Editar perfil' }}
+  </button>
+</div>
 
-@if (userId) {
-  <app-edit-user-form [userId]="userId"></app-edit-user-form>
+@if (userId && editMode) {
+<app-edit-user-form [userId]="userId"></app-edit-user-form>
 }

@@ -1,86 +1,69 @@
-import { HttpClient } from "@angular/common/http";
-import { Injectable, signal } from "@angular/core";
-import { Router } from "@angular/router";
-import { Observable, tap } from "rxjs";
-import { RestConstants } from "../components/rest-constants";
-import { LoginRequest, LoginResponse } from "../models/login";
-
-const TOKEN_KEY = 'cdv_token';
-
-interface JwtPayload {
-    sub?: number | string;
-    name?: string;
-    email?: string;
-    role?: number;
-    exp?: number;
-}
+import { HttpClient } from '@angular/common/http';
+import { Injectable, computed, signal } from '@angular/core';
+import { Observable, tap } from 'rxjs';
+import { RestConstants } from '../components/rest-constants';
+import { AuthUser, LoginRequest, LoginResponse } from '../models/auth';
 
 @Injectable({
     providedIn: 'root',
 })
 export class AuthService {
-    restConstants = new RestConstants();
+    private restConstants = new RestConstants();
 
-    isLoggedIn = signal(this.hasValidToken());
+    private readonly tokenKey = 'cdv_token';
 
-    constructor(
-        private httpClient: HttpClient,
-        private router: Router
-    ) { }
+    private readonly tokenState = signal<string | null>(localStorage.getItem(this.tokenKey));
 
-    public login(payload: LoginRequest): Observable<LoginResponse> {
-        return this.httpClient.post<LoginResponse>(
-            `${this.restConstants.getApiURL()}login`, payload
-        ).pipe(
-            tap((res) => {
-                if (res?.token) {
-                    this.saveToken(res.token);
-                }
-            })
-        );
-    }
+    readonly token = computed(() => this.tokenState());
+    readonly user = computed(() => {
+        const token = this.tokenState();
+        return token ? this.decodeToken(token) : null;
+    });
+    readonly isAuthenticated = computed(() => this.tokenState() !== null);
 
-    public logout(): void {
-        localStorage.removeItem(TOKEN_KEY);
-        this.isLoggedIn.set(false);
-        this.router.navigate(['/']);
+    constructor(private httpClient: HttpClient) {}
+
+    public login(email: string, password: string): Observable<LoginResponse> {
+        const body: LoginRequest = { email, password };
+        return this.httpClient
+            .post<LoginResponse>(`${this.restConstants.getApiURL()}login`, body)
+            .pipe(tap((response) => this.persistSession(response)));
     }
 
     public getToken(): string | null {
-        return localStorage.getItem(TOKEN_KEY);
+        return this.tokenState();
     }
 
     public getCurrentUserId(): number | null {
-        const payload = this.decodePayload();
-        if (!payload?.sub) return null;
-        const id = Number(payload.sub);
+        const id = Number(this.user()?.id);
         return Number.isInteger(id) && id > 0 ? id : null;
     }
 
-    public getCurrentUserName(): string | null {
-        return this.decodePayload()?.name ?? null;
+    public logout(): void {
+        localStorage.removeItem(this.tokenKey);
+        this.tokenState.set(null);
     }
 
-    private saveToken(token: string): void {
-        localStorage.setItem(TOKEN_KEY, token);
-        this.isLoggedIn.set(true);
+    private persistSession(response: LoginResponse): void {
+        if (!response.token) {
+            return;
+        }
+
+        localStorage.setItem(this.tokenKey, response.token);
+        this.tokenState.set(response.token);
     }
 
-    private hasValidToken(): boolean {
-        const payload = this.decodePayload();
-        if (!payload) return false;
-        if (payload.exp && payload.exp * 1000 < Date.now()) return false;
-        return true;
-    }
-
-    private decodePayload(): JwtPayload | null {
+    private decodeToken(token: string): AuthUser | null {
         try {
-            const token = localStorage.getItem(TOKEN_KEY);
-            if (!token) return null;
-            const parts = token.split('.');
-            if (parts.length !== 3) return null;
-            const json = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'));
-            return JSON.parse(json) as JwtPayload;
+            const payload = token.split('.')[1];
+            const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+            const json = JSON.parse(decodeURIComponent(escape(atob(base64))));
+            return {
+                id: json['sub'],
+                name: json['name'],
+                email: json['email'],
+                role: json['role'],
+            };
         } catch {
             return null;
         }

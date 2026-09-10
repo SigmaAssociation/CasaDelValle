@@ -1,83 +1,57 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, signal } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule, NgForm, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { LoginRequest } from '../../models/login';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterModule],
+  imports: [ReactiveFormsModule, RouterModule, FormsModule],
   templateUrl: './login-form.html',
   styleUrl: './login-form.css'
 })
 export class LoginForm {
-  loginForm: FormGroup;
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  isLoading = signal(false);
-  isError = signal(false);
-  errorMessage = signal('');
+  readonly isLoading = signal(false);
+  readonly submitted = signal(false);
+  readonly errorMessage = signal('');
+  readonly successMessage = signal('');
 
-  private emailRegex = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/i;
+  public onSubmit(form: NgForm): void {
+    this.submitted.set(true);
+    this.errorMessage.set('');
 
-  constructor(
-    private formBuilder: FormBuilder,
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.loginForm = this.formBuilder.group({
-      email: ['', [
-        Validators.required,
-        Validators.maxLength(150),
-        Validators.pattern(this.emailRegex)
-      ]],
-      password: ['', [
-        Validators.required
-      ]]
-    });
-  }
-
-  isInvalid(controlName: string): boolean {
-    const control = this.loginForm.get(controlName);
-    return !!(control && control.invalid && (control.dirty || control.touched));
-  }
-
-  submit(): void {
-    if (this.loginForm.invalid) {
-      this.loginForm.markAllAsTouched();
+    if (form.invalid) {
       return;
     }
 
     this.isLoading.set(true);
-    this.isError.set(false);
 
-    const payload = this.loginForm.value as LoginRequest;
-
-    this.authService.login(payload).subscribe({
-      next: () => {
+    this.authService.login(form.value.email, form.value.password).subscribe({
+      next: (response) => {
         this.isLoading.set(false);
-        this.router.navigate(['/']);
+
+        if (!response.token) {
+          this.errorMessage.set('Correo o contraseña incorrectos.');
+          return;
+        }
+
+        this.successMessage.set('Sesión iniciada correctamente. ¡Bienvenido!');
+
+        setTimeout(() => {
+          this.router.navigate(['/']);
+        }, 1200);
       },
-      error: (error: HttpErrorResponse) => {
+      error: (err: { status?: number }) => {
         this.isLoading.set(false);
-        this.isError.set(true);
-        this.errorMessage.set(this.extractErrorMessage(error));
-      }
+        this.errorMessage.set(
+          err.status === 401 || err.status === 400
+            ? 'Correo o contraseña incorrectos.'
+            : 'No se pudo conectar con el servidor. Inténtalo más tarde.',
+        );
+      },
     });
-  }
-
-  private extractErrorMessage(error: HttpErrorResponse): string {
-    if (error.error && typeof error.error === 'object') {
-      if (error.error.message) return error.error.message;
-    }
-
-    if (typeof error.error === 'string' && error.error.trim().length > 0) {
-      return error.error;
-    }
-
-    if (error.status === 401) return 'Correo o contraseña incorrectos.';
-
-    return 'Ocurrió un error inesperado. Intenta de nuevo.';
   }
 }

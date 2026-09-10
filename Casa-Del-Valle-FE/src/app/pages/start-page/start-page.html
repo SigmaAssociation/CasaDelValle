@@ -1,4 +1,4 @@
-@if (auth.isLoggedIn()) {
+@if (auth.isAuthenticated()) {
   <app-cabin-list-page></app-cabin-list-page>
 } @else {
   <div class="flex flex-col items-center justify-center text-center py-10 px-4">
