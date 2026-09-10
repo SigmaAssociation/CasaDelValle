@@ -68,6 +68,55 @@ func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
+func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	
+	if r.Method != http.MethodPut {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido en la URL"})
+		return
+	}
+
+	var req UserUpdate
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Datos de entrada inválidos"})
+		return
+	}
+
+
+	req.ID = uint(userID) 
+
+	rowsAffected, err := c.service.UpdateUser(r.Context(), req)
+	if err != nil {
+		status := http.StatusBadRequest 
+
+		if err.Error() == "el correo ya está registrado por otro usuario" {
+			status = http.StatusConflict 
+		} else if err.Error() == "usuario no encontrado" {
+			status = http.StatusNotFound 
+		}
+
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": err.Error()})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message":       "Usuario actualizado exitosamente",
+		"rows_affected": rowsAffected,
+	})
+}
+
 /*
 Intenta autenticar a un usuario con el correo y la contraseña proporcionados en la solicitud.
 Si la autenticación es exitosa, devuelve un mensaje y el token JWT. Si falla, devuelve un mensaje de error.

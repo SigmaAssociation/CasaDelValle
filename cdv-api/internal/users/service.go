@@ -63,6 +63,45 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterRequest) (int, e
 	return s.repository.CreateUser(ctx, req, string(hashBytes))
 }
 
+func (s *Service) UpdateUser(ctx context.Context, req UserUpdate) (int, error) {
+
+	if req.ID <= 0 {
+		return 0, errors.New("ID de usuario inválido")
+	}
+
+	if strings.TrimSpace(req.Name) == "" || len(req.Name) > 150 {
+		return 0, errors.New("Nombre inválido: debe tener entre 1 y 150 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$`, req.Name); !matched {
+		return 0, errors.New("Nombre inválido: solo se permiten letras y espacios")
+	}
+
+	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	if len(req.Email) > 150 || !emailRegex.MatchString(req.Email) {
+		return 0, errors.New("Correo inválido: debe ser un correo electrónico válido y tener un máximo de 150 caracteres")
+	}
+
+	if strings.TrimSpace(req.Phone) == "" {
+		return 0, errors.New("El teléfono es requerido")
+	}
+	if strings.TrimSpace(req.Address) == "" {
+		return 0, errors.New("La dirección es requerida")
+	}
+	
+	rowsAffected, err := s.repository.UpdateUser(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+
+	if rowsAffected == 0 {
+		return 0, errors.New("usuario no encontrado")
+	}
+
+	return rowsAffected, nil
+}
+
+
 func (s *Service) AuthenticateUser(ctx context.Context, loginRequest UserLoginRequest) (string, error) {
 	user, err := s.repository.GetUserAuthInfo(ctx, loginRequest.Email)
 	if err != nil {
@@ -80,7 +119,7 @@ func (s *Service) AuthenticateUser(ctx context.Context, loginRequest UserLoginRe
 	}
 
 	return token, nil
-}
+} 
 
 func CheckPassword(password string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword(
