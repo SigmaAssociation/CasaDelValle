@@ -4,13 +4,14 @@ import { Registro } from './pages/registro/registro';
 import { Login } from './pages/login/login';
 import { Perfil } from './pages/perfil/perfil';
 import { RegistrarCabana } from './pages/registrar-cabana/registrar-cabana';
+import { MyCabinsPage } from './pages/my-cabins-page/my-cabins-page';
 import { UserStoryGuidePage } from './pages/user-story-guide-page/user-story-guide-page';
 import { ModelGuidePage } from './pages/model-guide-page/model-guide-page';
 import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
 import { BackendGuidePage } from './pages/backend-guide-page/backend-guide-page';
 import { GuidePage } from './pages/guide-page/guide-page';
 import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
-import { CabinListPage } from './pages/cabin-list-page/cabin-list-page';
+import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
     {
@@ -35,12 +36,18 @@ export const routes: Routes = [
     },
     {
         path: '',
-        component: CabinListPage,
-    },    {
+        component: StartPage,
+    },
+    {
         path: 'cabins/:id/edit',
         component: CabinEditPage,
+        canActivate: [authGuard],
     },
-
+    {
+        path: 'mis-cabanas',
+        component: MyCabinsPage,
+        canActivate: [authGuard],
+    },
     {
         path: 'registro', component: Registro
     },
@@ -48,10 +55,14 @@ export const routes: Routes = [
         path: 'login', component: Login
     },
     {
-        path: 'perfil', component: Perfil
+        path: 'perfil',
+        component: Perfil,
+        canActivate: [authGuard],
     },
     {
-        path: 'registrar-cabana', component: RegistrarCabana
+        path: 'registrar-cabana',
+        component: RegistrarCabana,
+        canActivate: [authGuard],
     },
     {
         path: '**',

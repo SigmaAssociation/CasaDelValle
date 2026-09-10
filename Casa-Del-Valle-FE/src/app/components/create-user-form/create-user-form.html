@@ -148,10 +148,15 @@
       <p class="text-sm text-gray-500 font-sans mb-6">
         El usuario se ha registrado correctamente en Casa del Valle.
       </p>
+      <a
+        routerLink="/login"
+        class="block w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange focus:ring-offset-2">
+        Ir a iniciar sesión
+      </a>
       <button 
         type="button" 
         (click)="isCreated.set(false)"
-        class="w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-orange focus:ring-offset-2">
+        class="w-full mt-2 text-gray-500 hover:text-gray-700 text-sm font-medium py-2 px-4 rounded-md transition-colors">
         Aceptar
       </button>
     </div>

@@ -1,1 +1,37 @@
-<p>perfil works!</p>
+<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 mb-6">
+  <h2 class="text-3xl mb-2">Mi Perfil</h2>
+  <p class="text-gray-500 text-sm mb-6 font-sans">Información de tu cuenta en Casa del Valle.</p>
+
+  @if (isLoading) {
+    <p class="text-sm text-gray-500">Cargando perfil…</p>
+  } @else if (errorMessage) {
+    <p class="text-sm text-red-500">{{ errorMessage }}</p>
+  } @else if (user) {
+    <dl class="space-y-3 text-sm">
+      <div class="flex justify-between border-b border-gray-100 pb-2">
+        <dt class="font-medium text-gray-500">Nombre</dt>
+        <dd class="text-gray-800">{{ user.name }}</dd>
+      </div>
+      <div class="flex justify-between border-b border-gray-100 pb-2">
+        <dt class="font-medium text-gray-500">Correo</dt>
+        <dd class="text-gray-800">{{ user.email }}</dd>
+      </div>
+      <div class="flex justify-between border-b border-gray-100 pb-2">
+        <dt class="font-medium text-gray-500">Teléfono</dt>
+        <dd class="text-gray-800">{{ user.phone }}</dd>
+      </div>
+      <div class="flex justify-between border-b border-gray-100 pb-2">
+        <dt class="font-medium text-gray-500">Dirección</dt>
+        <dd class="text-gray-800 text-right">{{ user.address }}</dd>
+      </div>
+      <div class="flex justify-between">
+        <dt class="font-medium text-gray-500">DPI</dt>
+        <dd class="text-gray-800">{{ user.dpi }}</dd>
+      </div>
+    </dl>
+  }
+</div>
+
+@if (userId) {
+  <app-edit-user-form [userId]="userId"></app-edit-user-form>
+}

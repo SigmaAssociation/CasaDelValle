@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Cabin } from '../../models/cabin';
 import { CabinService } from '../../services/cabin.service';
@@ -11,6 +11,10 @@ import { RouterLink } from '@angular/router';
   templateUrl: './cabin-list-page.html',
 })
 export class CabinListPage implements OnInit {
+  @Input() userId?: number | null;
+  @Input() title = 'Cabañas';
+  @Input() subtitle = 'Listado de todas las cabañas registradas.';
+
   cabins: Cabin[] = [];
   isLoading = false;
   errorMessage: string | null = null;
@@ -18,7 +22,11 @@ export class CabinListPage implements OnInit {
   constructor(private cabinService: CabinService, private cd : ChangeDetectorRef) { }
 
   ngOnInit(): void {
-    this.loadAll();
+    if (this.userId) {
+      this.loadByUser(this.userId);
+    } else {
+      this.loadAll();
+    }
   }
 
   loadAll(): void {
