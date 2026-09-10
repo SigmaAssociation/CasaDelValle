@@ -1,9 +1,9 @@
 import { Component } from '@angular/core';
-import { ExampleForm } from '../../components/example-form/example-form';
 import { CreateUserForm } from '../../components/create-user-form/create-user-form';
+import { EditUserForm } from '../../components/edit-user-form/edit-user-form';
 
 @Component({
-  imports: [CreateUserForm],
+  imports: [CreateUserForm, EditUserForm],
   selector: 'app-start-page',
   styleUrl: './start-page.css',
   templateUrl: './start-page.html',
