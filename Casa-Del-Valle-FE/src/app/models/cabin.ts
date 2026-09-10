@@ -5,4 +5,6 @@ export interface Cabin {
     description: string;
     capacity: number;
     rules: string;
+    host_id?: number;
+    commission_id?: number | null;
 }
