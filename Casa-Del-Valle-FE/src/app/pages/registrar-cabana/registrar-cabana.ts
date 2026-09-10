@@ -1,8 +1,8 @@
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { CreateCabinForm } from '../../components/create-cabin-form/create-cabin-form';
 
 @Component({
-  imports: [RouterModule],
+  imports: [CreateCabinForm],
   selector: 'app-registrar-cabana',
   styleUrl: './registrar-cabana.css',
   templateUrl: './registrar-cabana.html',

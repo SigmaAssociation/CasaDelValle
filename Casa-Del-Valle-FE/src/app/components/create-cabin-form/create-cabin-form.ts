@@ -1,8 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CabinRequest } from '../../models/create-cabin';
 import { RegisterResponse } from '../../models/register-response';
+import { AuthService } from '../../services/auth.service';
 import { CabinService } from '../../services/cabin.service';
 
 @Component({
@@ -13,16 +14,21 @@ import { CabinService } from '../../services/cabin.service';
   styleUrl: './create-cabin-form.css'
 })
 export class CreateCabinForm implements OnInit {
+  @Input() hostId?: number | null;
+
   cabinForm!: FormGroup;
 
   isCreated = signal(false);
   isError = signal(false);
   errorMessage = signal('');
 
+  fixedHostId: number | null = null;
+
   constructor(
     private formBuilder: FormBuilder,
-    private cabinService: CabinService
-  ) {}
+    private cabinService: CabinService,
+    private authService: AuthService
+  ) { }
 
   ngOnInit(): void {
     this.cabinForm = this.formBuilder.group({
@@ -52,6 +58,12 @@ export class CreateCabinForm implements OnInit {
       ]],
       id_comision: [null]
     });
+    
+    this.fixedHostId = this.hostId ?? this.authService.getCurrentUserId();
+    if (this.fixedHostId) {
+      this.cabinForm.patchValue({ id_anfitrion: this.fixedHostId });
+      this.cabinForm.get('id_anfitrion')?.disable();
+    }
   }
 
   isInvalid(controlName: string): boolean {
@@ -61,7 +73,7 @@ export class CreateCabinForm implements OnInit {
 
   create(): void {
     if (this.cabinForm.valid) {
-      const newCabin = this.cabinForm.value as CabinRequest;
+      const newCabin = this.cabinForm.getRawValue() as CabinRequest;
 
       this.cabinService.createCabin(newCabin).subscribe({
         next: (response: RegisterResponse) => {
