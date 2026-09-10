@@ -9,6 +9,8 @@ import { ModelGuidePage } from './pages/model-guide-page/model-guide-page';
 import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
 import { BackendGuidePage } from './pages/backend-guide-page/backend-guide-page';
 import { GuidePage } from './pages/guide-page/guide-page';
+import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
+import { CabinListPage } from './pages/cabin-list-page/cabin-list-page';
 
 export const routes: Routes = [
     {
@@ -33,7 +35,10 @@ export const routes: Routes = [
     },
     {
         path: '',
-        component: StartPage,
+        component: CabinListPage,
+    },    {
+        path: 'cabins/:id/edit',
+        component: CabinEditPage,
     },
 
     {
@@ -51,5 +56,6 @@ export const routes: Routes = [
     {
         path: '**',
         redirectTo: ''
-    }
+    },
+
 ];
