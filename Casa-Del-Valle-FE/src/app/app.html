@@ -1,21 +1,10 @@
-<div class="min-h-screen flex flex-col">
+<div class="min-h-screen flex flex-col bg-cream text-black font-sans">
   <!-- Header estandarizado -->
-  <header class="text-white shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-      <h1 class="text-2xl font-bold tracking-wide">Casa Del Valle - Test</h1>
-      <nav class="space-x-4 font-sans text-sm font-medium">
-        <a href="#" class="hover:text-primary-light transition">Inicio</a>
-        <a href="#" class="hover:text-primary-light transition">Ingresar</a>
-      </nav>
-    </div>
-  </header>
+  <app-header></app-header>
 
   <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-8">
     <router-outlet></router-outlet>
   </main>
 
-  <footer class="text-center py-6 text-sm">
-    TEST
-    © 2026 Casa Del Valle. Todos los derechos reservados.
-  </footer>
+  <app-footer></app-footer>
 </div>

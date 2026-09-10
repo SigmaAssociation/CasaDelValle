@@ -31,6 +31,35 @@ func (r *Repository) CreateUser(ctx context.Context, req RegisterRequest, hashPa
 	return id, nil
 }
 
+func (r *Repository) UpdateUser(ctx context.Context, userUpdate UserUpdate) (int, error) {
+	query := `
+		UPDATE usuarios 
+		SET nombre = $1, 
+		    correo = $2, 
+		    direccion = $3, 
+		    telefono = $4 
+		WHERE id = $5
+	`
+
+	result, err := r.pool.Exec(ctx, query,
+		userUpdate.Name,
+		userUpdate.Email,
+		userUpdate.Address,
+		userUpdate.Phone,
+		userUpdate.ID,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return 0, errors.New("el correo ya está registrado por otro usuario")
+		}
+		return 0, err
+	}
+
+	return int(result.RowsAffected()), nil
+}
+
+
 func (r *Repository) GetAll(ctx context.Context) ([]User, error) {
 
 	rows, err := r.pool.Query(

@@ -145,4 +145,4 @@ INSERT INTO roles (id, tipo) VALUES
 (2, 'Usuario');
 
 INSERT INTO usuarios (nombre, telefono, direccion, dpi, correo, contrasena, id_rol) VALUES 
-('Admin', '123456789', 'Direccion Admin', '1234567890123', 'admin@admin.com', 'password', 1);
+('Admin', '12345678', 'Direccion Admin', '1234567890123', 'admin@admin.com', '$2a$10$QKGFUDCWV.D6MZfdHn1PIOlhqd8jwG4NvmKag76mflyiKp5u3Xcny', 1);

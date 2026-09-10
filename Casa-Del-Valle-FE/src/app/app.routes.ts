@@ -1,5 +1,9 @@
 import { Routes } from '@angular/router';
 import { StartPage } from './pages/start-page/start-page';
+import { Registro } from './pages/registro/registro';
+import { Login } from './pages/login/login';
+import { Perfil } from './pages/perfil/perfil';
+import { RegistrarCabana } from './pages/registrar-cabana/registrar-cabana';
 import { UserStoryGuidePage } from './pages/user-story-guide-page/user-story-guide-page';
 import { ModelGuidePage } from './pages/model-guide-page/model-guide-page';
 import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
@@ -35,6 +39,19 @@ export const routes: Routes = [
     },    {
         path: 'cabins/:id/edit',
         component: CabinEditPage,
+    },
+
+    {
+        path: 'registro', component: Registro
+    },
+    {
+        path: 'login', component: Login
+    },
+    {
+        path: 'perfil', component: Perfil
+    },
+    {
+        path: 'registrar-cabana', component: RegistrarCabana
     },
     {
         path: '**',
