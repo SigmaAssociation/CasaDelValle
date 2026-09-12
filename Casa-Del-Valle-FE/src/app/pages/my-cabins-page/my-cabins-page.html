@@ -1,0 +1,12 @@
+@if (userId) {
+  <app-cabin-list-page
+    [userId]="userId"
+    title="Mis Cabañas"
+    subtitle="Cabañas que tienes registradas como anfitrión.">
+  </app-cabin-list-page>
+} @else {
+  <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+    <h2 class="text-xl font-medium text-gray-800 mb-2">Sesión no válida</h2>
+    <p class="text-gray-500 text-sm">No se pudo identificar al usuario actual.</p>
+  </div>
+}

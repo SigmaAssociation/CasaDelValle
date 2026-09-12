@@ -1,7 +1,8 @@
 import { Component } from '@angular/core';
+import { LoginForm } from '../../components/login-form/login-form';
 
 @Component({
-  imports: [],
+  imports: [LoginForm],
   selector: 'app-login',
   styleUrl: './login.css',
   templateUrl: './login.html',

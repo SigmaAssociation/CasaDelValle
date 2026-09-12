@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { UserRequest } from '../../models/create-user';
 import { UserService } from '../../services/user.service';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -8,7 +9,7 @@ import { RegisterResponse } from '../../models/register-response';
 @Component({
   standalone: true,
   selector: 'app-create-user-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterModule],
   templateUrl: './create-user-form.html',
   styleUrl: './create-user-form.css',
 })

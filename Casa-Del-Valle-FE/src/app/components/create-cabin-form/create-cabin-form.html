@@ -1,4 +1,4 @@
-<div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+<div class="mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
   <h2 class="text-3xl mb-2">Publicar Cabaña</h2>
   <p class="text-gray-500 text-sm mb-6 font-sans">Comparte tu espacio con huéspedes de Casa del Valle.</p>
 
@@ -83,11 +83,13 @@
           type="number"
           min="1"
           formControlName="id_anfitrion"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm disabled:bg-gray-50 disabled:text-gray-500"
           [class.border-red-500]="isInvalid('id_anfitrion')"
           placeholder="ID de usuario"
         />
-        @if (isInvalid('id_anfitrion')) {
+        @if (fixedHostId) {
+          <p class="text-xs text-gray-400 mt-1">Se registrará como anfitrión de tu cuenta.</p>
+        } @else if (isInvalid('id_anfitrion')) {
           <p class="text-xs text-red-500 mt-1">Debes indicar un anfitrión válido.</p>
         }
       </div>
