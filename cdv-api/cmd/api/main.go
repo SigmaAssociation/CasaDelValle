@@ -60,7 +60,7 @@ func main() {
 	// Server
 	// -------------------------
 
-	handler := middleware.CORS(mux)
+	handler := middleware.CORS(middleware.Auth(mux))
 
 	log.Println("Servidor escuchando en :8080")
 

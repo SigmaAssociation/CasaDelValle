@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"cdv-api/internal/middleware"
 )
 
 type Controller struct {
@@ -91,6 +93,11 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := strconv.Atoi(idParam)
 	if err != nil || userID <= 0 {
 		writeError(w, http.StatusBadRequest, "ID de usuario inválido")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(userID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para ver las cabañas de este usuario")
 		return
 	}
 

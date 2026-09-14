@@ -92,4 +92,19 @@ describe('AuthService', () => {
         expect(service.getToken()).toBeNull();
         expect(localStorage.getItem('cdv_token')).toBeNull();
     });
+
+    it('cierra la sesión al iniciar si el token guardado expiró', () => {
+        TestBed.resetTestingModule();
+        const expired = buildToken({ sub: 1, exp: Math.floor(Date.now() / 1000) - 10 });
+        localStorage.setItem('cdv_token', expired);
+        TestBed.configureTestingModule({
+            providers: [provideHttpClient(), provideHttpClientTesting()],
+        });
+
+        const fresh = TestBed.inject(AuthService);
+
+        expect(fresh.isAuthenticated()).toBe(false);
+        expect(fresh.getToken()).toBeNull();
+        expect(localStorage.getItem('cdv_token')).toBeNull();
+    });
 });
