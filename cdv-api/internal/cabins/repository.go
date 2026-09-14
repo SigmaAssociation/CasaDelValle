@@ -2,7 +2,9 @@ package cabins
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -36,6 +38,38 @@ func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 	)
 
 	return c, err
+}
+
+func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (int, error) {
+	var id int
+
+	query := `
+		INSERT INTO cabanas (direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING id
+	`
+
+	err := r.pool.QueryRow(
+		ctx,
+		query,
+		req.Direccion,
+		req.Precio,
+		req.Descripcion,
+		req.Capacidad,
+		req.Reglas,
+		req.IDAnfitrion,
+		req.IDComision,
+	).Scan(&id)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return 0, errors.New("El anfitrión o la comisión especificada no existe")
+		}
+		return 0, err
+	}
+
+	return id, nil
 }
 
 func (r *Repository) GetAll(ctx context.Context) ([]Cabin, error) {

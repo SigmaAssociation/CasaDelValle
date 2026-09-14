@@ -43,6 +43,35 @@ func (c *Controller) GetCabins(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
 
+func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	var req CreateCabinRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(req.IDAnfitrion)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para registrar esta cabaña")
+		return
+	}
+
+	cabinID, err := c.service.CreateCabin(r.Context(), req)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, CreateCabinResponse{
+		Message: "Cabaña registrada exitosamente",
+		CabinID: cabinID,
+	})
+}
+
 func (c *Controller) GetCabinByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")

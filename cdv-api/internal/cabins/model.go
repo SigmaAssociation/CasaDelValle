@@ -11,6 +11,21 @@ type Cabin struct {
 	CommissionID *int    `json:"commission_id,omitempty"`
 }
 
+type CreateCabinRequest struct {
+	Direccion  string  `json:"direccion"`
+	Precio     float64 `json:"precio"`
+	Descripcion string `json:"descripcion,omitempty"`
+	Capacidad  int     `json:"capacidad"`
+	Reglas     string  `json:"reglas,omitempty"`
+	IDAnfitrion int    `json:"id_anfitrion"`
+	IDComision *int    `json:"id_comision,omitempty"`
+}
+
+type CreateCabinResponse struct {
+	Message string `json:"mensaje"`
+	CabinID int    `json:"cabin_id,omitempty"`
+}
+
 type GetCabinByIDRequest struct {
 	ID int `json:"id"`
 }
