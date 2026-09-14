@@ -3,6 +3,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { RestConstants } from '../components/rest-constants';
 import { AuthUser, LoginRequest, LoginResponse } from '../models/auth';
+import { isTokenExpired } from '../interceptors/token.utils';
 
 @Injectable({
     providedIn: 'root',
@@ -21,7 +22,12 @@ export class AuthService {
     });
     readonly isAuthenticated = computed(() => this.tokenState() !== null);
 
-    constructor(private httpClient: HttpClient) {}
+    constructor(private httpClient: HttpClient) {
+        const stored = this.tokenState();
+        if (stored && isTokenExpired(stored)) {
+            this.logout();
+        }
+    }
 
     public login(email: string, password: string): Observable<LoginResponse> {
         const body: LoginRequest = { email, password };
