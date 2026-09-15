@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/users"
@@ -39,6 +40,10 @@ func main() {
 	userService := users.NewService(userRepository)
 	userController := users.NewController(userService)
 
+	cabinRepository := cabins.NewRepository(pool)
+	cabinService := cabins.NewService(cabinRepository)
+	cabinController := cabins.NewController(cabinService)
+
 	// -------------------------
 	// Router
 	// -------------------------
@@ -49,17 +54,21 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/users/{id}", userController.GetUserByID)
 	mux.HandleFunc("PUT /cdv-api/users/{id}", userController.UpdateUser)
 
+	mux.HandleFunc("GET /cdv-api/cabins", cabinController.GetCabins)
+	mux.HandleFunc("POST /cdv-api/cabins", cabinController.CreateCabin)
+	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
+	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
+
 	// -------------------------
 	// Server
 	// -------------------------
-
 	port := os.Getenv("SERVER_PORT")
 	if port == "" {
 		port = "8080"
 	}
 
 	addr := fmt.Sprintf(":%s", port)
-	handler := middleware.CORS(mux)
+	handler := middleware.CORS(middleware.Auth(mux))
 
 	log.Printf("Servidor escuchando en %s", addr)
 

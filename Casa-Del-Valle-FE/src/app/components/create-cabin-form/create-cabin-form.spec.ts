@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
 
 import { CreateCabinForm } from './create-cabin-form';
 
@@ -8,7 +9,8 @@ describe('CreateCabinForm', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CreateCabinForm]
+      imports: [CreateCabinForm],
+      providers: [provideHttpClient()],
     })
     .compileComponents();
 

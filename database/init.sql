@@ -34,13 +34,9 @@ CREATE TABLE IF NOT EXISTS cabanas (
 -- Añadí Comisiones 
 CREATE TABLE IF NOT EXISTS comisiones (
     id SERIAL PRIMARY KEY,
-    id_cabana INT NOT NULL,
     id_usuario INT NOT NULL,
     porcentaje_comision NUMERIC(5, 2) NOT NULL,
     fecha_de_cambio TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    
-    CONSTRAINT fk_comision_cabana 
-        FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE,
         
     CONSTRAINT fk_comision_usuario 
         FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT    
@@ -146,3 +142,6 @@ INSERT INTO roles (id, tipo) VALUES
 
 INSERT INTO usuarios (nombre, telefono, direccion, dpi, correo, contrasena, id_rol) VALUES 
 ('Admin', '12345678', 'Direccion Admin', '1234567890123', 'admin@admin.com', '$2a$10$QKGFUDCWV.D6MZfdHn1PIOlhqd8jwG4NvmKag76mflyiKp5u3Xcny', 1);
+
+INSERT INTO comisiones (id_usuario, porcentaje_comision) VALUES 
+(1, 25.0)
