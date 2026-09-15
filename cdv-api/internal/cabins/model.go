@@ -12,13 +12,13 @@ type Cabin struct {
 }
 
 type CreateCabinRequest struct {
-	Direccion  string  `json:"direccion"`
-	Precio     float64 `json:"precio"`
-	Descripcion string `json:"descripcion,omitempty"`
-	Capacidad  int     `json:"capacidad"`
-	Reglas     string  `json:"reglas,omitempty"`
-	IDAnfitrion int    `json:"id_anfitrion"`
-	IDComision *int    `json:"id_comision,omitempty"`
+	Direccion   string  `json:"direccion"`
+	Precio      float64 `json:"precio"`
+	Descripcion string  `json:"descripcion,omitempty"`
+	Capacidad   int     `json:"capacidad"`
+	Reglas      string  `json:"reglas,omitempty"`
+	IDAnfitrion int     `json:"id_anfitrion"`
+	IDComision  *int    `json:"id_comision,omitempty"`
 }
 
 type CreateCabinResponse struct {
@@ -32,6 +32,15 @@ type GetCabinByIDRequest struct {
 
 type GetCabinsByUserRequest struct {
 	UserID int `json:"user_id"`
+}
+
+type UpdateCabinRequest struct {
+	ID          int     `json:"id"`
+	Address     string  `json:"address"`
+	Price       float64 `json:"price"`
+	Description string  `json:"description"`
+	Capacity    int     `json:"capacity"`
+	Rules       string  `json:"rules"`
 }
 
 type CabinResponse struct {

@@ -146,3 +146,40 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
+
+// PUT /cdv-api/cabins
+func (c *Controller) EditCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+	var req UpdateCabinRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+		return
+	}
+	userIDUint, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
+		return
+	}
+	roleUint, ok := middleware.RoleFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Rol no encontrado en el token")
+		return
+	}
+	currentUserID := int(userIDUint)
+	currentUserRole := int(roleUint)
+	err := c.service.UpdateCabin(r.Context(), req, currentUserID, currentUserRole)
+	if err != nil {
+		if err.Error() == "no tienes permisos para editar esta cabaña" {
+			writeError(w, http.StatusForbidden, err.Error())
+		} else if err.Error() == "la cabaña especificada no existe" || err.Error() == "no se encontró la cabaña para actualizar" {
+			writeError(w, http.StatusNotFound, err.Error())
+		} else {
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
