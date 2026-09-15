@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { CabinEditForm } from "../../components/cabin-edit-form/cabin-edit-form";
 import { Cabin } from '../../models/cabin';
@@ -16,7 +16,8 @@ export class CabinEditPage implements OnInit {
 
   constructor(
     private cabinService: CabinService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private cd : ChangeDetectorRef
   ) { }
 
   ngOnInit(): void {
@@ -36,10 +37,12 @@ export class CabinEditPage implements OnInit {
         } else {
           this.notFound = true;
         }
+        this.cd.detectChanges();
       },
       error: (err) => {
         console.error('Error al obtener la cabaña:', err);
         this.notFound = true;
+        this.cd.detectChanges();
       },
     });
   }

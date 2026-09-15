@@ -76,37 +76,6 @@
       ></textarea>
     </div>
 
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">ID Anfitrión</label>
-        <input
-          type="number"
-          min="1"
-          formControlName="id_anfitrion"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm disabled:bg-gray-50 disabled:text-gray-500"
-          [class.border-red-500]="isInvalid('id_anfitrion')"
-          placeholder="ID de usuario"
-        />
-        @if (fixedHostId) {
-          <p class="text-xs text-gray-400 mt-1">Se registrará como anfitrión de tu cuenta.</p>
-        } @else if (isInvalid('id_anfitrion')) {
-          <p class="text-xs text-red-500 mt-1">Debes indicar un anfitrión válido.</p>
-        }
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">ID Comisión</label>
-        <input
-          type="number"
-          min="0"
-          formControlName="id_comision"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-          [class.border-red-500]="isInvalid('id_comision')"
-          placeholder="Opcional"
-        />
-      </div>
-    </div>
-
     <button
       type="submit"
       [disabled]="cabinForm.invalid"
