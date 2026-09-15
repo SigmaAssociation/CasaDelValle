@@ -51,19 +51,10 @@ export class CreateCabinForm implements OnInit {
       ]],
       reglas: ['', [
         Validators.maxLength(500)
-      ]],
-      id_anfitrion: ['', [
-        Validators.required,
-        Validators.min(1)
-      ]],
-      id_comision: [null]
+      ]]
     });
     
     this.fixedHostId = this.hostId ?? this.authService.getCurrentUserId();
-    if (this.fixedHostId) {
-      this.cabinForm.patchValue({ id_anfitrion: this.fixedHostId });
-      this.cabinForm.get('id_anfitrion')?.disable();
-    }
   }
 
   isInvalid(controlName: string): boolean {
@@ -74,6 +65,7 @@ export class CreateCabinForm implements OnInit {
   create(): void {
     if (this.cabinForm.valid) {
       const newCabin = this.cabinForm.getRawValue() as CabinRequest;
+      newCabin.id_anfitrion = this.fixedHostId ?? 0;
 
       this.cabinService.createCabin(newCabin).subscribe({
         next: (response: RegisterResponse) => {
