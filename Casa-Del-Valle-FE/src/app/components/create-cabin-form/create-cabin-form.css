@@ -1,0 +1,31 @@
+input, textarea, select {
+  width: 100%;
+  border: 1px solid #D7D0C4;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #151515;
+  padding: 11px 13px;
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #958C80;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #4F5D2F;
+  box-shadow: 0 0 0 3px rgba(79, 93, 47, 0.10);
+  outline: none;
+}
+
+textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.btn-primary:hover {
+  background: #D9441B !important;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(66, 54, 41, 0.10);
+}

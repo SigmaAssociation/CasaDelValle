@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -17,14 +18,13 @@ func NewPostgresPool(ctx context.Context) (*pgxpool.Pool, error) {
 	password := os.Getenv("DB_PASSWORD")
 	dbname := os.Getenv("DB_NAME")
 
-	dsn := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s",
-		user,
-		password,
-		host,
-		port,
-		dbname,
-	)
+	dsn := (&url.URL{
+		Scheme: "postgres",
+		User:   url.UserPassword(user, password),
+		Host:   fmt.Sprintf("%s:%s", host, port),
+		Path:   dbname,
+		RawQuery: "sslmode=disable",
+	}).String()
 
 	config, err := pgxpool.ParseConfig(dsn)
 

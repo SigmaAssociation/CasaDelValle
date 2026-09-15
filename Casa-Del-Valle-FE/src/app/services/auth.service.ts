@@ -3,11 +3,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { RestConstants } from '../components/rest-constants';
 import { AuthUser, LoginRequest, LoginResponse } from '../models/auth';
-
-export interface AuthState {
-    token: string | null;
-    user: AuthUser | null;
-}
+import { isTokenExpired } from '../interceptors/token.utils';
 
 @Injectable({
     providedIn: 'root',
@@ -16,15 +12,22 @@ export class AuthService {
     private restConstants = new RestConstants();
 
     private readonly tokenKey = 'cdv_token';
-    private readonly userKey = 'cdv_user';
 
-    private readonly state = signal<AuthState>(this.loadState());
+    private readonly tokenState = signal<string | null>(localStorage.getItem(this.tokenKey));
 
-    readonly token = computed(() => this.state().token);
-    readonly user = computed(() => this.state().user);
-    readonly isAuthenticated = computed(() => this.state().token !== null);
+    readonly token = computed(() => this.tokenState());
+    readonly user = computed(() => {
+        const token = this.tokenState();
+        return token ? this.decodeToken(token) : null;
+    });
+    readonly isAuthenticated = computed(() => this.tokenState() !== null);
 
-    constructor(private httpClient: HttpClient) {}
+    constructor(private httpClient: HttpClient) {
+        const stored = this.tokenState();
+        if (stored && isTokenExpired(stored)) {
+            this.logout();
+        }
+    }
 
     public login(email: string, password: string): Observable<LoginResponse> {
         const body: LoginRequest = { email, password };
@@ -34,13 +37,17 @@ export class AuthService {
     }
 
     public getToken(): string | null {
-        return this.state().token;
+        return this.tokenState();
+    }
+
+    public getCurrentUserId(): number | null {
+        const id = Number(this.user()?.id);
+        return Number.isInteger(id) && id > 0 ? id : null;
     }
 
     public logout(): void {
         localStorage.removeItem(this.tokenKey);
-        localStorage.removeItem(this.userKey);
-        this.state.set({ token: null, user: null });
+        this.tokenState.set(null);
     }
 
     private persistSession(response: LoginResponse): void {
@@ -48,14 +55,8 @@ export class AuthService {
             return;
         }
 
-        const user = this.decodeToken(response.token);
-
         localStorage.setItem(this.tokenKey, response.token);
-        if (user) {
-            localStorage.setItem(this.userKey, JSON.stringify(user));
-        }
-
-        this.state.set({ token: response.token, user });
+        this.tokenState.set(response.token);
     }
 
     private decodeToken(token: string): AuthUser | null {
@@ -71,23 +72,6 @@ export class AuthService {
             };
         } catch {
             return null;
-        }
-    }
-
-    private loadState(): AuthState {
-        const token = localStorage.getItem(this.tokenKey);
-        if (!token) {
-            return { token: null, user: null };
-        }
-
-        const rawUser = localStorage.getItem(this.userKey);
-        try {
-            return {
-                token,
-                user: rawUser ? (JSON.parse(rawUser) as AuthUser) : this.decodeToken(token),
-            };
-        } catch {
-            return { token, user: null };
         }
     }
 }

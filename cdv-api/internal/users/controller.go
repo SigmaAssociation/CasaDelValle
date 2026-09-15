@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+
+	"cdv-api/internal/middleware"
 )
 
 type Controller struct {
@@ -17,6 +19,16 @@ func NewController(service *Service) *Controller {
 }
 
 func (c *Controller) GetUsers(w http.ResponseWriter, r *http.Request) {
+	if !middleware.IsAdmin(r) {
+		w.Header().Set(
+			"Content-Type",
+			"application/json",
+		)
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"message": "No tiene permisos para ver la lista de usuarios"})
+		return
+	}
+
 	usuarios, err := c.service.GetUsers(
 		r.Context(),
 	)
@@ -81,6 +93,12 @@ func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil || userID <= 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido en la URL"})
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(userID)) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"message": "No tiene permisos para editar este perfil"})
 		return
 	}
 
@@ -174,6 +192,12 @@ func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	if err != nil || id <= 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido"})
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(id)) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"message": "No tiene permisos para ver este perfil"})
 		return
 	}
 

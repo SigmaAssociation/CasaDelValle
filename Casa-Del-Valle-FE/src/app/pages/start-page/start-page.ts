@@ -1,12 +1,14 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { CreateUserForm } from '../../components/create-user-form/create-user-form';
-import { EditUserForm } from '../../components/edit-user-form/edit-user-form';
+import { CabinListPage } from '../cabin-list-page/cabin-list-page';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
-  imports: [CreateUserForm, EditUserForm, RouterModule],
+  imports: [RouterModule, CabinListPage],
   selector: 'app-start-page',
   styleUrl: './start-page.css',
   templateUrl: './start-page.html',
 })
-export class StartPage {}
+export class StartPage {
+  constructor(public auth: AuthService) { }
+}
