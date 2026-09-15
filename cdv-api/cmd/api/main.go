@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"cdv-api/internal/database"
 	"cdv-api/internal/middleware"
@@ -51,11 +53,17 @@ func main() {
 	// Server
 	// -------------------------
 
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	addr := fmt.Sprintf(":%s", port)
 	handler := middleware.CORS(mux)
 
-	log.Println("Servidor escuchando en :8080")
+	log.Printf("Servidor escuchando en %s", addr)
 
-	if err := http.ListenAndServe(":8080", handler); err != nil {
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)
 	}
 }
