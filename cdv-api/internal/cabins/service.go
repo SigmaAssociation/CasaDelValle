@@ -24,6 +24,14 @@ func (s *Service) GetCabins(ctx context.Context) ([]Cabin, error) {
 }
 
 func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int, error) {
+	req.Nombre = strings.TrimSpace(req.Nombre)
+	if len(req.Nombre) < 3 || len(req.Nombre) > 150 {
+		return 0, errors.New("Nombre inválido: debe tener entre 3 y 150 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\'#]+$`, req.Nombre); !matched {
+		return 0, errors.New("Nombre inválido: contiene caracteres no permitidos")
+	}
+
 	req.Direccion = strings.TrimSpace(req.Direccion)
 	if len(req.Direccion) < 5 || len(req.Direccion) > 255 {
 		return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")

@@ -39,6 +39,7 @@ func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 
 	err := scan(
 		&c.ID,
+		&c.Name,
 		&c.Address,
 		&c.Price,
 		&c.Description,
@@ -55,14 +56,15 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	var id int
 
 	query := `
-		INSERT INTO cabanas (direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO cabanas (nombre, direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 	`
 
 	err := r.pool.QueryRow(
 		ctx,
 		query,
+		req.Nombre,
 		req.Direccion,
 		req.Precio,
 		req.Descripcion,
