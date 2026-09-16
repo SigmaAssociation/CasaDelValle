@@ -81,3 +81,39 @@ func (s *Service) GetCabinsByUser(ctx context.Context, req GetCabinsByUserReques
 
 	return s.repository.GetByHostID(ctx, req.UserID)
 }
+
+func (s *Service) SearchCabins(ctx context.Context, params CabinSearchParams) (CabinCardsListResponse, error) {
+	if params.MinCapacity != nil && *params.MinCapacity < 0 {
+		return CabinCardsListResponse{}, errors.New("la capacidad mínima no puede ser negativa")
+	}
+	if params.MaxCapacity != nil && *params.MaxCapacity < 0 {
+		return CabinCardsListResponse{}, errors.New("la capacidad máxima no puede ser negativa")
+	}
+	if params.MinCapacity != nil && params.MaxCapacity != nil && *params.MinCapacity > *params.MaxCapacity {
+		return CabinCardsListResponse{}, errors.New("la capacidad mínima no puede ser mayor que la máxima")
+	}
+
+	if params.MinPrice != nil && *params.MinPrice < 0 {
+		return CabinCardsListResponse{}, errors.New("el precio mínimo no puede ser negativo")
+	}
+	if params.MaxPrice != nil && *params.MaxPrice < 0 {
+		return CabinCardsListResponse{}, errors.New("el precio máximo no puede ser negativo")
+	}
+	if params.MinPrice != nil && params.MaxPrice != nil && *params.MinPrice > *params.MaxPrice {
+		return CabinCardsListResponse{}, errors.New("el precio mínimo no puede ser mayor que el precio máximo")
+	}
+
+	if params.HostID != nil && *params.HostID <= 0 {
+		return CabinCardsListResponse{}, errors.New("ID de anfitrión inválido")
+	}
+
+	cabins, err := s.repository.SearchCabins(ctx, params)
+	if err != nil {
+		return CabinCardsListResponse{}, err
+	}
+
+	return CabinCardsListResponse{
+		Data:  cabins,
+		Total: len(cabins),
+	}, nil
+}

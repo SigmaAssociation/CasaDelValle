@@ -146,3 +146,68 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
+
+
+/*BUSQUEDA POR FILTROS COMBINADOS*/
+func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	query := r.URL.Query()
+	params := CabinSearchParams{}
+
+	if v := query.Get("host_id"); v != "" {
+		hostID, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "host_id debe ser un número entero válido")
+			return
+		}
+		params.HostID = &hostID
+	}
+
+	if v := query.Get("min_capacity"); v != "" {
+		minCap, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "min_capacity debe ser un número entero válido")
+			return
+		}
+		params.MinCapacity = &minCap
+	}
+
+	if v := query.Get("max_capacity"); v != "" {
+		maxCap, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "max_capacity debe ser un número entero válido")
+			return
+		}
+		params.MaxCapacity = &maxCap
+	}
+
+	if v := query.Get("min_price"); v != "" {
+		minPrice, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "min_price debe ser un número válido")
+			return
+		}
+		params.MinPrice = &minPrice
+	}
+
+	if v := query.Get("max_price"); v != "" {
+		maxPrice, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "max_price debe ser un número válido")
+			return
+		}
+		params.MaxPrice = &maxPrice
+	}
+
+	result, err := c.service.SearchCabins(r.Context(), params)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
