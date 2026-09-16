@@ -1,0 +1,8 @@
+{
+  "/cdv-api": {
+    "target": "http://backend-api:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}
