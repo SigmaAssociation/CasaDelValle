@@ -138,3 +138,113 @@ func (r *Repository) GetByHostID(ctx context.Context, hostID int) ([]Cabin, erro
 
 	return cabins, nil
 }
+
+func (r *Repository) GetAll(ctx context.Context) ([]Cabin, error) {
+    query := `SELECT ` + cabinColumns + ` FROM cabanas ORDER BY id`
+    
+    rows, err := r.pool.Query(ctx, query)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    cabins := []Cabin{}
+    for rows.Next() {
+        c, err := scanCabin(rows.Scan)
+        if err != nil {
+            return nil, err
+        }
+        cabins = append(cabins, c)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return cabins, nil
+}
+
+func (r *Repository) SearchByName(ctx context.Context, name string) ([]Cabin, error) {
+    pattern := "%" + name + "%"
+
+    rows, err := r.pool.Query(
+        ctx,
+        `SELECT `+cabinColumns+` FROM cabanas WHERE direccion ILIKE $1 ORDER BY id`,
+        pattern,
+    )
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    cabins := []Cabin{}
+    for rows.Next() {
+        c, err := scanCabin(rows.Scan)
+        if err != nil {
+            return nil, err
+        }
+        cabins = append(cabins, c)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return cabins, nil
+}
+
+func (r *Repository) GetByCapacityRange(ctx context.Context, minCap, maxCap int) ([]Cabin, error) {
+    rows, err := r.pool.Query(
+        ctx,
+        `SELECT `+cabinColumns+` FROM cabanas WHERE capacidad BETWEEN $1 AND $2 ORDER BY capacidad ASC, id ASC`,
+        minCap,
+        maxCap,
+    )
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    cabins := []Cabin{}
+    for rows.Next() {
+        c, err := scanCabin(rows.Scan)
+        if err != nil {
+            return nil, err
+        }
+        cabins = append(cabins, c)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return cabins, nil
+}
+
+func (r *Repository) GetByPriceRange(ctx context.Context, minPrice, maxPrice float64) ([]Cabin, error) {
+    rows, err := r.pool.Query(
+        ctx,
+        `SELECT `+cabinColumns+` FROM cabanas WHERE precio BETWEEN $1 AND $2 ORDER BY precio ASC, id ASC`,
+        minPrice,
+        maxPrice,
+    )
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    cabins := []Cabin{}
+    for rows.Next() {
+        c, err := scanCabin(rows.Scan)
+        if err != nil {
+            return nil, err
+        }
+        cabins = append(cabins, c)
+    }
+
+    if err := rows.Err(); err != nil {
+        return nil, err
+    }
+
+    return cabins, nil
+}

@@ -54,6 +54,16 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+type GetCabinsByCapacityRequest struct {
+    MinCapacity int `json:"min_capacity"`
+    MaxCapacity int `json:"max_capacity"`
+}
+
+type GetCabinsByPriceRangeRequest struct {
+    MinPrice float64 `json:"min_price"`
+    MaxPrice float64 `json:"max_price"`
+}
+
 func (c Cabin) ToResponse() CabinResponse {
 	return CabinResponse{
 		ID:           c.ID,

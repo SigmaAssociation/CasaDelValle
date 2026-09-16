@@ -146,3 +146,74 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
+
+func (c *Controller) GetAllCabins(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+        return
+    }
+
+    cabins, err := c.service.GetAllCabins(r.Context())
+    if err != nil {
+        writeError(w, http.StatusInternalServerError, "Error al obtener las cabañas")
+        return
+    }
+
+    writeJSON(w, http.StatusOK, ToResponseList(cabins))
+}
+
+func (c *Controller) GetCabinsByCapacity(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+        return
+    }
+
+    minCap, errMin := strconv.Atoi(r.URL.Query().Get("min_capacity"))
+    maxCap, errMax := strconv.Atoi(r.URL.Query().Get("max_capacity"))
+
+    if errMin != nil || errMax != nil {
+        writeError(w, http.StatusBadRequest, "Los parámetros de capacidad deben ser números enteros válidos")
+        return
+    }
+
+    req := GetCabinsByCapacityRequest{
+        MinCapacity: minCap,
+        MaxCapacity: maxCap,
+    }
+
+    cabins, err := c.service.GetCabinsByCapacity(r.Context(), req)
+    if err != nil {
+        writeError(w, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    writeJSON(w, http.StatusOK, ToResponseList(cabins))
+}
+
+func (c *Controller) GetCabinsByPrice(w http.ResponseWriter, r *http.Request) {
+    if r.Method != http.MethodGet {
+        writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+        return
+    }
+
+    minPrice, errMin := strconv.ParseFloat(r.URL.Query().Get("min_price"), 64)
+    maxPrice, errMax := strconv.ParseFloat(r.URL.Query().Get("max_price"), 64)
+
+    if errMin != nil || errMax != nil {
+        writeError(w, http.StatusBadRequest, "Los parámetros de precio deben ser números válidos")
+        return
+    }
+
+    req := GetCabinsByPriceRangeRequest{
+        MinPrice: minPrice,
+        MaxPrice: maxPrice,
+    }
+
+    cabins, err := c.service.GetCabinsByPrice(r.Context(), req)
+    if err != nil {
+        writeError(w, http.StatusBadRequest, err.Error())
+        return
+    }
+
+    writeJSON(w, http.StatusOK, ToResponseList(cabins))
+}

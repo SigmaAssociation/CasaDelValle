@@ -81,3 +81,29 @@ func (s *Service) GetCabinsByUser(ctx context.Context, req GetCabinsByUserReques
 
 	return s.repository.GetByHostID(ctx, req.UserID)
 }
+
+func (s *Service) GetAllCabins(ctx context.Context) ([]Cabin, error) {
+    return s.repository.GetAll(ctx)
+}
+
+func (s *Service) GetCabinsByCapacity(ctx context.Context, req GetCabinsByCapacityRequest) ([]Cabin, error) {
+    if req.MinCapacity < 0 || req.MaxCapacity < 0 {
+        return nil, errors.New("la capacidad no puede ser negativa")
+    }
+    if req.MinCapacity > req.MaxCapacity {
+        return nil, errors.New("la capacidad mínima no puede ser mayor que la máxima")
+    }
+
+    return s.repository.GetByCapacityRange(ctx, req.MinCapacity, req.MaxCapacity)
+}
+
+func (s *Service) GetCabinsByPrice(ctx context.Context, req GetCabinsByPriceRangeRequest) ([]Cabin, error) {
+    if req.MinPrice < 0 || req.MaxPrice < 0 {
+        return nil, errors.New("el precio no puede ser negativo")
+    }
+    if req.MinPrice > req.MaxPrice {
+        return nil, errors.New("el precio mínimo no puede ser mayor que el precio máximo")
+    }
+
+    return s.repository.GetByPriceRange(ctx, req.MinPrice, req.MaxPrice)
+}
