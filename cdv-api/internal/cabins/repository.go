@@ -138,3 +138,32 @@ func (r *Repository) GetByHostID(ctx context.Context, hostID int) ([]Cabin, erro
 
 	return cabins, nil
 }
+
+func (r *Repository) GetHostID(ctx context.Context, cabinID int) (int, error) {
+	var hostID int
+	err := r.pool.QueryRow(ctx, `SELECT id_anfitrion FROM cabanas WHERE id = $1`, cabinID).Scan(&hostID)
+	return hostID, err
+}
+
+func (r *Repository) Update(ctx context.Context, req UpdateCabinRequest) error {
+	query := `
+		UPDATE cabanas 
+		SET direccion = $1, precio = $2, descripcion = $3, capacidad = $4, reglas = $5
+		WHERE id = $6
+	`
+	cmdTag, err := r.pool.Exec(ctx, query,
+		req.Address,
+		req.Price,
+		req.Description,
+		req.Capacity,
+		req.Rules,
+		req.ID,
+	)
+	if err != nil {
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return errors.New("no se encontró la cabaña para actualizar")
+	}
+	return nil
+}

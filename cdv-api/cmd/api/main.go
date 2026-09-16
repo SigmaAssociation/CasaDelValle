@@ -58,7 +58,7 @@ func main() {
 	mux.HandleFunc("POST /cdv-api/cabins", cabinController.CreateCabin)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
-
+	mux.HandleFunc("PUT /cdv-api/cabins", cabinController.EditCabin)
 	// -------------------------
 	// Server
 	// -------------------------
