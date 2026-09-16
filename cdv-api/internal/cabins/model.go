@@ -28,6 +28,11 @@ type CreateCabinResponse struct {
 	CabinID int    `json:"cabin_id,omitempty"`
 }
 
+type DeleteCabinResponse struct {
+	Message      string `json:"mensaje"`
+	RowsAffected int    `json:"rows_affected,omitempty"`
+}
+
 type GetCabinByIDRequest struct {
 	ID int `json:"id"`
 }

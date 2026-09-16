@@ -85,6 +85,23 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	return id, nil
 }
 
+func (r *Repository) DeleteCabin(ctx context.Context, id int) (int, error) {
+	result, err := r.pool.Exec(
+		ctx,
+		`DELETE FROM cabanas WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return 0, errors.New("La cabaña no se puede eliminar porque tiene reservaciones asociadas")
+		}
+		return 0, err
+	}
+
+	return int(result.RowsAffected()), nil
+}
+
 func (r *Repository) GetAll(ctx context.Context) ([]Cabin, error) {
 	rows, err := r.pool.Query(
 		ctx,
