@@ -81,7 +81,12 @@ export class CabinEditForm implements OnChanges {
         this.isSubmitting.set(false);
       },
       error: (err) => {
-        this.errorMessage.set(err?.error?.message || err?.error || 'Error al actualizar la cabaña.');
+        const backendMessage = err?.error?.message ?? err?.error?.mensaje;
+        this.errorMessage.set(
+          typeof backendMessage === 'string' && backendMessage.trim().length > 0
+            ? backendMessage
+            : 'Error al actualizar la cabaña.',
+        );
         this.isSubmitting.set(false);
       }
     });

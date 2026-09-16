@@ -191,7 +191,6 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
 
-
 /*BUSQUEDA POR FILTROS COMBINADOS*/
 func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
@@ -254,4 +253,54 @@ func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (c *Controller) UpdateCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
+	var req UpdateCabinRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+		return
+	}
+
+	existing, err := c.service.GetCabinByID(r.Context(), GetCabinByIDRequest{ID: id})
+	if err != nil {
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la cabaña")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(existing.HostID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para editar esta cabaña")
+		return
+	}
+
+	if err := c.service.UpdateCabin(r.Context(), id, req); err != nil {
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"mensaje": "Cabaña actualizada exitosamente"})
 }

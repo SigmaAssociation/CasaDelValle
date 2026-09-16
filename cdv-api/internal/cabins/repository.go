@@ -169,6 +169,36 @@ func (r *Repository) GetByHostID(ctx context.Context, hostID int) ([]Cabin, erro
 	return cabins, nil
 }
 
+func (r *Repository) Update(ctx context.Context, id int, req UpdateCabinRequest) error {
+	query := `
+		UPDATE cabanas
+		SET nombre = $1, direccion = $2, precio = $3, descripcion = $4,
+		    capacidad = $5, reglas = $6
+		WHERE id = $7
+	`
+
+	tag, err := r.pool.Exec(
+		ctx,
+		query,
+		req.Name,
+		req.Address,
+		req.Price,
+		req.Description,
+		req.Capacity,
+		req.Rules,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.New("Cabaña no encontrada")
+	}
+
+	return nil
+}
+
 func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, error) {
 	var card CabinCardResponse
 

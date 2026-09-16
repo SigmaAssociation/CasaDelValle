@@ -55,8 +55,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return next(req);
     }
 
-    // Token expirado o con formato inválido: se cierra la sesión sin
-    // siquiera llamar al backend y se notifica un 401 a quien llamó.
     if (isTokenExpired(token)) {
         closeSession(auth, router);
         return throwError(() => unauthorizedError(req.url));
@@ -70,8 +68,6 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(authReq).pipe(
         catchError((err: unknown) => {
-            // El backend rechaza el token (inválido o expirado): cerrar sesión.
-            // Un 403 NO cierra sesión: el token es válido, solo faltan permisos.
             if (err instanceof HttpErrorResponse && err.status === 401) {
                 closeSession(auth, router);
             }
