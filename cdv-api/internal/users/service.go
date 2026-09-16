@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -63,6 +64,52 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterRequest) (int, e
 	return s.repository.CreateUser(ctx, req, string(hashBytes))
 }
 
+func (s *Service) UpdateUser(ctx context.Context, req UserUpdate) (int, error) {
+
+	if req.ID <= 0 {
+		return 0, errors.New("ID de usuario inválido")
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	if req.Name == "" || len(req.Name) > 150 {
+		return 0, errors.New("Nombre inválido: debe tener entre 1 y 150 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$`, req.Name); !matched {
+		return 0, errors.New("Nombre inválido: solo se permiten letras y espacios")
+	}
+
+	emailRegex := regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,4}$`)
+	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+	if len(req.Email) > 150 || !emailRegex.MatchString(req.Email) {
+		return 0, errors.New("Correo inválido: debe ser un correo electrónico válido y tener un máximo de 150 caracteres")
+	}
+
+	req.Phone = strings.TrimSpace(req.Phone)
+	if matched, _ := regexp.MatchString(`^[123456789]\d{7}$`, req.Phone); !matched {
+		return 0, errors.New("Teléfono inválido: debe contener 8 dígitos y no iniciar con 0")
+	}
+
+	req.Address = strings.TrimSpace(req.Address)
+	if len(req.Address) < 5 || len(req.Address) > 255 {
+		return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Address); !matched {
+		return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
+	}
+	
+	rowsAffected, err := s.repository.UpdateUser(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+
+	if rowsAffected == 0 {
+		return 0, errors.New("Usuario no encontrado")
+	}
+
+	return rowsAffected, nil
+}
+
+
 func (s *Service) AuthenticateUser(ctx context.Context, loginRequest UserLoginRequest) (string, error) {
 	user, err := s.repository.GetUserAuthInfo(ctx, loginRequest.Email)
 	if err != nil {
@@ -80,7 +127,7 @@ func (s *Service) AuthenticateUser(ctx context.Context, loginRequest UserLoginRe
 	}
 
 	return token, nil
-}
+} 
 
 func CheckPassword(password string, hash string) bool {
 	err := bcrypt.CompareHashAndPassword(
@@ -116,5 +163,12 @@ func (s *Service) GetUserByID(ctx context.Context, id int) (User, error) {
 	// Pendiente de verificar si el usuario tiene permisos para acceder a la información del usuario con el ID proporcionado.
 	// Esto podría implicar verificar el rol del usuario autenticado y compararlo con el ID del usuario solicitado.
 	// Si el usuario no tiene permisos, se debería retornar un error de autorización.
-	return s.repository.GetUserByID(ctx, id)
+	user, err := s.repository.GetUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return User{}, errors.New("Usuario no encontrado")
+		}
+		return User{}, err
+	}
+	return user, nil
 }
