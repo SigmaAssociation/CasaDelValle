@@ -57,6 +57,23 @@ func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int,
 	return s.repository.CreateCabin(ctx, req)
 }
 
+func (s *Service) DeleteCabin(ctx context.Context, id int) (int, error) {
+	if id <= 0 {
+		return 0, errors.New("ID de cabaña inválido")
+	}
+
+	rowsAffected, err := s.repository.DeleteCabin(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+
+	if rowsAffected == 0 {
+		return 0, errors.New("Cabaña no encontrada")
+	}
+
+	return rowsAffected, nil
+}
+
 func (s *Service) GetCabinByID(ctx context.Context, req GetCabinByIDRequest) (Cabin, error) {
 	if req.ID <= 0 {
 		return Cabin{}, errors.New("ID de cabaña inválido")

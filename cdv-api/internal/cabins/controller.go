@@ -72,6 +72,50 @@ func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func (c *Controller) DeleteCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
+	cabin, err := c.service.GetCabinByID(r.Context(), GetCabinByIDRequest{ID: id})
+	if err != nil {
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la cabaña")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(cabin.HostID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para eliminar esta cabaña")
+		return
+	}
+
+	rowsAffected, err := c.service.DeleteCabin(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, DeleteCabinResponse{
+		Message:      "Cabaña eliminada exitosamente",
+		RowsAffected: rowsAffected,
+	})
+}
+
 func (c *Controller) GetCabinByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
