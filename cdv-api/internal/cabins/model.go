@@ -2,6 +2,7 @@ package cabins
 
 type Cabin struct {
 	ID           int     `json:"id"`
+	Name         string  `json:"name"`
 	Address      string  `json:"address"`
 	Price        float64 `json:"price"`
 	Description  string  `json:"description"`
@@ -12,6 +13,7 @@ type Cabin struct {
 }
 
 type CreateCabinRequest struct {
+	Nombre      string `json:"nombre"`
 	Direccion  string  `json:"direccion"`
 	Precio     float64 `json:"precio"`
 	Descripcion string `json:"descripcion,omitempty"`
@@ -36,6 +38,7 @@ type GetCabinsByUserRequest struct {
 
 type CabinResponse struct {
 	ID           int     `json:"id"`
+	Name         string  `json:"name"`
 	Address      string  `json:"address"`
 	Price        float64 `json:"price"`
 	Description  string  `json:"description"`
@@ -48,6 +51,30 @@ type CabinResponse struct {
 type CabinsListResponse struct {
 	Data  []CabinResponse `json:"data"`
 	Total int             `json:"total"`
+}
+
+/*Modelo para la info completa en las card de cabañas*/
+type CabinCardResponse struct {
+	ID       int     `json:"id"`
+	Name     string  `json:"name"`
+	Address  string  `json:"address"`
+	Price    float64 `json:"price"`
+	Capacity int     `json:"capacity"`
+	HostName string  `json:"host_name"`
+	ImageURL *string `json:"image_url,omitempty"`
+}
+
+type CabinCardsListResponse struct {
+	Data  []CabinCardResponse `json:"data"`
+	Total int                 `json:"total"`
+}
+
+type CabinSearchParams struct {
+	HostID      *int     `json:"host_id,omitempty"`
+	MinCapacity *int     `json:"min_capacity,omitempty"`
+	MaxCapacity *int     `json:"max_capacity,omitempty"`
+	MinPrice    *float64 `json:"min_price,omitempty"`
+	MaxPrice    *float64 `json:"max_price,omitempty"`
 }
 
 type ErrorResponse struct {
@@ -67,6 +94,7 @@ type GetCabinsByPriceRangeRequest struct {
 func (c Cabin) ToResponse() CabinResponse {
 	return CabinResponse{
 		ID:           c.ID,
+		Name:         c.Name,
 		Address:      c.Address,
 		Price:        c.Price,
 		Description:  c.Description,
@@ -85,5 +113,17 @@ func ToResponseList(cabins []Cabin) CabinsListResponse {
 	return CabinsListResponse{
 		Data:  data,
 		Total: len(data),
+	}
+}
+
+func (c Cabin) ToCardResponse(hostName string, imageURL *string) CabinCardResponse {
+	return CabinCardResponse{
+		ID:       c.ID,
+		Name:     c.Name,
+		Address:  c.Address,
+		Price:    c.Price,
+		Capacity: c.Capacity,
+		HostName: hostName,
+		ImageURL: imageURL,
 	}
 }

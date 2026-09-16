@@ -3,6 +3,8 @@ package cabins
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -19,10 +21,19 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 }
 
 const cabinColumns = `
-	id, direccion, precio, COALESCE(descripcion, ''), capacidad,
+	id, nombre, direccion, precio, COALESCE(descripcion, ''), capacidad,
 	COALESCE(reglas, ''), id_anfitrion, id_comision
 `
 
+const cabinSearchColumns = `
+	c.id, c.nombre, c.direccion, c.precio, c.capacidad,
+	COALESCE(u.nombre, '')
+`
+
+const cabinSearchFrom = `
+	FROM cabanas c
+	JOIN usuarios u ON u.id = c.id_anfitrion
+`
 func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 	var c Cabin
 
@@ -139,112 +150,76 @@ func (r *Repository) GetByHostID(ctx context.Context, hostID int) ([]Cabin, erro
 	return cabins, nil
 }
 
-func (r *Repository) GetAll(ctx context.Context) ([]Cabin, error) {
-    query := `SELECT ` + cabinColumns + ` FROM cabanas ORDER BY id`
-    
-    rows, err := r.pool.Query(ctx, query)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, error) {
+	var card CabinCardResponse
 
-    cabins := []Cabin{}
-    for rows.Next() {
-        c, err := scanCabin(rows.Scan)
-        if err != nil {
-            return nil, err
-        }
-        cabins = append(cabins, c)
-    }
-
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-
-    return cabins, nil
+	err := scan(
+		&card.ID,
+		&card.Name,
+		&card.Address,
+		&card.Price,
+		&card.Capacity,
+		&card.HostName,
+	)
+	return card, err
 }
 
-func (r *Repository) SearchByName(ctx context.Context, name string) ([]Cabin, error) {
-    pattern := "%" + name + "%"
+// SearchCabins retorna cabañas aplicando cualquier combinación de filtros
+// definidos en params. Un filtro nil se omite del WHERE.
+func (r *Repository) SearchCabins(ctx context.Context, params CabinSearchParams) ([]CabinCardResponse, error) {
+	query := `SELECT ` + cabinSearchColumns + cabinSearchFrom
 
-    rows, err := r.pool.Query(
-        ctx,
-        `SELECT `+cabinColumns+` FROM cabanas WHERE direccion ILIKE $1 ORDER BY id`,
-        pattern,
-    )
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	var (
+		conditions []string
+		args       []any
+	)
 
-    cabins := []Cabin{}
-    for rows.Next() {
-        c, err := scanCabin(rows.Scan)
-        if err != nil {
-            return nil, err
-        }
-        cabins = append(cabins, c)
-    }
+	addCondition := func(cond string, val any) {
+		args = append(args, val)
+		conditions = append(conditions, fmt.Sprintf(cond, len(args)))
+	}
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	if params.HostID != nil {
+		addCondition("c.id_anfitrion = $%d", *params.HostID)
+	}
+	if params.MinCapacity != nil {
+		addCondition("c.capacidad >= $%d", *params.MinCapacity)
+	}
+	if params.MaxCapacity != nil {
+		addCondition("c.capacidad <= $%d", *params.MaxCapacity)
+	}
+	if params.MinPrice != nil {
+		addCondition("c.precio >= $%d", *params.MinPrice)
+	}
+	if params.MaxPrice != nil {
+		addCondition("c.precio <= $%d", *params.MaxPrice)
+	}
 
-    return cabins, nil
-}
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
 
-func (r *Repository) GetByCapacityRange(ctx context.Context, minCap, maxCap int) ([]Cabin, error) {
-    rows, err := r.pool.Query(
-        ctx,
-        `SELECT `+cabinColumns+` FROM cabanas WHERE capacidad BETWEEN $1 AND $2 ORDER BY capacidad ASC, id ASC`,
-        minCap,
-        maxCap,
-    )
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	query += " ORDER BY c.id"
 
-    cabins := []Cabin{}
-    for rows.Next() {
-        c, err := scanCabin(rows.Scan)
-        if err != nil {
-            return nil, err
-        }
-        cabins = append(cabins, c)
-    }
+	rows, err := r.pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
 
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
+	cabins := []CabinCardResponse{}
 
-    return cabins, nil
-}
+	for rows.Next() {
+		c, err := scanCabinSearchResult(rows.Scan)
+		if err != nil {
+			return nil, err
+		}
+		cabins = append(cabins, c)
+	}
 
-func (r *Repository) GetByPriceRange(ctx context.Context, minPrice, maxPrice float64) ([]Cabin, error) {
-    rows, err := r.pool.Query(
-        ctx,
-        `SELECT `+cabinColumns+` FROM cabanas WHERE precio BETWEEN $1 AND $2 ORDER BY precio ASC, id ASC`,
-        minPrice,
-        maxPrice,
-    )
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
-    cabins := []Cabin{}
-    for rows.Next() {
-        c, err := scanCabin(rows.Scan)
-        if err != nil {
-            return nil, err
-        }
-        cabins = append(cabins, c)
-    }
-
-    if err := rows.Err(); err != nil {
-        return nil, err
-    }
-
-    return cabins, nil
+	return cabins, nil
 }
