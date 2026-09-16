@@ -33,6 +33,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       JWT_SECRET: ${JWT_SECRET}
+      SERVER_PORT: 8080
+      CORS_ALLOW_ORIGIN: http://localhost:4200
     volumes:
       - ./cdv-api:/app
     depends_on:
