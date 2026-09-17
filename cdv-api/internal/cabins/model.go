@@ -13,14 +13,14 @@ type Cabin struct {
 }
 
 type CreateCabinRequest struct {
-	Nombre      string `json:"nombre"`
-	Direccion  string  `json:"direccion"`
-	Precio     float64 `json:"precio"`
-	Descripcion string `json:"descripcion,omitempty"`
-	Capacidad  int     `json:"capacidad"`
-	Reglas     string  `json:"reglas,omitempty"`
-	IDAnfitrion int    `json:"id_anfitrion"`
-	IDComision *int    `json:"id_comision,omitempty"`
+	Nombre      string  `json:"nombre"`
+	Direccion   string  `json:"direccion"`
+	Precio      float64 `json:"precio"`
+	Descripcion string  `json:"descripcion,omitempty"`
+	Capacidad   int     `json:"capacidad"`
+	Reglas      string  `json:"reglas,omitempty"`
+	IDAnfitrion int     `json:"id_anfitrion"`
+	IDComision  *int    `json:"id_comision,omitempty"`
 }
 
 type CreateCabinResponse struct {
@@ -28,8 +28,22 @@ type CreateCabinResponse struct {
 	CabinID int    `json:"cabin_id,omitempty"`
 }
 
+type DeleteCabinResponse struct {
+	Message      string `json:"mensaje"`
+	RowsAffected int    `json:"rows_affected,omitempty"`
+}
+
 type GetCabinByIDRequest struct {
 	ID int `json:"id"`
+}
+
+type UpdateCabinRequest struct {
+	Name        string  `json:"name"`
+	Address     string  `json:"address"`
+	Price       float64 `json:"price"`
+	Description string  `json:"description,omitempty"`
+	Capacity    int     `json:"capacity"`
+	Rules       string  `json:"rules,omitempty"`
 }
 
 type GetCabinsByUserRequest struct {
@@ -82,13 +96,13 @@ type ErrorResponse struct {
 }
 
 type GetCabinsByCapacityRequest struct {
-    MinCapacity int `json:"min_capacity"`
-    MaxCapacity int `json:"max_capacity"`
+	MinCapacity int `json:"min_capacity"`
+	MaxCapacity int `json:"max_capacity"`
 }
 
 type GetCabinsByPriceRangeRequest struct {
-    MinPrice float64 `json:"min_price"`
-    MaxPrice float64 `json:"max_price"`
+	MinPrice float64 `json:"min_price"`
+	MaxPrice float64 `json:"max_price"`
 }
 
 func (c Cabin) ToResponse() CabinResponse {

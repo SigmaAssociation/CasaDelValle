@@ -39,6 +39,7 @@ func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 
 	err := scan(
 		&c.ID,
+		&c.Name,
 		&c.Address,
 		&c.Price,
 		&c.Description,
@@ -55,14 +56,15 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	var id int
 
 	query := `
-		INSERT INTO cabanas (direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO cabanas (nombre, direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING id
 	`
 
 	err := r.pool.QueryRow(
 		ctx,
 		query,
+		req.Nombre,
 		req.Direccion,
 		req.Precio,
 		req.Descripcion,
@@ -81,6 +83,23 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	}
 
 	return id, nil
+}
+
+func (r *Repository) DeleteCabin(ctx context.Context, id int) (int, error) {
+	result, err := r.pool.Exec(
+		ctx,
+		`DELETE FROM cabanas WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return 0, errors.New("La cabaña no se puede eliminar porque tiene reservaciones asociadas")
+		}
+		return 0, err
+	}
+
+	return int(result.RowsAffected()), nil
 }
 
 func (r *Repository) GetAll(ctx context.Context) ([]Cabin, error) {
@@ -148,6 +167,36 @@ func (r *Repository) GetByHostID(ctx context.Context, hostID int) ([]Cabin, erro
 	}
 
 	return cabins, nil
+}
+
+func (r *Repository) Update(ctx context.Context, id int, req UpdateCabinRequest) error {
+	query := `
+		UPDATE cabanas
+		SET nombre = $1, direccion = $2, precio = $3, descripcion = $4,
+		    capacidad = $5, reglas = $6
+		WHERE id = $7
+	`
+
+	tag, err := r.pool.Exec(
+		ctx,
+		query,
+		req.Name,
+		req.Address,
+		req.Price,
+		req.Description,
+		req.Capacity,
+		req.Rules,
+		id,
+	)
+	if err != nil {
+		return err
+	}
+
+	if tag.RowsAffected() == 0 {
+		return errors.New("Cabaña no encontrada")
+	}
+
+	return nil
 }
 
 func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, error) {

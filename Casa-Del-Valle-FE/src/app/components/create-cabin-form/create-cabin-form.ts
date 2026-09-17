@@ -32,6 +32,12 @@ export class CreateCabinForm implements OnInit {
 
   ngOnInit(): void {
     this.cabinForm = this.formBuilder.group({
+      nombre: ['', [
+        Validators.required,
+        Validators.minLength(3),
+        Validators.maxLength(150),
+        Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s\-\.\'#]+$/)
+      ]],
       direccion: ['', [
         Validators.required,
         Validators.minLength(5),

@@ -23,38 +23,115 @@ func (s *Service) GetCabins(ctx context.Context) ([]Cabin, error) {
 	return s.repository.GetAll(ctx)
 }
 
+func validateCabinName(name string) error {
+	name = strings.TrimSpace(name)
+	if len(name) < 3 || len(name) > 150 {
+		return errors.New("Nombre inválido: debe tener entre 3 y 150 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s\-\.\'#]+$`, name); !matched {
+		return errors.New("Nombre inválido: contiene caracteres no permitidos")
+	}
+	return nil
+}
+
+func validateCabinAddress(address string) error {
+	address = strings.TrimSpace(address)
+	if len(address) < 5 || len(address) > 255 {
+		return errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+	}
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, address); !matched {
+		return errors.New("Dirección inválida: contiene caracteres no permitidos")
+	}
+	return nil
+}
+
+func validateCabinCommonFields(price float64, description string, capacity int, rules string) error {
+	if price <= 0 {
+		return errors.New("Precio inválido: debe ser mayor a 0")
+	}
+
+	if len(strings.TrimSpace(description)) > 500 {
+		return errors.New("Descripción inválida: debe tener un máximo de 500 caracteres")
+	}
+
+	if capacity < 1 || capacity > 50 {
+		return errors.New("Capacidad inválida: debe estar entre 1 y 50")
+	}
+
+	if len(strings.TrimSpace(rules)) > 500 {
+		return errors.New("Reglas inválidas: deben tener un máximo de 500 caracteres")
+	}
+
+	return nil
+}
+
 func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int, error) {
-	req.Direccion = strings.TrimSpace(req.Direccion)
-	if len(req.Direccion) < 5 || len(req.Direccion) > 255 {
-		return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+	if err := validateCabinName(req.Nombre); err != nil {
+		return 0, err
 	}
-	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Direccion); !matched {
-		return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
+	if err := validateCabinAddress(req.Direccion); err != nil {
+		return 0, err
 	}
-
-	if req.Precio <= 0 {
-		return 0, errors.New("Precio inválido: debe ser mayor a 0")
-	}
-
-	req.Descripcion = strings.TrimSpace(req.Descripcion)
-	if len(req.Descripcion) > 500 {
-		return 0, errors.New("Descripción inválida: debe tener un máximo de 500 caracteres")
-	}
-
-	if req.Capacidad < 1 || req.Capacidad > 50 {
-		return 0, errors.New("Capacidad inválida: debe estar entre 1 y 50")
-	}
-
-	req.Reglas = strings.TrimSpace(req.Reglas)
-	if len(req.Reglas) > 500 {
-		return 0, errors.New("Reglas inválidas: deben tener un máximo de 500 caracteres")
+	if err := validateCabinCommonFields(req.Precio, req.Descripcion, req.Capacidad, req.Reglas); err != nil {
+		return 0, err
 	}
 
 	if req.IDAnfitrion <= 0 {
 		return 0, errors.New("Anfitrión inválido: es obligatorio indicar el anfitrión de la cabaña")
 	}
 
+	req.Nombre = strings.TrimSpace(req.Nombre)
+	req.Direccion = strings.TrimSpace(req.Direccion)
+	req.Descripcion = strings.TrimSpace(req.Descripcion)
+	req.Reglas = strings.TrimSpace(req.Reglas)
+
 	return s.repository.CreateCabin(ctx, req)
+}
+
+func (s *Service) UpdateCabin(ctx context.Context, id int, req UpdateCabinRequest) error {
+	if id <= 0 {
+		return errors.New("ID de cabaña inválido")
+	}
+	if err := validateCabinName(req.Name); err != nil {
+		return err
+	}
+	if err := validateCabinAddress(req.Address); err != nil {
+		return err
+	}
+	if err := validateCabinCommonFields(req.Price, req.Description, req.Capacity, req.Rules); err != nil {
+		return err
+	}
+
+	req.Name = strings.TrimSpace(req.Name)
+	req.Address = strings.TrimSpace(req.Address)
+	req.Description = strings.TrimSpace(req.Description)
+	req.Rules = strings.TrimSpace(req.Rules)
+
+	if err := s.repository.Update(ctx, id, req); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) || err.Error() == "Cabaña no encontrada" {
+			return errors.New("Cabaña no encontrada")
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) DeleteCabin(ctx context.Context, id int) (int, error) {
+	if id <= 0 {
+		return 0, errors.New("ID de cabaña inválido")
+	}
+
+	rowsAffected, err := s.repository.DeleteCabin(ctx, id)
+	if err != nil {
+		return 0, err
+	}
+
+	if rowsAffected == 0 {
+		return 0, errors.New("Cabaña no encontrada")
+	}
+
+	return rowsAffected, nil
 }
 
 func (s *Service) GetCabinByID(ctx context.Context, req GetCabinByIDRequest) (Cabin, error) {
