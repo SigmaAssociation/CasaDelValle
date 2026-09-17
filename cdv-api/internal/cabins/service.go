@@ -76,7 +76,7 @@ func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int,
 		return 0, err
 	}
 
-	if req.IDAnfitrion <= 0 {
+	if req.HostID <= 0 {
 		return 0, errors.New("Anfitrión inválido: es obligatorio indicar el anfitrión de la cabaña")
 	}
 

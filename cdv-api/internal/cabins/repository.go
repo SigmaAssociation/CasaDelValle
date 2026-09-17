@@ -64,14 +64,14 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	err := r.pool.QueryRow(
 		ctx,
 		query,
-		req.Nombre,
-		req.Direccion,
-		req.Precio,
-		req.Descripcion,
-		req.Capacidad,
-		req.Reglas,
-		req.IDAnfitrion,
-		req.IDComision,
+		req.Name,
+		req.Address,
+		req.Price,
+		req.Description,
+		req.Capacity,
+		req.Rules,
+		req.HostID,
+		req.CommissionID,
 	).Scan(&id)
 
 	if err != nil {
@@ -186,7 +186,7 @@ func (r *Repository) Update(ctx context.Context, id int, req UpdateCabinRequest)
 		req.Description,
 		req.Capacity,
 		req.Rules,
-		id,
+		req.ID,
 	)
 	if err != nil {
 		return err

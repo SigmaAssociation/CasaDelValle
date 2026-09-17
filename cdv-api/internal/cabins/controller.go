@@ -55,7 +55,19 @@ func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !middleware.AuthorizeSelfOrAdmin(r, uint(req.IDAnfitrion)) {
+	userIDUint, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
+		return
+	}
+
+	if !middleware.IsAdmin(r) {
+		req.HostID = int(userIDUint)
+	} else if req.HostID == 0 {
+		req.HostID = int(userIDUint)
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(req.HostID)) {
 		writeError(w, http.StatusForbidden, "No tiene permisos para registrar esta cabaña")
 		return
 	}

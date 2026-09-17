@@ -19,12 +19,14 @@ export class CabinEditForm implements OnChanges {
   errorMessage = signal<string | null>(null);
   isSubmitting = signal(false);
 
+  isSubmitting: boolean = false;
   private addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$/;
   private nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s\-\.\'#]+$/;
 
   constructor(
     private formBuilder: FormBuilder,
-    private cabinService: CabinService
+    private cabinService: CabinService,
+    private cd: ChangeDetectorRef
   ) {
     this.cabinForm = this.formBuilder.group({
       id: [null],
@@ -41,13 +43,14 @@ export class CabinEditForm implements OnChanges {
         '',
         [
           Validators.required,
+          Validators.minLength(5),
           Validators.maxLength(255),
           Validators.pattern(this.addressRegex)
         ]
       ],
-      price: [null, [Validators.required, Validators.min(0)]],
-      description: [''],
-      capacity: [null, [Validators.required, Validators.min(1)]],
+      price: [null, [Validators.required, Validators.min(0.01)]],
+      description: ['', [Validators.maxLength(500)]],
+      capacity: [null, [Validators.required, Validators.min(1), Validators.max(50)]],
       rules: [''],
     });
   }
