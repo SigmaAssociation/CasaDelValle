@@ -1,4 +1,5 @@
 export interface CabinRequest {
+  nombre: string;
   direccion: string;
   precio: number;
   descripcion: string;

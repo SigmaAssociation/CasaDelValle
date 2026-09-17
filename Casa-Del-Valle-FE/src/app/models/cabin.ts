@@ -1,6 +1,6 @@
 export interface Cabin {
     id: number;
-    name: string;
+    name:string;
     address: string;
     price: number;
     description: string;

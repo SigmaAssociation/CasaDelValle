@@ -2,8 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
@@ -55,18 +57,26 @@ func main() {
 
 	mux.HandleFunc("GET /cdv-api/cabins", cabinController.GetCabins)
 	mux.HandleFunc("POST /cdv-api/cabins", cabinController.CreateCabin)
+	mux.HandleFunc("GET /cdv-api/cabins/search", cabinController.SearchCabins)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
-	mux.HandleFunc("PUT /cdv-api/cabins", cabinController.EditCabin)
+	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
+	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
+
 	// -------------------------
 	// Server
 	// -------------------------
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
 
+	addr := fmt.Sprintf(":%s", port)
 	handler := middleware.CORS(middleware.Auth(mux))
 
-	log.Println("Servidor escuchando en :8080")
+	log.Printf("Servidor escuchando en %s", addr)
 
-	if err := http.ListenAndServe(":8080", handler); err != nil {
+	if err := http.ListenAndServe(addr, handler); err != nil {
 		log.Fatal(err)
 	}
 }
