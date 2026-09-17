@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Cabin } from '../../models/cabin';
 import { CabinService } from '../../services/cabin.service';
@@ -14,29 +14,37 @@ export class CabinEditForm implements OnChanges {
 
   @Input({ required: true })
   cabin!: Cabin;
-
+  
+  @Output() onEditSuccess = new EventEmitter<void>();
   successMessage: string | null = null;
   errorMessage: string | null = null;
 
+  isSubmitting: boolean = false;
   private addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$/;
 
   constructor(
     private formBuilder: FormBuilder,
-    private cabinService: CabinService
+    private cabinService: CabinService,
+    private cd: ChangeDetectorRef
   ) {
     this.cabinForm = this.formBuilder.group({
       id: [null],
+      name: [
+        '', 
+        [Validators.required, Validators.minLength(3), Validators.maxLength(150)]
+      ],
       address: [
         '',
         [
           Validators.required,
+          Validators.minLength(5),
           Validators.maxLength(255),
           Validators.pattern(this.addressRegex)
         ]
       ],
-      price: [null, [Validators.required, Validators.min(0)]],
-      description: [''],
-      capacity: [null, [Validators.required, Validators.min(1)]],
+      price: [null, [Validators.required, Validators.min(0.01)]],
+      description: ['', [Validators.maxLength(500)]],
+      capacity: [null, [Validators.required, Validators.min(1), Validators.max(50)]],
       rules: [''],
     });
   }
@@ -55,14 +63,21 @@ export class CabinEditForm implements OnChanges {
 
     this.successMessage = null;
     this.errorMessage = null;
+    this.isSubmitting = true;
 
     const cabin = this.cabinForm.value as Cabin;
-
     this.cabinService.editCabin(cabin).subscribe({
       next: () => {
+        this.isSubmitting = false;
         this.successMessage = '¡Cabaña actualizada correctamente!';
+        this.onEditSuccess.emit();
+        setTimeout(() => {
+          this.successMessage = null;
+          this.cd.detectChanges();
+        }, 3000);
       },
       error: (err) => {
+        this.isSubmitting = false;
         this.errorMessage = err?.error?.message || err?.error || 'Error al actualizar la cabaña.';
       }
     });

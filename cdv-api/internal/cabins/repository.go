@@ -19,8 +19,8 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 }
 
 const cabinColumns = `
-	id, direccion, precio, COALESCE(descripcion, ''), capacidad,
-	COALESCE(reglas, ''), id_anfitrion, id_comision
+    id, nombre, direccion, precio, COALESCE(descripcion, ''), capacidad,
+    COALESCE(reglas, ''), id_anfitrion, id_comision
 `
 
 func scanCabin(scan func(dest ...any) error) (Cabin, error) {
@@ -28,6 +28,7 @@ func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 
 	err := scan(
 		&c.ID,
+		&c.Name,
 		&c.Address,
 		&c.Price,
 		&c.Description,
@@ -44,21 +45,22 @@ func (r *Repository) CreateCabin(ctx context.Context, req CreateCabinRequest) (i
 	var id int
 
 	query := `
-		INSERT INTO cabanas (direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id
-	`
+        INSERT INTO cabanas (nombre, direccion, precio, descripcion, capacidad, reglas, id_anfitrion, id_comision)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        RETURNING id
+    `
 
 	err := r.pool.QueryRow(
 		ctx,
 		query,
-		req.Direccion,
-		req.Precio,
-		req.Descripcion,
-		req.Capacidad,
-		req.Reglas,
-		req.IDAnfitrion,
-		req.IDComision,
+		req.Name,
+		req.Address,
+		req.Price,
+		req.Description,
+		req.Capacity,
+		req.Rules,
+		req.HostID,
+		req.CommissionID,
 	).Scan(&id)
 
 	if err != nil {
@@ -147,11 +149,12 @@ func (r *Repository) GetHostID(ctx context.Context, cabinID int) (int, error) {
 
 func (r *Repository) Update(ctx context.Context, req UpdateCabinRequest) error {
 	query := `
-		UPDATE cabanas 
-		SET direccion = $1, precio = $2, descripcion = $3, capacidad = $4, reglas = $5
-		WHERE id = $6
-	`
+        UPDATE cabanas 
+        SET nombre = $1, direccion = $2, precio = $3, descripcion = $4, capacidad = $5, reglas = $6
+        WHERE id = $7
+    `
 	cmdTag, err := r.pool.Exec(ctx, query,
+		req.Name,
 		req.Address,
 		req.Price,
 		req.Description,
@@ -165,5 +168,22 @@ func (r *Repository) Update(ctx context.Context, req UpdateCabinRequest) error {
 	if cmdTag.RowsAffected() == 0 {
 		return errors.New("no se encontró la cabaña para actualizar")
 	}
+	return nil
+}
+
+func (r *Repository) Delete(ctx context.Context, id int) error {
+	query := `DELETE FROM cabanas WHERE id = $1`
+	cmdTag, err := r.pool.Exec(ctx, query, id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return errors.New("no se puede eliminar la cabaña porque tiene reservaciones activas")
+		}
+		return err
+	}
+	if cmdTag.RowsAffected() == 0 {
+		return errors.New("no se encontró la cabaña para eliminar")
+	}
+
 	return nil
 }

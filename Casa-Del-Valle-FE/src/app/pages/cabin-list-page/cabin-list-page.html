@@ -12,6 +12,7 @@
       <thead>
         <tr class="border-b border-gray-200 text-gray-500">
           <th class="py-3 px-4 font-medium">ID</th>
+          <th class="py-3 px-4 font-medium">Nombre</th>
           <th class="py-3 px-4 font-medium">Dirección</th>
           <th class="py-3 px-4 font-medium">Precio</th>
           <th class="py-3 px-4 font-medium">Capacidad</th>
@@ -25,6 +26,7 @@
           class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
         >
           <td class="py-3 px-4 text-gray-700">{{ cabinItem.id }}</td>
+          <td class="py-3 px-4 font-medium text-gray-900">{{ cabinItem.name }}</td>
           <td class="py-3 px-4 text-gray-700">{{ cabinItem.address }}</td>
           <td class="py-3 px-4 text-gray-700">Q{{ cabinItem.price.toFixed(2) }}</td>
           <td class="py-3 px-4 text-gray-700">{{ cabinItem.capacity }}</td>
@@ -57,6 +59,7 @@
               <!-- Botón eliminar -->
               <button
                 type="button"
+                (click)="onDelete(cabinItem.id, cabinItem.name)"
                 class="p-2 rounded-md text-red-500 hover:bg-red-50 transition-colors"
                 title="Eliminar"
               >

@@ -49,4 +49,11 @@ export class CabinService {
             `${this.restConstants.getApiURL()}cabins/${id}`
         );
     }
+
+    // DELETE /cdv-api/cabins/{id} — eliminar cabaña.
+    public deleteCabin(id: number): Observable<void> {
+        return this.httpClient.delete<void>(
+            `${this.restConstants.getApiURL()}cabins/${id}`
+        );
+    }
 }

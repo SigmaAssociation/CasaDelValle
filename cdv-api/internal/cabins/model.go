@@ -2,6 +2,7 @@ package cabins
 
 type Cabin struct {
 	ID           int     `json:"id"`
+	Name         string  `json:"name"`
 	Address      string  `json:"address"`
 	Price        float64 `json:"price"`
 	Description  string  `json:"description"`
@@ -12,13 +13,14 @@ type Cabin struct {
 }
 
 type CreateCabinRequest struct {
-	Direccion   string  `json:"direccion"`
-	Precio      float64 `json:"precio"`
-	Descripcion string  `json:"descripcion,omitempty"`
-	Capacidad   int     `json:"capacidad"`
-	Reglas      string  `json:"reglas,omitempty"`
-	IDAnfitrion int     `json:"id_anfitrion"`
-	IDComision  *int    `json:"id_comision,omitempty"`
+	Name         string  `json:"name"`
+	Address      string  `json:"address"`
+	Price        float64 `json:"price"`
+	Description  string  `json:"description,omitempty"`
+	Capacity     int     `json:"capacity"`
+	Rules        string  `json:"rules,omitempty"`
+	HostID       int     `json:"host_id"`
+	CommissionID *int    `json:"commission_id,omitempty"`
 }
 
 type CreateCabinResponse struct {
@@ -36,6 +38,7 @@ type GetCabinsByUserRequest struct {
 
 type UpdateCabinRequest struct {
 	ID          int     `json:"id"`
+	Name        string  `json:"name"`
 	Address     string  `json:"address"`
 	Price       float64 `json:"price"`
 	Description string  `json:"description"`
@@ -45,6 +48,7 @@ type UpdateCabinRequest struct {
 
 type CabinResponse struct {
 	ID           int     `json:"id"`
+	Name         string  `json:"name"`
 	Address      string  `json:"address"`
 	Price        float64 `json:"price"`
 	Description  string  `json:"description"`
@@ -66,6 +70,7 @@ type ErrorResponse struct {
 func (c Cabin) ToResponse() CabinResponse {
 	return CabinResponse{
 		ID:           c.ID,
+		Name:         c.Name,
 		Address:      c.Address,
 		Price:        c.Price,
 		Description:  c.Description,

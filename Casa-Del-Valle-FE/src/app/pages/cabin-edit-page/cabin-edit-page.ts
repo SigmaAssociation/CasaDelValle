@@ -1,5 +1,5 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CabinEditForm } from "../../components/cabin-edit-form/cabin-edit-form";
 import { Cabin } from '../../models/cabin';
 import { CabinService } from '../../services/cabin.service';
@@ -17,7 +17,8 @@ export class CabinEditPage implements OnInit {
   constructor(
     private cabinService: CabinService,
     private route: ActivatedRoute,
-    private cd : ChangeDetectorRef
+    private cd : ChangeDetectorRef,
+    private router: Router
   ) { }
 
   ngOnInit(): void {
@@ -45,5 +46,7 @@ export class CabinEditPage implements OnInit {
         this.cd.detectChanges();
       },
     });
+  }
+  onEditSuccess(): void {
   }
 }

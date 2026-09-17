@@ -19,7 +19,19 @@
   <form [formGroup]="cabinForm" (ngSubmit)="edit()" class="space-y-5">
     <!-- ID (oculto, no editable) -->
     <input type="hidden" formControlName="id" />
-
+    <!-- NOMBRE -->
+     <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Cabaña</label>
+      <input
+        type="text"
+        maxlength="150"
+        formControlName="name"
+        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+      />
+      @if (cabinForm.get('name')?.invalid && cabinForm.get('name')?.touched) {
+        <small class="text-red-500 mt-1">El nombre es requerido (mínimo 3 caracteres).</small>
+      }
+    </div>
     <!-- DIRECCION -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
@@ -30,6 +42,9 @@
         autocomplete="address"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       />
+      @if (cabinForm.get('address')?.invalid && cabinForm.get('address')?.touched) {
+        <small class="text-red-500 text-xs mt-1 block">La dirección es obligatoria y debe ser válida (5 a 255 caracteres).</small>
+      }
     </div>
 
     <!-- PRECIO -->
@@ -42,6 +57,9 @@
         formControlName="price"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       />
+      @if (cabinForm.get('price')?.invalid && cabinForm.get('price')?.touched) {
+        <small class="text-red-500 text-xs mt-1 block">El precio es obligatorio y debe ser mayor a 0.</small>
+      }
     </div>
 
     <!-- DESCRIPCION -->
@@ -52,6 +70,9 @@
         rows="3"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       ></textarea>
+      @if (cabinForm.get('description')?.invalid && cabinForm.get('description')?.touched) {
+        <small class="text-red-500 text-xs mt-1 block">La descripción no puede superar los 500 caracteres.</small>
+      }
     </div>
 
     <!-- CAPACIDAD -->
@@ -63,6 +84,9 @@
         formControlName="capacity"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       />
+      @if (cabinForm.get('capacity')?.invalid && cabinForm.get('capacity')?.touched) {
+        <small class="text-red-500 text-xs mt-1 block">La capacidad debe estar entre 1 y 50.</small>
+      }
     </div>
 
     <!-- REGLAS -->
@@ -73,6 +97,9 @@
         rows="3"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       ></textarea>
+      @if (cabinForm.get('rules')?.invalid && cabinForm.get('rules')?.touched) {
+        <small class="text-red-500 text-xs mt-1 block">Las reglas no pueden superar los 500 caracteres.</small>
+      }
     </div>
 
     <!-- BOTÓN -->
@@ -81,7 +108,11 @@
       [disabled]="cabinForm.invalid"
       class="w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      Editar
+      @if (isSubmitting) {
+        Guardando...
+      } @else {
+        Editar
+      }
     </button>
   </form>
 </div>

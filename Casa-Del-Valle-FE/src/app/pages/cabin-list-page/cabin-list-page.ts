@@ -53,7 +53,7 @@ export class CabinListPage implements OnInit {
       this.loadAll();
       return;
     }
-    
+      
     this.isLoading = true;
     this.errorMessage = null;
     
@@ -70,5 +70,21 @@ export class CabinListPage implements OnInit {
         this.cd.detectChanges();
       },
     });
+  }
+
+  onDelete(id: number, name: string): void {
+    const confirmar = window.confirm(`¿Estás seguro de que deseas eliminar la cabaña "${name}"? Esta acción no se puede deshacer.`);
+    if (confirmar) {
+      this.cabinService.deleteCabin(id).subscribe({
+        next: () => {
+          this.cabins = this.cabins.filter(cabin => cabin.id !== id);
+          this.cd.detectChanges();
+        },
+        error: (err) => {
+          console.error('Error al eliminar la cabaña:', err);
+          alert(err?.error?.message || 'Error al eliminar la cabaña. Verifica que no tenga reservaciones activas.');
+        }
+      });
+    }
   }
 }

@@ -24,33 +24,33 @@ func (s *Service) GetCabins(ctx context.Context) ([]Cabin, error) {
 }
 
 func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int, error) {
-	req.Direccion = strings.TrimSpace(req.Direccion)
-	if len(req.Direccion) < 5 || len(req.Direccion) > 255 {
+	req.Address = strings.TrimSpace(req.Address)
+	if len(req.Address) < 5 || len(req.Address) > 255 {
 		return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
 	}
-	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Direccion); !matched {
+	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Address); !matched {
 		return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
 	}
 
-	if req.Precio <= 0 {
+	if req.Price <= 0 {
 		return 0, errors.New("Precio inválido: debe ser mayor a 0")
 	}
 
-	req.Descripcion = strings.TrimSpace(req.Descripcion)
-	if len(req.Descripcion) > 500 {
+	req.Description = strings.TrimSpace(req.Description)
+	if len(req.Description) > 500 {
 		return 0, errors.New("Descripción inválida: debe tener un máximo de 500 caracteres")
 	}
 
-	if req.Capacidad < 1 || req.Capacidad > 50 {
+	if req.Capacity < 1 || req.Capacity > 50 {
 		return 0, errors.New("Capacidad inválida: debe estar entre 1 y 50")
 	}
 
-	req.Reglas = strings.TrimSpace(req.Reglas)
-	if len(req.Reglas) > 500 {
+	req.Rules = strings.TrimSpace(req.Rules)
+	if len(req.Rules) > 500 {
 		return 0, errors.New("Reglas inválidas: deben tener un máximo de 500 caracteres")
 	}
 
-	if req.IDAnfitrion <= 0 {
+	if req.HostID <= 0 {
 		return 0, errors.New("Anfitrión inválido: es obligatorio indicar el anfitrión de la cabaña")
 	}
 
@@ -83,6 +83,10 @@ func (s *Service) GetCabinsByUser(ctx context.Context, req GetCabinsByUserReques
 }
 
 func (s *Service) UpdateCabin(ctx context.Context, req UpdateCabinRequest, userID int, userRole int) error {
+	req.Name = strings.TrimSpace(req.Name)
+	if len(req.Name) < 3 || len(req.Name) > 150 {
+		return errors.New("Nombre inválido: debe tener entre 3 y 150 caracteres")
+	}
 	req.Address = strings.TrimSpace(req.Address)
 	if len(req.Address) < 5 || len(req.Address) > 255 {
 		return errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
@@ -115,4 +119,18 @@ func (s *Service) UpdateCabin(ctx context.Context, req UpdateCabinRequest, userI
 	}
 
 	return s.repository.Update(ctx, req)
+}
+
+func (s *Service) DeleteCabin(ctx context.Context, id int, userID int, userRole int) error {
+	if userRole != 1 {
+		hostID, err := s.repository.GetHostID(ctx, id)
+		if err != nil {
+			return errors.New("la cabaña especificada no existe")
+		}
+		if hostID != userID {
+			return errors.New("no tienes permisos para eliminar esta cabaña")
+		}
+	}
+
+	return s.repository.Delete(ctx, id)
 }
