@@ -24,12 +24,12 @@ type CreateCabinRequest struct {
 }
 
 type CreateCabinResponse struct {
-	Message string `json:"mensaje"`
+	Message string `json:"message"`
 	CabinID int    `json:"cabin_id,omitempty"`
 }
 
 type DeleteCabinResponse struct {
-	Message      string `json:"mensaje"`
+	Message      string `json:"message"`
 	RowsAffected int    `json:"rows_affected,omitempty"`
 }
 
@@ -48,16 +48,6 @@ type UpdateCabinRequest struct {
 
 type GetCabinsByUserRequest struct {
 	UserID int `json:"user_id"`
-}
-
-type UpdateCabinRequest struct {
-	ID          int     `json:"id"`
-	Name        string  `json:"name"`
-	Address     string  `json:"address"`
-	Price       float64 `json:"price"`
-	Description string  `json:"description"`
-	Capacity    int     `json:"capacity"`
-	Rules       string  `json:"rules"`
 }
 
 type CabinResponse struct {
