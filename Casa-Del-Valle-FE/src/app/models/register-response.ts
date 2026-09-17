@@ -1,5 +1,6 @@
 export interface RegisterResponse {
-  mensaje: string;
+  message?: string;
+  mensaje?: string;
   user_id?: number;
   cabin_id?: number;
 }
