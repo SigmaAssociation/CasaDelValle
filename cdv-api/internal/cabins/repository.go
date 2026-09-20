@@ -186,7 +186,7 @@ func (r *Repository) Update(ctx context.Context, id int, req UpdateCabinRequest)
 		req.Description,
 		req.Capacity,
 		req.Rules,
-		req.ID,
+		id,
 	)
 	if err != nil {
 		return err

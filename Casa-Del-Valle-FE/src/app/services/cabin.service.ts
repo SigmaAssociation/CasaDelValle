@@ -16,17 +16,17 @@ export class CabinService {
 
     constructor(private httpClient: HttpClient) { }
 
-    public editCabin(cabinEdit: Cabin): Observable<{ mensaje: string }> {
+    public editCabin(cabinEdit: Cabin): Observable<{ message: string }> {
         if (!cabinEdit.id || cabinEdit.id <= 0) {
             throw new Error('ID de cabaña inválido para editar');
         }
-        return this.httpClient.put<{ mensaje: string }>(
+        return this.httpClient.put<{ message: string }>(
             `${this.restConstants.getApiURL()}cabins/${cabinEdit.id}`, cabinEdit
         );
     }
 
-    public deleteCabin(id: number): Observable<{ mensaje: string; rows_affected?: number }> {
-        return this.httpClient.delete<{ mensaje: string; rows_affected?: number }>(
+    public deleteCabin(id: number): Observable<{ message: string; rows_affected?: number }> {
+        return this.httpClient.delete<{ message: string; rows_affected?: number }>(
             `${this.restConstants.getApiURL()}cabins/${id}`
         );
     }
@@ -51,13 +51,6 @@ export class CabinService {
 
     public getCabinById(id: number): Observable<Cabin> {
         return this.httpClient.get<CabinResponse>(
-            `${this.restConstants.getApiURL()}cabins/${id}`
-        );
-    }
-
-    // DELETE /cdv-api/cabins/{id} — eliminar cabaña.
-    public deleteCabin(id: number): Observable<void> {
-        return this.httpClient.delete<void>(
             `${this.restConstants.getApiURL()}cabins/${id}`
         );
     }

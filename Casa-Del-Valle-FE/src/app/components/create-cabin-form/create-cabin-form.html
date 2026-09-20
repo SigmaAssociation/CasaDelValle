@@ -8,12 +8,12 @@
       <input
         type="text"
         maxlength="150"
-        formControlName="nombre"
+        formControlName="name"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('nombre')"
+        [class.border-red-500]="isInvalid('name')"
         placeholder="Ej. Cabaña El Mirador"
       />
-      @if (isInvalid('nombre')) {
+      @if (isInvalid('name')) {
         <p class="text-xs text-red-500 mt-1">El nombre es obligatorio (mín. 3 caracteres, máx. 150).</p>
       }
     </div>
@@ -23,12 +23,12 @@
       <input
         type="text"
         maxlength="255"
-        formControlName="direccion"
+        formControlName="address"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('direccion')"
+        [class.border-red-500]="isInvalid('address')"
         placeholder="Ej. Km 20 Ruta a El Baúl, Quetzaltenango"
       />
-      @if (isInvalid('direccion')) {
+      @if (isInvalid('address')) {
         <p class="text-xs text-red-500 mt-1">La dirección es obligatoria.</p>
       }
     </div>
@@ -40,12 +40,12 @@
           type="number"
           min="0"
           step="0.01"
-          formControlName="precio"
+          formControlName="price"
           class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-          [class.border-red-500]="isInvalid('precio')"
+          [class.border-red-500]="isInvalid('price')"
           placeholder="0.00"
         />
-        @if (isInvalid('precio')) {
+        @if (isInvalid('price')) {
           <p class="text-xs text-red-500 mt-1">Ingresa un precio válido.</p>
         }
       </div>
@@ -56,12 +56,12 @@
           type="number"
           min="1"
           max="50"
-          formControlName="capacidad"
+          formControlName="capacity"
           class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-          [class.border-red-500]="isInvalid('capacidad')"
+          [class.border-red-500]="isInvalid('capacity')"
           placeholder="Ej. 4"
         />
-        @if (isInvalid('capacidad')) {
+        @if (isInvalid('capacity')) {
           <p class="text-xs text-red-500 mt-1">La capacidad debe ser mayor a 0.</p>
         }
       </div>
@@ -72,9 +72,9 @@
       <textarea
         rows="4"
         maxlength="500"
-        formControlName="descripcion"
+        formControlName="description"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('descripcion')"
+        [class.border-red-500]="isInvalid('description')"
         placeholder="Describe la cabaña, comodidades y atractivo principal..."
       ></textarea>
     </div>
@@ -84,9 +84,9 @@
       <textarea
         rows="3"
         maxlength="500"
-        formControlName="reglas"
+        formControlName="rules"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-        [class.border-red-500]="isInvalid('reglas')"
+        [class.border-red-500]="isInvalid('rules')"
         placeholder="Ej. No se permiten mascotas, prohibido fumar..."
       ></textarea>
     </div>

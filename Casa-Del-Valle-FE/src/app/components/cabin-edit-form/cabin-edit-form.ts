@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Cabin } from '../../models/cabin';
 import { CabinService } from '../../services/cabin.service';
@@ -15,18 +15,19 @@ export class CabinEditForm implements OnChanges {
   @Input({ required: true })
   cabin!: Cabin;
 
+  @Output()
+  onEditSuccess = new EventEmitter<void>();
+
   successMessage = signal<string | null>(null);
   errorMessage = signal<string | null>(null);
   isSubmitting = signal(false);
 
-  isSubmitting: boolean = false;
   private addressRegex = /^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$/;
   private nameRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s\-\.\'#]+$/;
 
   constructor(
     private formBuilder: FormBuilder,
-    private cabinService: CabinService,
-    private cd: ChangeDetectorRef
+    private cabinService: CabinService
   ) {
     this.cabinForm = this.formBuilder.group({
       id: [null],
@@ -82,6 +83,7 @@ export class CabinEditForm implements OnChanges {
       next: () => {
         this.successMessage.set('¡Cabaña actualizada correctamente!');
         this.isSubmitting.set(false);
+        this.onEditSuccess.emit();
       },
       error: (err) => {
         const backendMessage = err?.error?.message ?? err?.error?.mensaje;
