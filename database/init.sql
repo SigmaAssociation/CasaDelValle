@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- Añadí Cabañas 
 CREATE TABLE IF NOT EXISTS cabanas (
     id SERIAL PRIMARY KEY,
+    nombre VARCHAR(150) NOT NULL,
     direccion VARCHAR(255) NOT NULL,
     precio NUMERIC(10, 2) NOT NULL,
     descripcion TEXT,

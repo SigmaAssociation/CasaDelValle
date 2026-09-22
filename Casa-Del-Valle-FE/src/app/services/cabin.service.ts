@@ -16,9 +16,18 @@ export class CabinService {
 
     constructor(private httpClient: HttpClient) { }
 
-    public editCabin(cabinEdit: Cabin): Observable<void> {
-        return this.httpClient.put<void>(
-            `${this.restConstants.getApiURL()}cabins`, cabinEdit
+    public editCabin(cabinEdit: Cabin): Observable<{ message: string }> {
+        if (!cabinEdit.id || cabinEdit.id <= 0) {
+            throw new Error('ID de cabaña inválido para editar');
+        }
+        return this.httpClient.put<{ message: string }>(
+            `${this.restConstants.getApiURL()}cabins/${cabinEdit.id}`, cabinEdit
+        );
+    }
+
+    public deleteCabin(id: number): Observable<{ message: string; rows_affected?: number }> {
+        return this.httpClient.delete<{ message: string; rows_affected?: number }>(
+            `${this.restConstants.getApiURL()}cabins/${id}`
         );
     }
 
@@ -28,22 +37,18 @@ export class CabinService {
         );
     }
 
-    // GET /cdv-api/cabins — todas las cabañas.
-    // Desenvuelve el struct CabinsListResponse { data, total } del BE.
     public getCabins(): Observable<Cabin[]> {
         return this.httpClient.get<CabinsListResponse | Cabin[]>(
             `${this.restConstants.getApiURL()}cabins`
         ).pipe(map((res) => Array.isArray(res) ? res : res.data));
     }
 
-    // GET /cdv-api/cabins/user/{userId} — cabañas por usuario (anfitrión).
     public getCabinsByUserId(userId: number): Observable<Cabin[]> {
         return this.httpClient.get<CabinsListResponse | Cabin[]>(
             `${this.restConstants.getApiURL()}cabins/user/${userId}`
         ).pipe(map((res) => Array.isArray(res) ? res : res.data));
     }
 
-    // GET /cdv-api/cabins/{id} — cabaña por id.
     public getCabinById(id: number): Observable<Cabin> {
         return this.httpClient.get<CabinResponse>(
             `${this.restConstants.getApiURL()}cabins/${id}`

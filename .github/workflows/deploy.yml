@@ -1,64 +1,33 @@
-name: Build and Push Images
+name: Deploy to VM
 
 on:
   push:
-    branches: [main]
-    tags: ["v*.*.*"]
-
-env:
-  REGISTRY: ghcr.io
-  BACKEND_IMAGE: ${{ github.repository_owner }}/cdv-api
-  FRONTEND_IMAGE: ${{ github.repository_owner }}/casa-del-valle-fe
+    branches:
+      - main
 
 jobs:
-  build-backend:
+  deploy:
+    name: Deploy app to Ubuntu VM
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Login a GHCR
-        uses: docker/login-action@v3
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          ssh-private-key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
 
-      - name: Build y push backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./cdv-api
-          file: ./cdv-api/Dockerfile.prod
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+      - name: Add host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
 
-  build-frontend:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Login a GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build y push frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./Casa-Del-Valle-FE
-          file: ./Casa-Del-Valle-FE/Dockerfile.prod
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+      - name: Deploy on VM
+        env:
+          VM_HOST: ${{ secrets.VM_HOST }}
+          VM_USER: ${{ secrets.VM_USER }}
+          VM_PATH: ${{ secrets.VM_APP_PATH }}
+        run: |
+          ssh "$VM_USER@$VM_HOST" "mkdir -p '$VM_PATH' && cd '$VM_PATH' && git pull origin main && docker compose -f docker-compose.prod.yml down --remove-orphans && docker compose -f docker-compose.prod.yml up -d --build"

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  backend-build:
+    name: Backend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Build Go API
+        run: |
+          cd cdv-api
+          go mod download
+          go build -o /tmp/cdv-api ./cmd/api
+
+  frontend-build:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: Casa-Del-Valle-FE/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd Casa-Del-Valle-FE
+          npm ci
+
+      - name: Build Angular app
+        run: |
+          cd Casa-Del-Valle-FE
+          npm run build -- --configuration production
+
+  compose-check:
+    name: Docker compose validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create env file for compose validation
+        run: cp .env.production.example .env
+
+      - name: Validate compose config
+        run: docker compose -f docker-compose.prod.yml config

@@ -55,7 +55,19 @@ func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !middleware.AuthorizeSelfOrAdmin(r, uint(req.IDAnfitrion)) {
+	userIDUint, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
+		return
+	}
+
+	if !middleware.IsAdmin(r) {
+		req.HostID = int(userIDUint)
+	} else if req.HostID == 0 {
+		req.HostID = int(userIDUint)
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(req.HostID)) {
 		writeError(w, http.StatusForbidden, "No tiene permisos para registrar esta cabaña")
 		return
 	}
@@ -69,6 +81,50 @@ func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, CreateCabinResponse{
 		Message: "Cabaña registrada exitosamente",
 		CabinID: cabinID,
+	})
+}
+
+func (c *Controller) DeleteCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
+	cabin, err := c.service.GetCabinByID(r.Context(), GetCabinByIDRequest{ID: id})
+	if err != nil {
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la cabaña")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(cabin.HostID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para eliminar esta cabaña")
+		return
+	}
+
+	rowsAffected, err := c.service.DeleteCabin(r.Context(), id)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, DeleteCabinResponse{
+		Message:      "Cabaña eliminada exitosamente",
+		RowsAffected: rowsAffected,
 	})
 }
 
@@ -147,39 +203,116 @@ func (c *Controller) GetCabinsByUser(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, ToResponseList(cabins))
 }
 
-// PUT /cdv-api/cabins
-func (c *Controller) EditCabin(w http.ResponseWriter, r *http.Request) {
+/*BUSQUEDA POR FILTROS COMBINADOS*/
+func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	query := r.URL.Query()
+	params := CabinSearchParams{}
+
+	if v := query.Get("host_id"); v != "" {
+		hostID, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "host_id debe ser un número entero válido")
+			return
+		}
+		params.HostID = &hostID
+	}
+
+	if v := query.Get("min_capacity"); v != "" {
+		minCap, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "min_capacity debe ser un número entero válido")
+			return
+		}
+		params.MinCapacity = &minCap
+	}
+
+	if v := query.Get("max_capacity"); v != "" {
+		maxCap, err := strconv.Atoi(v)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "max_capacity debe ser un número entero válido")
+			return
+		}
+		params.MaxCapacity = &maxCap
+	}
+
+	if v := query.Get("min_price"); v != "" {
+		minPrice, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "min_price debe ser un número válido")
+			return
+		}
+		params.MinPrice = &minPrice
+	}
+
+	if v := query.Get("max_price"); v != "" {
+		maxPrice, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "max_price debe ser un número válido")
+			return
+		}
+		params.MaxPrice = &maxPrice
+	}
+
+	result, err := c.service.SearchCabins(r.Context(), params)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (c *Controller) UpdateCabin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
 		return
 	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
 	var req UpdateCabinRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
 		return
 	}
-	userIDUint, ok := middleware.UserIDFromContext(r.Context())
-	if !ok {
-		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
-		return
-	}
-	roleUint, ok := middleware.RoleFromContext(r.Context())
-	if !ok {
-		writeError(w, http.StatusUnauthorized, "Rol no encontrado en el token")
-		return
-	}
-	currentUserID := int(userIDUint)
-	currentUserRole := int(roleUint)
-	err := c.service.UpdateCabin(r.Context(), req, currentUserID, currentUserRole)
+
+	existing, err := c.service.GetCabinByID(r.Context(), GetCabinByIDRequest{ID: id})
 	if err != nil {
-		if err.Error() == "no tienes permisos para editar esta cabaña" {
-			writeError(w, http.StatusForbidden, err.Error())
-		} else if err.Error() == "la cabaña especificada no existe" || err.Error() == "no se encontró la cabaña para actualizar" {
-			writeError(w, http.StatusNotFound, err.Error())
-		} else {
-			writeError(w, http.StatusBadRequest, err.Error())
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
 		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la cabaña")
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(existing.HostID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para editar esta cabaña")
+		return
+	}
+
+	if err := c.service.UpdateCabin(r.Context(), id, req); err != nil {
+		if err.Error() == "Cabaña no encontrada" {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Cabaña actualizada exitosamente"})
 }

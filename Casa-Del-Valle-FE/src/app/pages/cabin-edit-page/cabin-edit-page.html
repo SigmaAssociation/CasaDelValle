@@ -18,7 +18,7 @@
     </a>
   </div>
 
-  <app-cabin-edit-form [cabin]="cabin"></app-cabin-edit-form>
+  <app-cabin-edit-form [cabin]="cabin" (onEditSuccess)="onEditSuccess()"></app-cabin-edit-form>
 } @else if (notFound) {
   <!-- Modal-->
   <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">

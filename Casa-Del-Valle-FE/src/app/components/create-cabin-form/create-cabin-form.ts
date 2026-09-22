@@ -32,24 +32,30 @@ export class CreateCabinForm implements OnInit {
 
   ngOnInit(): void {
     this.cabinForm = this.formBuilder.group({
-      direccion: ['', [
+      name: ['', [
+        Validators.required,
+        Validators.minLength(3),
+        Validators.maxLength(150),
+        Validators.pattern(/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s\-\.\'#]+$/)
+      ]],
+      address: ['', [
         Validators.required,
         Validators.minLength(5),
         Validators.maxLength(255)
       ]],
-      precio: ['', [
+      price: ['', [
         Validators.required,
         Validators.min(0)
       ]],
-      descripcion: ['', [
+      description: ['', [
         Validators.maxLength(500)
       ]],
-      capacidad: ['', [
+      capacity: ['', [
         Validators.required,
         Validators.min(1),
         Validators.max(50)
       ]],
-      reglas: ['', [
+      rules: ['', [
         Validators.maxLength(500)
       ]]
     });
@@ -65,11 +71,11 @@ export class CreateCabinForm implements OnInit {
   create(): void {
     if (this.cabinForm.valid) {
       const newCabin = this.cabinForm.getRawValue() as CabinRequest;
-      newCabin.id_anfitrion = this.fixedHostId ?? 0;
+      newCabin.host_id = this.fixedHostId ?? 0;
 
       this.cabinService.createCabin(newCabin).subscribe({
         next: (response: RegisterResponse) => {
-          console.log(response.mensaje, response.cabin_id);
+          console.log(response.message ?? response.mensaje, response.cabin_id);
           this.isCreated.set(true);
           this.isError.set(false);
         },
@@ -84,8 +90,8 @@ export class CreateCabinForm implements OnInit {
   }
 
   private extractErrorMessage(error: HttpErrorResponse): string {
-    if (error.error && typeof error.error === 'object' && error.error.mensaje) {
-      return error.error.mensaje;
+    if (error.error && typeof error.error === 'object' && (error.error.message ?? error.error.mensaje)) {
+      return error.error.message ?? error.error.mensaje;
     }
 
     if (typeof error.error === 'string' && error.error.trim().length > 0) {
