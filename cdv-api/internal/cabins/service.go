@@ -66,13 +66,13 @@ func validateCabinCommonFields(price float64, description string, capacity int, 
 }
 
 func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int, error) {
-	if err := validateCabinName(req.Nombre); err != nil {
+	if err := validateCabinName(req.Name); err != nil {
 		return 0, err
 	}
-	if err := validateCabinAddress(req.Direccion); err != nil {
+	if err := validateCabinAddress(req.Address); err != nil {
 		return 0, err
 	}
-	if err := validateCabinCommonFields(req.Precio, req.Descripcion, req.Capacidad, req.Reglas); err != nil {
+	if err := validateCabinCommonFields(req.Price, req.Description, req.Capacity, req.Rules); err != nil {
 		return 0, err
 	}
 
@@ -80,10 +80,10 @@ func (s *Service) CreateCabin(ctx context.Context, req CreateCabinRequest) (int,
 		return 0, errors.New("Anfitrión inválido: es obligatorio indicar el anfitrión de la cabaña")
 	}
 
-	req.Nombre = strings.TrimSpace(req.Nombre)
-	req.Direccion = strings.TrimSpace(req.Direccion)
-	req.Descripcion = strings.TrimSpace(req.Descripcion)
-	req.Reglas = strings.TrimSpace(req.Reglas)
+	req.Name = strings.TrimSpace(req.Name)
+	req.Address = strings.TrimSpace(req.Address)
+	req.Description = strings.TrimSpace(req.Description)
+	req.Rules = strings.TrimSpace(req.Rules)
 
 	return s.repository.CreateCabin(ctx, req)
 }

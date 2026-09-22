@@ -314,5 +314,5 @@ func (c *Controller) UpdateCabin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, map[string]string{"mensaje": "Cabaña actualizada exitosamente"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Cabaña actualizada exitosamente"})
 }
