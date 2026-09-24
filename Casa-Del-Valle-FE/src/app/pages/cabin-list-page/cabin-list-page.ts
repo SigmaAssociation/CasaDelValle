@@ -1,12 +1,14 @@
 import { ChangeDetectorRef, Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Cabin } from '../../models/cabin';
+import { CabinCardResponse, CabinSearchParams } from '../../models/cabin-response';
 import { CabinService } from '../../services/cabin.service';
+import { AuthService } from '../../services/auth.service';
 import { RouterLink } from '@angular/router';
 
 @Component({
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, FormsModule],
   selector: 'app-cabin-list-page',
   styleUrl: './cabin-list-page.css',
   templateUrl: './cabin-list-page.html',
@@ -16,19 +18,36 @@ export class CabinListPage implements OnInit, OnChanges {
   @Input() title = 'Cabañas';
   @Input() subtitle = 'Listado de todas las cabañas registradas.';
 
-  cabins: Cabin[] = [];
+  cabins: CabinCardResponse[] = [];
+  totalCabins = 0; 
   isLoading = false;
   errorMessage: string | null = null;
   deletingId: number | null = null;
+  currentUserId: number | null = null; 
+  isAdmin = false;
 
-  constructor(private cabinService: CabinService, private cd: ChangeDetectorRef) { }
+  filters: CabinSearchParams = { 
+    name: '',
+    host_name: null,
+    host_id: null,
+    min_capacity: null,
+    max_capacity: null,
+    min_price: null,
+    max_price: null
+  };
+
+  constructor(private cabinService: CabinService, private authService: AuthService, private cd: ChangeDetectorRef) { }
 
   ngOnInit(): void {
+    this.currentUserId = this.authService.getCurrentUserId();
+    this.isAdmin = this.authService.user()?.role === 1;
     this.load();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['userId'] && !changes['userId'].firstChange) {
+    const userIdChange = changes['userId'];
+    if (userIdChange && userIdChange.currentValue != null
+      && userIdChange.currentValue !== userIdChange.previousValue) {
       this.load();
     }
   }
@@ -41,7 +60,7 @@ export class CabinListPage implements OnInit, OnChanges {
     }
   }
 
-  trackById(_index: number, cabin: Cabin): number {
+  trackById(_index: number, cabin: CabinCardResponse): number {
     return cabin.id;
   }
 
@@ -51,22 +70,7 @@ export class CabinListPage implements OnInit, OnChanges {
   }
 
   loadAll(): void {
-    this.isLoading = true;
-    this.errorMessage = null;
-
-    this.cabinService.getCabins().subscribe({
-      next: (cabins) => {
-        this.cabins = cabins ?? [];
-        this.isLoading = false;
-        this.cd.detectChanges();
-      },
-      error: (err) => {
-        console.error('Error al obtener las cabañas:', err);
-        this.errorMessage = this.resolveListError(err, 'No se pudieron cargar las cabañas.');
-        this.isLoading = false;
-        this.cd.detectChanges();
-      },
-    });
+    this.applyFilters();
   }
 
   loadByUser(userId: number): void {
@@ -75,23 +79,49 @@ export class CabinListPage implements OnInit, OnChanges {
       this.errorMessage = 'ID de usuario inválido.';
       return;
     }
+    this.userId = userId;
+    this.filters.host_id = userId;
+    this.applyFilters();
+  }
 
+  applyFilters(): void {
     this.isLoading = true;
     this.errorMessage = null;
+    const searchParams: CabinSearchParams = {
+      ...this.filters,
+    };
 
-    this.cabinService.getCabinsByUserId(userId).subscribe({
-      next: (cabins) => {
-        this.cabins = cabins ?? [];
+    this.cabinService.searchCabins(searchParams).subscribe({
+      next: (response) => {
+        this.cabins = response.data || [];
+        this.totalCabins = response.total || 0;
         this.isLoading = false;
         this.cd.detectChanges();
       },
       error: (err) => {
-        console.error('Error al obtener las cabañas del usuario:', err);
-        this.errorMessage = this.resolveListError(err, 'No se pudieron cargar las cabañas del usuario.');
+        console.error('Error al buscar cabañas:', err);
+        this.errorMessage = this.resolveListError(err, 'No se pudieron cargar las cabañas.');
         this.isLoading = false;
         this.cd.detectChanges();
-      },
+      }
     });
+  }
+
+  clearFilters(): void {
+    this.filters = { 
+      name: '', 
+      host_name: null,
+      host_id: this.userId ?? null,
+      min_price: null, 
+      max_price: null, 
+      min_capacity: null, 
+      max_capacity: null 
+    };
+    this.applyFilters();
+  }
+
+  canEdit(hostId: number): boolean {
+    return this.isAdmin || hostId === this.currentUserId;
   }
 
   deleteCabin(id: number): void {

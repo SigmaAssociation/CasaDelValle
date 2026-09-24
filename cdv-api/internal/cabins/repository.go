@@ -27,13 +27,14 @@ const cabinColumns = `
 
 const cabinSearchColumns = `
 	c.id, c.nombre, c.direccion, c.precio, c.capacidad,
-	COALESCE(u.nombre, '')
+	COALESCE(u.nombre, ''), c.id_anfitrion
 `
 
 const cabinSearchFrom = `
 	FROM cabanas c
 	JOIN usuarios u ON u.id = c.id_anfitrion
 `
+
 func scanCabin(scan func(dest ...any) error) (Cabin, error) {
 	var c Cabin
 
@@ -209,8 +210,17 @@ func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, err
 		&card.Price,
 		&card.Capacity,
 		&card.HostName,
+		&card.HostID,
 	)
 	return card, err
+}
+
+// escapeLike escapa los comodines de LIKE para búsquedas literales.
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
 }
 
 // SearchCabins retorna cabañas aplicando cualquier combinación de filtros
@@ -228,8 +238,17 @@ func (r *Repository) SearchCabins(ctx context.Context, params CabinSearchParams)
 		conditions = append(conditions, fmt.Sprintf(cond, len(args)))
 	}
 
+	if params.Name != nil && *params.Name != "" {
+		addCondition("c.nombre ILIKE $%d", "%"+*params.Name+"%")
+	}
 	if params.HostID != nil {
 		addCondition("c.id_anfitrion = $%d", *params.HostID)
+	}
+	if params.Name != nil {
+		addCondition(`c.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.Name)+"%")
+	}
+	if params.HostName != nil {
+		addCondition(`u.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.HostName)+"%")
 	}
 	if params.MinCapacity != nil {
 		addCondition("c.capacidad >= $%d", *params.MinCapacity)

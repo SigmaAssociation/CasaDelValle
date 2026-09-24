@@ -213,6 +213,10 @@ func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	params := CabinSearchParams{}
 
+	if v := query.Get("name"); v != "" {
+		params.Name = &v
+	}
+
 	if v := query.Get("host_id"); v != "" {
 		hostID, err := strconv.Atoi(v)
 		if err != nil {
@@ -220,6 +224,14 @@ func (c *Controller) SearchCabins(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		params.HostID = &hostID
+	}
+
+	if v := query.Get("name"); v != "" {
+		params.Name = &v
+	}
+
+	if v := query.Get("host_name"); v != "" {
+		params.HostName = &v
 	}
 
 	if v := query.Get("min_capacity"); v != "" {
