@@ -215,6 +215,14 @@ func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, err
 	return card, err
 }
 
+// escapeLike escapa los comodines de LIKE para búsquedas literales.
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
 // SearchCabins retorna cabañas aplicando cualquier combinación de filtros
 // definidos en params. Un filtro nil se omite del WHERE.
 func (r *Repository) SearchCabins(ctx context.Context, params CabinSearchParams) ([]CabinCardResponse, error) {
@@ -235,6 +243,12 @@ func (r *Repository) SearchCabins(ctx context.Context, params CabinSearchParams)
 	}
 	if params.HostID != nil {
 		addCondition("c.id_anfitrion = $%d", *params.HostID)
+	}
+	if params.Name != nil {
+		addCondition(`c.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.Name)+"%")
+	}
+	if params.HostName != nil {
+		addCondition(`u.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.HostName)+"%")
 	}
 	if params.MinCapacity != nil {
 		addCondition("c.capacidad >= $%d", *params.MinCapacity)

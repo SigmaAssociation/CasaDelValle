@@ -87,6 +87,7 @@ type CabinCardsListResponse struct {
 type CabinSearchParams struct {
 	HostID      *int     `json:"host_id,omitempty"`
 	Name        *string  `json:"name,omitempty"`
+	HostName    *string  `json:"host_name,omitempty"`
 	MinCapacity *int     `json:"min_capacity,omitempty"`
 	MaxCapacity *int     `json:"max_capacity,omitempty"`
 	MinPrice    *float64 `json:"min_price,omitempty"`
