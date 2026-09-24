@@ -45,7 +45,9 @@ export class CabinListPage implements OnInit, OnChanges {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['userId'] && !changes['userId'].firstChange) {
+    const userIdChange = changes['userId'];
+    if (userIdChange && userIdChange.currentValue != null
+      && userIdChange.currentValue !== userIdChange.previousValue) {
       this.load();
     }
   }
@@ -78,10 +80,7 @@ export class CabinListPage implements OnInit, OnChanges {
       return;
     }
     this.userId = userId;
-    const currentUser = this.authService.user();
-    if (currentUser?.name) {
-      this.filters.host_name = currentUser.name;
-    }
+    this.filters.host_id = userId;
     this.applyFilters();
   }
 
@@ -112,7 +111,7 @@ export class CabinListPage implements OnInit, OnChanges {
     this.filters = { 
       name: '', 
       host_name: null,
-      host_id: null,
+      host_id: this.userId ?? null,
       min_price: null, 
       max_price: null, 
       min_capacity: null, 

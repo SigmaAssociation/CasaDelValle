@@ -160,6 +160,12 @@ func (s *Service) GetCabinsByUser(ctx context.Context, req GetCabinsByUserReques
 }
 
 func (s *Service) SearchCabins(ctx context.Context, params CabinSearchParams) (CabinCardsListResponse, error) {
+	if params.Name != nil && strings.TrimSpace(*params.Name) == "" {
+		params.Name = nil
+	}
+	if params.HostName != nil && strings.TrimSpace(*params.HostName) == "" {
+		params.HostName = nil
+	}
 	if params.MinCapacity != nil && *params.MinCapacity < 0 {
 		return CabinCardsListResponse{}, errors.New("la capacidad mínima no puede ser negativa")
 	}
