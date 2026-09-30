@@ -95,15 +95,17 @@ CREATE TABLE IF NOT EXISTS reservaciones (
     fecha_fin DATE NOT NULL,
     id_cabana INT NOT NULL, 
     id_usuario INT NOT NULL,
-    disponible BOOLEAN DEFAULT TRUE,
+    estado VARCHAR(20) NOT NULL DEFAULT 'activa',
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_cancelacion TIMESTAMPTZ,
 
-    CONSTRAINT fk_reservacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
-    
--- Añadí esta fk
-CONSTRAINT fk_reservacion_cabana
+    CONSTRAINT fk_reservacion_usuario
+        FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_reservacion_cabana
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE RESTRICT,
-    
-    CONSTRAINT chk_fechas CHECK (fecha_fin >= fecha_inicio)
+
+    CONSTRAINT chk_fechas CHECK (fecha_fin > fecha_inicio),
+    CONSTRAINT chk_estado CHECK (estado IN ('activa', 'cancelada', 'finalizada'))
 );
 
 CREATE TABLE IF NOT EXISTS pagos (
