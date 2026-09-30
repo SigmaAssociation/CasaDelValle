@@ -10,6 +10,7 @@ import (
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
 	"cdv-api/internal/middleware"
+	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
 )
 
@@ -44,6 +45,10 @@ func main() {
 	cabinService := cabins.NewService(cabinRepository)
 	cabinController := cabins.NewController(cabinService)
 
+	reservationRepository := reservations.NewRepository(pool)
+	reservationService := reservations.NewService(reservationRepository)
+	reservationController := reservations.NewController(reservationService)
+
 	// -------------------------
 	// Router
 	// -------------------------
@@ -61,6 +66,8 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
+
+	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
 
 	// -------------------------
 	// Server
