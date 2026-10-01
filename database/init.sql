@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS imagenes (
     ruta VARCHAR(255) NOT NULL,
     id_usuario INT,
     id_cabana INT,
+    fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     
     CONSTRAINT fk_imagen_usuario 
         FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
@@ -88,6 +89,9 @@ CREATE TABLE IF NOT EXISTS imagenes (
     CONSTRAINT fk_imagen_cabana 
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_imagenes_cabana 
+    ON imagenes (id_cabana, fecha_creacion DESC, id DESC);
 
 CREATE TABLE IF NOT EXISTS reservaciones (
     id SERIAL PRIMARY KEY,
