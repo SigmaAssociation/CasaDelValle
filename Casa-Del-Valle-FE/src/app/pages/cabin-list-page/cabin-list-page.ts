@@ -36,7 +36,11 @@ export class CabinListPage implements OnInit, OnChanges {
     max_price: null
   };
 
-  constructor(private cabinService: CabinService, private authService: AuthService, private cd: ChangeDetectorRef) { }
+  constructor(
+    private cabinService: CabinService,
+    private authService: AuthService,
+    private cd: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
     this.currentUserId = this.authService.getCurrentUserId();
@@ -67,6 +71,14 @@ export class CabinListPage implements OnInit, OnChanges {
   formatPrice(price: number | string | null | undefined): string {
     const value = Number(price);
     return Number.isFinite(value) ? `Q${value.toFixed(2)}` : 'Q—';
+  }
+
+  /** Oculta la miniatura cuando la ruta guardada en la BD no resuelve. */
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.style.visibility = 'hidden';
+    }
   }
 
   loadAll(): void {
