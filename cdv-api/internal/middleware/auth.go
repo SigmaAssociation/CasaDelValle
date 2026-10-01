@@ -82,11 +82,18 @@ func Auth(next http.Handler) http.Handler {
 }
 
 func isPublicRoute(r *http.Request) bool {
+	// Imágenes de cabañas: públicas para que cualquier usuario (incluso sin
+	// sesión iniciada) pueda verlas como referencia visual del catálogo.
+	path := r.URL.Path
+	if strings.HasPrefix(path, "/cdv-api/uploads/") || strings.HasPrefix(path, "/uploads/") {
+		return true
+	}
+
 	if r.Method != http.MethodPost {
 		return false
 	}
 
-	switch r.URL.Path {
+	switch path {
 	case "/cdv-api/login", "/cdv-api/users":
 		return true
 	default:

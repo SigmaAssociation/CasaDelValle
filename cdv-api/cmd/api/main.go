@@ -9,6 +9,7 @@ import (
 
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
+	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/users"
 )
@@ -44,6 +45,10 @@ func main() {
 	cabinService := cabins.NewService(cabinRepository)
 	cabinController := cabins.NewController(cabinService)
 
+	imageRepository := images.NewRepository(pool)
+	imageService := images.NewService(imageRepository)
+	imageController := images.NewController(imageService)
+
 	// -------------------------
 	// Router
 	// -------------------------
@@ -62,6 +67,10 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
 
+	mux.HandleFunc("POST /cdv-api/cabins/images/{cabinId}", imageController.CreateImage)
+	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}", imageController.GetImagesByCabin)
+	mux.HandleFunc("DELETE /cdv-api/images/{id}", imageController.DeleteImage)
+
 	// -------------------------
 	// Server
 	// -------------------------
@@ -71,6 +80,14 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", port)
+
+	// Servir archivos subidos (imágenes de cabañas) de forma pública, para que
+	// cualquier usuario pueda verlas como referencia visual del catálogo.
+	mux.Handle(
+		"/cdv-api/uploads/",
+		http.StripPrefix("/cdv-api/uploads/", http.FileServer(http.Dir("./uploads"))),
+	)
+
 	handler := middleware.CORS(middleware.Auth(mux))
 
 	log.Printf("Servidor escuchando en %s", addr)

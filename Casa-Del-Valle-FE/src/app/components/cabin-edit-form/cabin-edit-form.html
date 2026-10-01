@@ -146,4 +146,51 @@
       }
     </button>
   </form>
+
+  <!-- IMÁGENES -->
+  <div class="mt-10 pt-6 border-t border-gray-100">
+    <h3 class="text-xl font-semibold mb-4">Imágenes</h3>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700 mb-2">Subir imagen (JPEG, PNG, WebP — máx. 5 MB)</label>
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        (change)="onFileSelected($event)"
+        [disabled]="isUploading()"
+        class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-orange file:text-white hover:file:bg-orange-dark"
+      />
+      @if (isUploading()) {
+        <p class="mt-2 text-sm text-orange">Subiendo...</p>
+      }
+      @if (uploadError()) {
+        <p class="mt-2 text-sm text-red-600">{{ uploadError() }}</p>
+      }
+    </div>
+
+    @if (isLoadingImages()) {
+      <p class="text-sm text-gray-500">Cargando imágenes...</p>
+    } @else if (images().length > 0) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+        @for (img of images(); track img.id) {
+          <div class="relative group bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
+            <img [src]="getImageUrl(img.ruta)" alt="Imagen cabaña" class="w-full h-32 object-cover" />
+            <button
+              type="button"
+              (click)="deleteImage(img.id)"
+              [disabled]="isUploading()"
+              class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 bg-red-600 text-white rounded-full hover:bg-red-700 disabled:opacity-50"
+              title="Eliminar"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v12m-6 0h12a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2z" />
+              </svg>
+            </button>
+          </div>
+        }
+      </div>
+    } @else {
+      <p class="text-sm text-gray-500">No hay imágenes subidas.</p>
+    }
+  </div>
 </div>
