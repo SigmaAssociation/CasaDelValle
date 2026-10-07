@@ -2,7 +2,9 @@ package images
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -11,15 +13,30 @@ type Repository struct {
 }
 
 func NewRepository(pool *pgxpool.Pool) *Repository {
-	return &Repository{pool: pool}
+	return &Repository{
+		pool: pool,
+	}
 }
 
-const imageColumns = `id, ruta, id_usuario, id_cabana`
+const imageColumns = `
+	id, ruta, id_usuario, id_cabana, fecha_creacion
+`
+
+// Orden de las imágenes: de la más reciente a la más antigua.
+const imageOrder = ` ORDER BY fecha_creacion DESC, id DESC `
 
 func scanImage(scan func(dest ...any) error) (Image, error) {
-	var img Image
-	err := scan(&img.ID, &img.Ruta, &img.IDUsuario, &img.IDCabana)
-	return img, err
+	var i Image
+
+	err := scan(
+		&i.ID,
+		&i.Path,
+		&i.UserID,
+		&i.CabinID,
+		&i.CreatedAt,
+	)
+
+	return i, err
 }
 
 func (r *Repository) CreateImage(ctx context.Context, img Image) (int, error) {
@@ -29,14 +46,22 @@ func (r *Repository) CreateImage(ctx context.Context, img Image) (int, error) {
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	err := r.pool.QueryRow(ctx, query, img.Ruta, img.IDUsuario, img.IDCabana).Scan(&id)
-	return id, err
+	err := r.pool.QueryRow(ctx, query, img.Path, img.UserID, img.CabinID).Scan(&id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return 0, errors.New("La cabaña especificada no existe")
+		}
+		return 0, err
+	}
+	return id, nil
 }
 
+// GetByCabinID retorna todas las imágenes que pertenecen a una cabaña.
 func (r *Repository) GetByCabinID(ctx context.Context, cabinID int) ([]Image, error) {
 	rows, err := r.pool.Query(
 		ctx,
-		`SELECT `+imageColumns+` FROM imagenes WHERE id_cabana = $1 ORDER BY id`,
+		`SELECT `+imageColumns+` FROM imagenes WHERE id_cabana = $1`+imageOrder,
 		cabinID,
 	)
 	if err != nil {
@@ -44,15 +69,44 @@ func (r *Repository) GetByCabinID(ctx context.Context, cabinID int) ([]Image, er
 	}
 	defer rows.Close()
 
-	var images []Image
+	images := []Image{}
+
 	for rows.Next() {
-		img, err := scanImage(rows.Scan)
+		i, err := scanImage(rows.Scan)
 		if err != nil {
 			return nil, err
 		}
-		images = append(images, img)
+
+		images = append(images, i)
 	}
-	return images, rows.Err()
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return images, nil
+}
+
+// GetMainByCabinID retorna la imagen más reciente de una cabaña.
+func (r *Repository) GetMainByCabinID(ctx context.Context, cabinID int) (Image, error) {
+	row := r.pool.QueryRow(
+		ctx,
+		`SELECT `+imageColumns+` FROM imagenes WHERE id_cabana = $1`+imageOrder+` LIMIT 1`,
+		cabinID,
+	)
+
+	return scanImage(row.Scan)
+}
+
+// GetByID retorna una imagen por su identificador.
+func (r *Repository) GetByID(ctx context.Context, id int) (Image, error) {
+	row := r.pool.QueryRow(
+		ctx,
+		`SELECT `+imageColumns+` FROM imagenes WHERE id = $1`,
+		id,
+	)
+
+	return scanImage(row.Scan)
 }
 
 func (r *Repository) DeleteImage(ctx context.Context, id int) (int, error) {
@@ -61,15 +115,6 @@ func (r *Repository) DeleteImage(ctx context.Context, id int) (int, error) {
 		return 0, err
 	}
 	return int(result.RowsAffected()), nil
-}
-
-func (r *Repository) GetImageByID(ctx context.Context, id int) (Image, error) {
-	row := r.pool.QueryRow(
-		ctx,
-		`SELECT `+imageColumns+` FROM imagenes WHERE id = $1`,
-		id,
-	)
-	return scanImage(row.Scan)
 }
 
 func (r *Repository) GetCabinHostID(ctx context.Context, cabinID int) (int, error) {

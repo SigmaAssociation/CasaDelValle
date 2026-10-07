@@ -10,7 +10,19 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
+
+type Service struct {
+	repository *Repository
+}
+
+func NewService(repository *Repository) *Service {
+	return &Service{
+		repository: repository,
+	}
+}
 
 const (
 	maxFileSize = 5 << 20 // 5 MB
@@ -23,15 +35,12 @@ var allowedMimeTypes = map[string]string{
 	"image/webp": ".webp",
 }
 
-type Service struct {
-	repository *Repository
-}
-
-func NewService(repository *Repository) *Service {
-	return &Service{repository: repository}
-}
-
+// CreateImage valida y guarda el archivo en disco y su ruta en la BD.
 func (s *Service) CreateImage(ctx context.Context, cabinID, userID int, file multipart.File, header *multipart.FileHeader) (int, string, error) {
+	if cabinID <= 0 {
+		return 0, "", errors.New("ID de cabaña inválido")
+	}
+
 	// Validar tamaño
 	if header.Size > maxFileSize {
 		return 0, "", errors.New("La imagen excede el tamaño máximo de 5 MB")
@@ -72,10 +81,12 @@ func (s *Service) CreateImage(ctx context.Context, cabinID, userID int, file mul
 	relPath := filepath.ToSlash(filepath.Join("uploads/cabins", fmt.Sprintf("%d", cabinID), filename))
 
 	// Insertar en BD
+	userIDPtr := &userID
+	cabinIDPtr := &cabinID
 	img := Image{
-		Ruta:      relPath,
-		IDUsuario: userID,
-		IDCabana:  cabinID,
+		Path:    relPath,
+		UserID:  userIDPtr,
+		CabinID: cabinIDPtr,
 	}
 	id, err := s.repository.CreateImage(ctx, img)
 	if err != nil {
@@ -87,20 +98,58 @@ func (s *Service) CreateImage(ctx context.Context, cabinID, userID int, file mul
 	return id, relPath, nil
 }
 
-func (s *Service) GetImagesByCabin(ctx context.Context, cabinID int) ([]Image, error) {
+// GetImagesByCabin retorna todas las imágenes de una cabaña.
+func (s *Service) GetImagesByCabin(ctx context.Context, cabinID int) (ImagesListResponse, error) {
 	if cabinID <= 0 {
-		return nil, errors.New("ID de cabaña inválido")
+		return ImagesListResponse{}, errors.New("ID de cabaña inválido")
 	}
-	return s.repository.GetByCabinID(ctx, cabinID)
+
+	images, err := s.repository.GetByCabinID(ctx, cabinID)
+	if err != nil {
+		return ImagesListResponse{}, err
+	}
+
+	return ToResponseList(images), nil
 }
 
+// GetMainImageByCabin retorna la imagen más reciente de una cabaña.
+func (s *Service) GetMainImageByCabin(ctx context.Context, cabinID int) (Image, error) {
+	if cabinID <= 0 {
+		return Image{}, errors.New("ID de cabaña inválido")
+	}
+
+	image, err := s.repository.GetMainByCabinID(ctx, cabinID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Image{}, errors.New("La cabaña no tiene imágenes registradas")
+		}
+
+		return Image{}, err
+	}
+
+	return image, nil
+}
+
+// GetImageByID retorna una imagen por su identificador.
 func (s *Service) GetImageByID(ctx context.Context, id int) (Image, error) {
 	if id <= 0 {
 		return Image{}, errors.New("ID de imagen inválido")
 	}
-	return s.repository.GetImageByID(ctx, id)
+
+	image, err := s.repository.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return Image{}, errors.New("Imagen no encontrada")
+		}
+
+		return Image{}, err
+	}
+
+	return image, nil
 }
 
+// DeleteImage elimina el registro y también el archivo físico
+// para no dejar archivos huérfanos.
 func (s *Service) DeleteImage(ctx context.Context, img Image) (int, error) {
 	if img.ID <= 0 {
 		return 0, errors.New("ID de imagen inválido")
@@ -115,9 +164,8 @@ func (s *Service) DeleteImage(ctx context.Context, img Image) (int, error) {
 		return 0, errors.New("Imagen no encontrada")
 	}
 
-	// Eliminar también el archivo físico para no dejar archivos huérfanos
-	if img.Ruta != "" {
-		os.Remove(img.Ruta)
+	if img.Path != "" {
+		os.Remove(img.Path)
 	}
 
 	return rows, nil

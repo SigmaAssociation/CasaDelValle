@@ -1,4 +1,4 @@
-<div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100">
   <h2 class="text-3xl mb-2">Editar Cabaña</h2>
   <p class="text-gray-500 text-sm mb-6 font-sans">Actualiza la información de la cabaña.</p>
 
@@ -66,25 +66,47 @@
       }
     </div>
 
-    <!-- PRECIO -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Precio</label>
-      <input
-        type="number"
-        step="0.01"
-        min="0"
-        formControlName="price"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-      />
-      @if (cabinForm.get('price')?.invalid && cabinForm.get('price')?.touched) {
-        <p class="mt-1 text-xs text-red-600">
-          @if (cabinForm.get('price')?.hasError('required')) {
-            El precio es obligatorio.
-          } @else if (cabinForm.get('price')?.hasError('min')) {
-            El precio no puede ser negativo.
-          }
-        </p>
-      }
+    <!-- PRECIO + CAPACIDAD -->
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Precio / noche (Q)</label>
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          formControlName="price"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+        />
+        @if (cabinForm.get('price')?.invalid && cabinForm.get('price')?.touched) {
+          <p class="mt-1 text-xs text-red-600">
+            @if (cabinForm.get('price')?.hasError('required')) {
+              El precio es obligatorio.
+            } @else if (cabinForm.get('price')?.hasError('min')) {
+              El precio no puede ser negativo.
+            }
+          </p>
+        }
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Capacidad</label>
+        <input
+          type="number"
+          min="1"
+          max="50"
+          formControlName="capacity"
+          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
+        />
+        @if (cabinForm.get('capacity')?.invalid && cabinForm.get('capacity')?.touched) {
+          <p class="mt-1 text-xs text-red-600">
+            @if (cabinForm.get('capacity')?.hasError('required')) {
+              La capacidad es obligatoria.
+            } @else if (cabinForm.get('capacity')?.hasError('min')) {
+              Debe ser al menos 1.
+            }
+          </p>
+        }
+      </div>
     </div>
 
     <!-- DESCRIPCION -->
@@ -93,30 +115,12 @@
       <textarea
         formControlName="description"
         rows="3"
+        maxlength="500"
+        placeholder="Describe la cabaña, sus comodidades y lo que la hace especial…"
         class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
       ></textarea>
       @if (cabinForm.get('description')?.invalid && cabinForm.get('description')?.touched) {
         <small class="text-red-500 text-xs mt-1 block">La descripción no puede superar los 500 caracteres.</small>
-      }
-    </div>
-
-    <!-- CAPACIDAD -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Capacidad</label>
-      <input
-        type="number"
-        min="1"
-        formControlName="capacity"
-        class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-      />
-      @if (cabinForm.get('capacity')?.invalid && cabinForm.get('capacity')?.touched) {
-        <p class="mt-1 text-xs text-red-600">
-          @if (cabinForm.get('capacity')?.hasError('required')) {
-            La capacidad es obligatoria.
-          } @else if (cabinForm.get('capacity')?.hasError('min')) {
-            Debe ser al menos 1.
-          }
-        </p>
       }
     </div>
 
@@ -149,32 +153,48 @@
 
   <!-- IMÁGENES -->
   <div class="mt-10 pt-6 border-t border-gray-100">
-    <h3 class="text-xl font-semibold mb-4">Imágenes</h3>
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="text-xl font-semibold">Imágenes</h3>
+      @if (images().length > 0) {
+        <span class="text-xs font-medium text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+          {{ images().length }} {{ images().length === 1 ? 'imagen' : 'imágenes' }}
+        </span>
+      }
+    </div>
+    <p class="text-sm text-gray-500 mb-4">La imagen más reciente se muestra como principal en el listado.</p>
 
-    <div class="mb-4">
-      <label class="block text-sm font-medium text-gray-700 mb-2">Subir imagen (JPEG, PNG, WebP — máx. 5 MB)</label>
+    <label class="block border-2 border-dashed border-gray-300 rounded-lg p-5 text-center cursor-pointer hover:border-orange hover:bg-orange/5 transition mb-2">
       <input
         type="file"
         accept="image/jpeg,image/png,image/webp"
         (change)="onFileSelected($event)"
         [disabled]="isUploading()"
-        class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-orange file:text-white hover:file:bg-orange-dark"
+        class="hidden"
       />
-      @if (isUploading()) {
-        <p class="mt-2 text-sm text-orange">Subiendo...</p>
-      }
-      @if (uploadError()) {
-        <p class="mt-2 text-sm text-red-600">{{ uploadError() }}</p>
-      }
-    </div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 mx-auto text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+      </svg>
+      <span class="text-sm font-medium text-gray-700">
+        {{ isUploading() ? 'Subiendo…' : 'Haz clic para subir una imagen' }}
+      </span>
+      <span class="block text-xs text-gray-400 mt-1">JPEG, PNG o WebP — máx. 5 MB</span>
+    </label>
+    @if (uploadError()) {
+      <p class="mt-2 text-sm text-red-600">{{ uploadError() }}</p>
+    }
 
     @if (isLoadingImages()) {
       <p class="text-sm text-gray-500">Cargando imágenes...</p>
     } @else if (images().length > 0) {
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        @for (img of images(); track img.id) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        @for (img of images(); track img.id; let first = $first) {
           <div class="relative group bg-gray-50 rounded-lg overflow-hidden border border-gray-100">
-            <img [src]="getImageUrl(img.ruta)" alt="Imagen cabaña" class="w-full h-32 object-cover" />
+            <img [src]="getImageUrl(img.path)" alt="Imagen cabaña" class="w-full h-32 object-cover" loading="lazy" />
+            @if (first) {
+              <span class="absolute bottom-2 left-2 bg-green text-white text-[11px] font-semibold px-2 py-0.5 rounded-full">
+                Principal
+              </span>
+            }
             <button
               type="button"
               (click)="deleteImage(img.id)"

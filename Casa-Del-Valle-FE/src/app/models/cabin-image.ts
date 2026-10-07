@@ -1,22 +1,23 @@
 export interface CabinImage {
-  id: number;
-  ruta: string;
-  id_usuario: number;
-  id_cabana: number;
+    id: number;
+    path: string;
+    user_id?: number | null;
+    cabin_id?: number | null;
+    created_at: string;
+}
+
+export interface CabinImagesListResponse {
+    data: CabinImage[];
+    total: number;
 }
 
 export interface CreateImageResponse {
-  mensaje: string;
-  image_id: number;
-  ruta: string;
-}
-
-export interface ImagesListResponse {
-  data: CabinImage[];
-  total: number;
+    message: string;
+    image_id?: number;
+    path?: string;
 }
 
 export interface DeleteImageResponse {
-  mensaje: string;
-  rows_affected: number;
+    message: string;
+    rows_affected?: number;
 }

@@ -132,8 +132,8 @@ export class CabinEditForm implements OnChanges {
     });
   }
 
-  getImageUrl(ruta: string): string {
-    return `${this.cabinService.restConstants.getApiURL()}${ruta}`;
+  getImageUrl(path: string): string {
+    return `${this.cabinService.restConstants.getApiURL()}${path}`;
   }
 
   edit(): void {

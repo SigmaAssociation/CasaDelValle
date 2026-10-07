@@ -7,7 +7,7 @@ import { Cabin } from "../models/cabin";
 import { CabinResponse, CabinsListResponse, CabinCardResponse, CabinCardsListResponse, CabinSearchParams } from "../models/cabin-response";
 import { CabinRequest } from "../models/create-cabin";
 import { RegisterResponse } from "../models/register-response";
-import { CabinImage, CreateImageResponse, ImagesListResponse, DeleteImageResponse } from "../models/cabin-image";
+import { CabinImage, CreateImageResponse, CabinImagesListResponse, DeleteImageResponse } from "../models/cabin-image";
 
 @Injectable({
     providedIn: 'root'
@@ -82,7 +82,7 @@ export class CabinService {
     }
 
     public getImagesByCabin(cabinId: number): Observable<CabinImage[]> {
-        return this.httpClient.get<ImagesListResponse | CabinImage[]>(
+        return this.httpClient.get<CabinImagesListResponse | CabinImage[]>(
             `${this.restConstants.getApiURL()}cabins/images/${cabinId}`
         ).pipe(map((res) => Array.isArray(res) ? res : res.data));
     }

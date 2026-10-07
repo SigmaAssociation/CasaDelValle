@@ -25,6 +25,7 @@ export class CabinListPage implements OnInit, OnChanges {
   deletingId: number | null = null;
   currentUserId: number | null = null; 
   isAdmin = false;
+  filtersVisible = false;
 
   filters: CabinSearchParams = { 
     name: '',
@@ -36,7 +37,11 @@ export class CabinListPage implements OnInit, OnChanges {
     max_price: null
   };
 
-  constructor(private cabinService: CabinService, private authService: AuthService, private cd: ChangeDetectorRef) { }
+  constructor(
+    private cabinService: CabinService,
+    private authService: AuthService,
+    private cd: ChangeDetectorRef
+  ) { }
 
   ngOnInit(): void {
     this.currentUserId = this.authService.getCurrentUserId();
@@ -67,6 +72,25 @@ export class CabinListPage implements OnInit, OnChanges {
   formatPrice(price: number | string | null | undefined): string {
     const value = Number(price);
     return Number.isFinite(value) ? `Q${value.toFixed(2)}` : 'Q—';
+  }
+
+  /** Resuelve la ruta guardada en BD a una URL servida por el backend. */
+  resolveImageUrl(path: string | null | undefined): string | null {
+    if (!path) {
+      return null;
+    }
+    if (/^https?:\/\//.test(path) || path.startsWith('/')) {
+      return path;
+    }
+    return `${this.cabinService.restConstants.getApiURL()}${path}`;
+  }
+
+  /** Oculta la miniatura cuando la ruta guardada en la BD no resuelve. */
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.style.visibility = 'hidden';
+    }
   }
 
   loadAll(): void {

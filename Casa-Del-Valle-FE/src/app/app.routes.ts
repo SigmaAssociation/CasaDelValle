@@ -11,6 +11,7 @@ import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
 import { BackendGuidePage } from './pages/backend-guide-page/backend-guide-page';
 import { GuidePage } from './pages/guide-page/guide-page';
 import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
+import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
 
 export const routes: Routes = [
@@ -37,6 +38,11 @@ export const routes: Routes = [
     {
         path: '',
         component: StartPage,
+    },
+    {
+        path: 'cabins/:id',
+        component: CabinDetailPage,
+        canActivate: [authGuard],
     },
     {
         path: 'cabins/:id/edit',

@@ -27,12 +27,19 @@ const cabinColumns = `
 
 const cabinSearchColumns = `
 	c.id, c.nombre, c.direccion, c.precio, c.capacidad,
-	COALESCE(u.nombre, ''), c.id_anfitrion
+	COALESCE(u.nombre, ''), c.id_anfitrion, main_image.ruta
 `
 
 const cabinSearchFrom = `
 	FROM cabanas c
 	JOIN usuarios u ON u.id = c.id_anfitrion
+	LEFT JOIN LATERAL (
+		SELECT i.ruta
+		FROM imagenes i
+		WHERE i.id_cabana = c.id
+		ORDER BY i.fecha_creacion DESC, i.id DESC
+		LIMIT 1
+	) main_image ON TRUE
 `
 
 func scanCabin(scan func(dest ...any) error) (Cabin, error) {
@@ -211,6 +218,7 @@ func scanCabinSearchResult(scan func(dest ...any) error) (CabinCardResponse, err
 		&card.Capacity,
 		&card.HostName,
 		&card.HostID,
+		&card.ImageURL,
 	)
 	return card, err
 }
@@ -239,13 +247,10 @@ func (r *Repository) SearchCabins(ctx context.Context, params CabinSearchParams)
 	}
 
 	if params.Name != nil && *params.Name != "" {
-		addCondition("c.nombre ILIKE $%d", "%"+*params.Name+"%")
+		addCondition(`c.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.Name)+"%")
 	}
 	if params.HostID != nil {
 		addCondition("c.id_anfitrion = $%d", *params.HostID)
-	}
-	if params.Name != nil {
-		addCondition(`c.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.Name)+"%")
 	}
 	if params.HostName != nil {
 		addCondition(`u.nombre ILIKE $%d ESCAPE '\'`, "%"+escapeLike(*params.HostName)+"%")
