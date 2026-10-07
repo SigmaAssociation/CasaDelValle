@@ -68,7 +68,7 @@ func main() {
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
 
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
-
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	// -------------------------
 	// Server
 	// -------------------------
