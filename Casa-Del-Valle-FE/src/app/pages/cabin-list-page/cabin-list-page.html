@@ -116,6 +116,7 @@
       <thead>
         <tr class="border-b border-gray-200 text-gray-500">
           <th class="py-3 px-4 font-medium">ID</th>
+          <th class="py-3 px-4 font-medium">Imagen</th>
           <th class="py-3 px-4 font-medium">Nombre</th>
           <th class="py-3 px-4 font-medium">Dirección</th>
           <th class="py-3 px-4 font-medium">Precio</th>
@@ -128,6 +129,19 @@
         @for (cabinItem of cabins; track cabinItem.id) {
           <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
             <td class="py-3 px-4 text-gray-700">{{ cabinItem.id }}</td>
+            <td class="py-3 px-4">
+              @if (cabinItem.image_url; as imageUrl) {
+                <img
+                  [src]="imageUrl"
+                  [alt]="'Imagen principal de ' + cabinItem.name"
+                  class="w-20 h-14 object-cover rounded-md border border-gray-200 bg-gray-50"
+                  loading="lazy"
+                  (error)="onImageError($event)"
+                />
+              } @else {
+                <span class="text-xs text-gray-400 italic">Sin imagen</span>
+              }
+            </td>
             <td class="py-3 px-4 text-gray-700">{{ cabinItem.name }}</td>
             <td class="py-3 px-4 text-gray-700">{{ cabinItem.address }}</td>
             <td class="py-3 px-4 text-gray-700">{{ formatPrice(cabinItem.price) }}</td>
@@ -188,7 +202,7 @@
           </tr>
         } @empty {
           <tr>
-            <td colspan="7" class="py-8 px-4 text-center text-gray-400">
+            <td colspan="8" class="py-8 px-4 text-center text-gray-400">
               No hay cabañas registradas todavía.
             </td>
           </tr>
