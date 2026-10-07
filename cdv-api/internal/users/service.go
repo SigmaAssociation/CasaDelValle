@@ -11,6 +11,8 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
+
+	"cdv-api/internal/middleware"
 )
 
 type Service struct {
@@ -57,6 +59,21 @@ func (s *Service) RegisterUser(ctx context.Context, req RegisterRequest) (int, e
 	if hasSpecial := regexp.MustCompile(`[!@#~$%^&*()+|_.,<>?/\\-]`).MatchString(req.Password); !hasSpecial {
 		return 0, errors.New("Contraseña inválida: debe contener al menos un carácter especial")
 	}
+	if req.IDRole == 0 {
+		req.IDRole = middleware.RoleGuest
+	}
+	if req.IDRole != middleware.RoleGuest && req.IDRole != middleware.RoleHost {
+		return 0, errors.New("Rol inválido: debe ser huésped o anfitrión")
+	}
+	req.Address = strings.TrimSpace(req.Address)
+	if req.Address != "" {
+		if len(req.Address) < 5 || len(req.Address) > 255 {
+			return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+		}
+		if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Address); !matched {
+			return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
+		}
+	}
 	hashBytes, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost) // Hasheo de contraseña
 	if err != nil {
 		return 0, errors.New("Error al procesar la contraseña")
@@ -90,13 +107,15 @@ func (s *Service) UpdateUser(ctx context.Context, req UserUpdate) (int, error) {
 	}
 
 	req.Address = strings.TrimSpace(req.Address)
-	if len(req.Address) < 5 || len(req.Address) > 255 {
-		return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+	if req.Address != "" {
+		if len(req.Address) < 5 || len(req.Address) > 255 {
+			return 0, errors.New("Dirección inválida: debe tener entre 5 y 255 caracteres")
+		}
+		if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Address); !matched {
+			return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
+		}
 	}
-	if matched, _ := regexp.MatchString(`^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s,.\-#]+$`, req.Address); !matched {
-		return 0, errors.New("Dirección inválida: contiene caracteres no permitidos")
-	}
-	
+
 	rowsAffected, err := s.repository.UpdateUser(ctx, req)
 	if err != nil {
 		return 0, err
@@ -159,8 +178,7 @@ func GenerateToken(
 	return token.SignedString([]byte(secret))
 }
 
-func (s *Service) GetUserByID(ctx context.Context, id int) (User, error) {
-	// Pendiente de verificar si el usuario tiene permisos para acceder a la información del usuario con el ID proporcionado.
+func (s *Service) GetUserByID(ctx context.Context, id int) (User, error) {	// Pendiente de verificar si el usuario tiene permisos para acceder a la información del usuario con el ID proporcionado.
 	// Esto podría implicar verificar el rol del usuario autenticado y compararlo con el ID del usuario solicitado.
 	// Si el usuario no tiene permisos, se debería retornar un error de autorización.
 	user, err := s.repository.GetUserByID(ctx, id)
@@ -171,4 +189,38 @@ func (s *Service) GetUserByID(ctx context.Context, id int) (User, error) {
 		return User{}, err
 	}
 	return user, nil
+}
+
+// UpgradeToHost convierte un huésped en anfitrión. Es de una sola vía:
+// no se permite volver a huésped ni cambiar el rol de un administrador.
+func (s *Service) UpgradeToHost(ctx context.Context, id int) (UserAuth, error) {
+	user, err := s.repository.GetUserByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return UserAuth{}, errors.New("Usuario no encontrado")
+		}
+		return UserAuth{}, err
+	}
+
+	if user.IDRole == middleware.RoleHost {
+		return UserAuth{}, errors.New("El usuario ya es anfitrión")
+	}
+	if user.IDRole != middleware.RoleGuest {
+		return UserAuth{}, errors.New("El cambio de rol no está permitido para esta cuenta")
+	}
+
+	rowsAffected, err := s.repository.UpdateRole(ctx, id, middleware.RoleHost)
+	if err != nil {
+		return UserAuth{}, err
+	}
+	if rowsAffected == 0 {
+		return UserAuth{}, errors.New("Usuario no encontrado")
+	}
+
+	return UserAuth{
+		ID:     user.ID,
+		Email:  user.Email,
+		IDRole: middleware.RoleHost,
+		Name:   user.Name,
+	}, nil
 }

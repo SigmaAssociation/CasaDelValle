@@ -49,8 +49,6 @@ export class EditUserForm implements OnInit {
         Validators.pattern(this.phoneRegex)
       ]],
       address: ['', [
-        Validators.required,
-        Validators.minLength(5),
         Validators.maxLength(255),
         Validators.pattern(this.addressRegex)
       ]],
