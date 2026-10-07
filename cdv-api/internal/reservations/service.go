@@ -81,3 +81,50 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 
 	return s.repository.CreateReservation(ctx, req)
 }
+
+const cancellationTimezone = "America/Guatemala"
+
+func cancellationLocation() *time.Location {
+	loc, err := time.LoadLocation(cancellationTimezone)
+	if err != nil {
+		return time.FixedZone("GT", -6*60*60)
+	}
+	return loc
+}
+
+func (s *Service) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
+	return s.repository.GetReservationByID(ctx, id)
+}
+
+func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDetail, error) {
+	reservation, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if reservation.Status != StatusActive {
+		return nil, ErrReservationNotCancellable
+	}
+
+	loc := cancellationLocation()
+	now := time.Now().In(loc)
+
+	startDate, err := time.ParseInLocation(dateLayout, reservation.StartDate, loc)
+	if err != nil {
+		return nil, err
+	}
+
+	y, m, d := now.Date()
+	today := time.Date(y, m, d, 0, 0, 0, 0, loc)
+	limit := today.AddDate(0, 0, MinCancellationDays)
+
+	if startDate.Before(limit) {
+		return nil, ErrCancellationTooLate
+	}
+
+	if err := s.repository.CancelReservation(ctx, id, now); err != nil {
+		return nil, err
+	}
+
+	return s.repository.GetReservationByID(ctx, id)
+}

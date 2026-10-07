@@ -79,7 +79,7 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/images/{id}", imageController.GetImageByID)
 
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
-
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	// -------------------------
 	// Server
 	// -------------------------
