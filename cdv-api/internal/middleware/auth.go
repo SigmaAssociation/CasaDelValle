@@ -10,7 +10,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const RoleAdmin = 1
+const (
+	RoleAdmin = 1
+	RoleGuest = 2
+	RoleHost  = 3
+)
 
 type contextKey string
 
@@ -85,7 +89,8 @@ func isPublicRoute(r *http.Request) bool {
 	// Imágenes de cabañas: públicas para que cualquier usuario (incluso sin
 	// sesión iniciada) pueda verlas como referencia visual del catálogo.
 	path := r.URL.Path
-	if strings.HasPrefix(path, "/cdv-api/uploads/") || strings.HasPrefix(path, "/uploads/") {
+	if strings.HasPrefix(path, "/cdv-api/uploads/") || strings.HasPrefix(path, "/uploads/") ||
+		strings.HasPrefix(path, "/swagger") {
 		return true
 	}
 
@@ -114,6 +119,13 @@ func RoleFromContext(ctx context.Context) (uint, bool) {
 func IsAdmin(r *http.Request) bool {
 	role, ok := RoleFromContext(r.Context())
 	return ok && role == RoleAdmin
+}
+
+// IsHostOrAdmin indica si el usuario autenticado es anfitrión o administrador.
+// El anfitrión conserva las funcionalidades de huésped (p. ej. reservar).
+func IsHostOrAdmin(r *http.Request) bool {
+	role, ok := RoleFromContext(r.Context())
+	return ok && (role == RoleHost || role == RoleAdmin)
 }
 
 func AuthorizeSelfOrAdmin(r *http.Request, targetUserID uint) bool {

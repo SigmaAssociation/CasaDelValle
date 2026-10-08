@@ -21,7 +21,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 func (r *Repository) CreateUser(ctx context.Context, req RegisterRequest, hashPassword string) (int, error) {
 	var id int
 	query := "INSERT INTO usuarios (nombre, dpi, correo, contrasena, id_rol, direccion, telefono) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
-	err := r.pool.QueryRow(ctx, query, req.Name, req.DPI, req.Email, hashPassword, 2, req.Address, req.Phone).Scan(&id)
+	err := r.pool.QueryRow(ctx, query, req.Name, req.DPI, req.Email, hashPassword, req.IDRole, req.Address, req.Phone).Scan(&id)
 	if err != nil {
 		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
 			return 0, errors.New("El correo o dpi ya está registrado")
@@ -53,6 +53,18 @@ func (r *Repository) UpdateUser(ctx context.Context, userUpdate UserUpdate) (int
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
 			return 0, errors.New("el correo ya está registrado por otro usuario")
 		}
+		return 0, err
+	}
+
+	return int(result.RowsAffected()), nil
+}
+
+func (r *Repository) UpdateRole(ctx context.Context, userID int, role uint) (int, error) {
+	result, err := r.pool.Exec(ctx,
+		`UPDATE usuarios SET id_rol = $1 WHERE id = $2`,
+		role, userID,
+	)
+	if err != nil {
 		return 0, err
 	}
 
