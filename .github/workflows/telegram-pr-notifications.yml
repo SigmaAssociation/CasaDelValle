@@ -1,0 +1,45 @@
+name: Notificaciones de PR en Telegram
+
+on:
+  pull_request:
+    types: [opened, reopened]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify-telegram:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Notificar cuando se ABRE o REABRE un PR
+      - name: Notificar Pull Request Abierto
+        if: github.event_name == 'pull_request' && (github.event.action == 'opened' || github.event.action == 'reopened')
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          AUTHOR="${{ github.event.pull_request.user.login }}"
+          HEAD="${{ github.event.pull_request.head.ref }}"
+          BASE="${{ github.event.pull_request.base.ref }}"
+          URL="${{ github.event.pull_request.html_url }}"
+
+          MESSAGE="🚀 <b>Nuevo Pull Request Abierto</b>%0A%0A📌 <b>Título:</b> $TITLE%0A👤 <b>Autor:</b> $AUTHOR%0A🌿 <b>Ramas:</b> <code>$HEAD</code> ➔ <code>$BASE</code>%0A🔗 <a href='$URL'>Revisar PR en GitHub</a>"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=$MESSAGE" \
+            -d "parse_mode=HTML" \
+            -d "disable_web_page_preview=true"
+
+      # 2. Notificar cuando un compañero APRUEBA el PR
+      - name: Notificar PR Aprobado
+        if: github.event_name == 'pull_request_review' && github.event.review.state == 'approved'
+        run: |
+          TITLE="${{ github.event.pull_request.title }}"
+          REVIEWER="${{ github.event.review.user.login }}"
+          URL="${{ github.event.pull_request.html_url }}"
+
+          MESSAGE="✅ <b>Pull Request Aprobado</b>%0A%0A📌 <b>Título:</b> $TITLE%0A👤 <b>Aprobado por:</b> $REVIEWER%0A🔗 <a href='$URL'>Ver PR en GitHub</a>"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=$MESSAGE" \
+            -d "parse_mode=HTML" \
+            -d "disable_web_page_preview=true"
