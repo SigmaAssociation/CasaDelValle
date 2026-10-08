@@ -11,7 +11,7 @@ type Reservation struct {
 	CabinID   uint   `json:"cabin_id"`
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
-	Available *bool  `json:"available,omitempty"`
+	Status    string `json:"status,omitempty"`
 }
 
 type ReservationRequest struct {
@@ -40,8 +40,15 @@ const (
 var (
 	ErrReservationNotFound       = errors.New("reservation not found")
 	ErrReservationNotCancellable = errors.New("reservation not cancellable")
+	ErrReservationNotEditable    = errors.New("reservation not editable")
 	ErrCancellationTooLate       = errors.New("cancellation too late")
 )
+
+type UpdateReservationRequest struct {
+	CabinID   uint   `json:"cabin_id"`
+	StartDate string `json:"start_date"` // Formato AAAA-MM-DD
+	EndDate   string `json:"end_date"`   // Formato AAAA-MM-DD
+}
 
 type ReservationDetail struct {
 	ID          int        `json:"id"`
@@ -55,6 +62,11 @@ type ReservationDetail struct {
 }
 
 type CancelReservationResponse struct {
+	Message     string             `json:"message"`
+	Reservation *ReservationDetail `json:"reservation"`
+}
+
+type UpdateReservationResponse struct {
 	Message     string             `json:"message"`
 	Reservation *ReservationDetail `json:"reservation"`
 }

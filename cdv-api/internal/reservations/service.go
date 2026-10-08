@@ -71,7 +71,7 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 		return 0, errors.New("La fecha de inicio no puede ser anterior a la fecha actual")
 	}
 
-	overlap, err := s.repository.HasOverlap(ctx, req.CabinID, req.StartDate, req.EndDate)
+	overlap, err := s.repository.HasOverlap(ctx, req.CabinID, req.StartDate, req.EndDate, 0)
 	if err != nil {
 		return 0, err
 	}
@@ -79,11 +79,18 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 		return 0, errors.New("La cabaña no está disponible en el rango de fechas seleccionado")
 	}
 
+	userOverlap, err := s.repository.HasUserOverlap(ctx, req.UserID, req.StartDate, req.EndDate, 0)
+	if err != nil {
+		return 0, err
+	}
+	if userOverlap {
+		return 0, errors.New("El usuario ya tiene otra reservación en el rango de fechas seleccionado")
+	}
+
 	return s.repository.CreateReservation(ctx, req)
 }
 
 const cancellationTimezone = "America/Guatemala"
-
 func cancellationLocation() *time.Location {
 	loc, err := time.LoadLocation(cancellationTimezone)
 	if err != nil {
@@ -123,6 +130,70 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 	}
 
 	if err := s.repository.CancelReservation(ctx, id, now); err != nil {
+		return nil, err
+	}
+
+	return s.repository.GetReservationByID(ctx, id)
+}
+
+func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) (*ReservationDetail, error) {
+	if id <= 0 {
+		return nil, errors.New("ID de reservación inválido")
+	}
+	if req.CabinID == 0 {
+		return nil, errors.New("La cabaña es requerida")
+	}
+	if req.StartDate == "" {
+		return nil, errors.New("La fecha de inicio es requerida")
+	}
+	if req.EndDate == "" {
+		return nil, errors.New("La fecha de fin es requerida")
+	}
+
+	startDate, err := parseReservationDate(req.StartDate, "fecha de inicio")
+	if err != nil {
+		return nil, err
+	}
+	endDate, err := parseReservationDate(req.EndDate, "fecha de fin")
+	if err != nil {
+		return nil, err
+	}
+
+	if startDate.After(endDate) {
+		return nil, errors.New("La fecha de inicio no puede ser posterior a la fecha de fin")
+	}
+	if startDate.Equal(endDate) {
+		return nil, errors.New("La fecha de inicio y la fecha de fin no pueden ser iguales")
+	}
+	if startDate.Before(startOfToday()) {
+		return nil, errors.New("La fecha de inicio no puede ser anterior a la fecha actual")
+	}
+
+	existing, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if existing.Status != StatusActive {
+		return nil, ErrReservationNotEditable
+	}
+
+	overlap, err := s.repository.HasOverlap(ctx, req.CabinID, req.StartDate, req.EndDate, id)
+	if err != nil {
+		return nil, err
+	}
+	if overlap {
+		return nil, errors.New("La cabaña no está disponible en el rango de fechas seleccionado")
+	}
+
+	userOverlap, err := s.repository.HasUserOverlap(ctx, existing.UserID, req.StartDate, req.EndDate, id)
+	if err != nil {
+		return nil, err
+	}
+	if userOverlap {
+		return nil, errors.New("El usuario ya tiene otra reservación en el rango de fechas seleccionado")
+	}
+
+	if err := s.repository.UpdateReservation(ctx, id, req); err != nil {
 		return nil, err
 	}
 
