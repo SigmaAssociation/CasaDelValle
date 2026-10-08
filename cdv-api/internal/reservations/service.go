@@ -8,10 +8,20 @@ import (
 )
 
 type Service struct {
-	repository *Repository
+	repository ReservationRepository
 }
 
-func NewService(repository *Repository) *Service {
+type ReservationRepository interface {
+	CreateReservation(ctx context.Context, req ReservationRequest) (int, error)
+	HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string, excludeID int) (bool, error)
+	HasUserOverlap(ctx context.Context, userID uint, startDate, endDate string, excludeID int) (bool, error)
+	GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error)
+	CancelReservation(ctx context.Context, id int, cancelledAt time.Time) error
+	GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error)
+	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
+}
+
+func NewService(repository ReservationRepository) *Service {
 	return &Service{
 		repository: repository,
 	}
@@ -36,6 +46,29 @@ func startOfToday() time.Time {
 	now := time.Now()
 	year, month, day := now.Date()
 	return time.Date(year, month, day, 0, 0, 0, 0, now.Location())
+}
+
+func calculateReservationNights(startDate, endDate string) (int, error) {
+	start, err := time.ParseInLocation(dateLayout, startDate, time.UTC)
+	if err != nil {
+		return 0, err
+	}
+
+	end, err := time.ParseInLocation(dateLayout, endDate, time.UTC)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(end.Sub(start).Hours() / 24), nil
+}
+
+func calculateReservationTotalPrice(startDate, endDate string, nightlyRate float64) (float64, error) {
+	nights, err := calculateReservationNights(startDate, endDate)
+	if err != nil {
+		return 0, err
+	}
+
+	return float64(nights) * nightlyRate, nil
 }
 
 func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest) (int, error) {
@@ -91,6 +124,7 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 }
 
 const cancellationTimezone = "America/Guatemala"
+
 func cancellationLocation() *time.Location {
 	loc, err := time.LoadLocation(cancellationTimezone)
 	if err != nil {
