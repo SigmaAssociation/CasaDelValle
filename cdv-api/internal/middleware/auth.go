@@ -85,7 +85,8 @@ func isPublicRoute(r *http.Request) bool {
 	// Imágenes de cabañas: públicas para que cualquier usuario (incluso sin
 	// sesión iniciada) pueda verlas como referencia visual del catálogo.
 	path := r.URL.Path
-	if strings.HasPrefix(path, "/cdv-api/uploads/") || strings.HasPrefix(path, "/uploads/") {
+	if strings.HasPrefix(path, "/cdv-api/uploads/") || strings.HasPrefix(path, "/uploads/") ||
+		strings.HasPrefix(path, "/swagger") {
 		return true
 	}
 

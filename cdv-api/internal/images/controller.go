@@ -46,6 +46,20 @@ func pathIntParam(r *http.Request, name string) (int, bool) {
 }
 
 // CreateImage sube una imagen a una cabaña. Solo el propietario o un admin.
+// CreateImage sube una imagen para una cabaña.
+// @Summary Subir imagen
+// @Description Sube una imagen (JPEG, PNG o WebP, máx. 5 MB) asociada a una cabaña. Solo el dueño de la cabaña o un administrador.
+// @Tags Imágenes
+// @Accept multipart/form-data
+// @Produce json
+// @Security BearerAuth
+// @Param cabinId path int true "ID de cabaña"
+// @Param image formData file true "Archivo de imagen"
+// @Success 201 {object} CreateImageResponse "Imagen subida exitosamente"
+// @Failure 400 {object} map[string]string "Datos o formato inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Cabaña no encontrada"
+// @Router /cabins/images/{cabinId} [post]
 func (c *Controller) CreateImage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -113,7 +127,17 @@ func (c *Controller) CreateImage(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetImagesByCabin lista todas las imágenes de una cabaña.
+// GetImagesByCabin obtiene las imágenes de una cabaña.
+// @Summary Listar imágenes de una cabaña
+// @Description Devuelve todas las imágenes asociadas a la cabaña indicada.
+// @Tags Imágenes
+// @Produce json
+// @Security BearerAuth
+// @Param cabinId path int true "ID de cabaña"
+// @Success 200 {object} ImagesListResponse "Lista de imágenes"
+// @Failure 400 {object} map[string]string "ID de cabaña inválido"
+// @Failure 500 {object} map[string]string "Error al obtener imágenes"
+// @Router /cabins/images/{cabinId} [get]
 func (c *Controller) GetImagesByCabin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -140,7 +164,17 @@ func (c *Controller) GetImagesByCabin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, result)
 }
 
-// GetMainImageByCabin retorna la imagen más reciente de una cabaña.
+// GetMainImageByCabin retorna la imagen principal de una cabaña.
+// @Summary Imagen principal de una cabaña
+// @Description Devuelve la imagen más reciente de la cabaña indicada. Requiere token.
+// @Tags Imágenes
+// @Produce json
+// @Security BearerAuth
+// @Param cabinId path int true "ID de cabaña"
+// @Success 200 {object} ImageResponse "Imagen principal"
+// @Failure 400 {object} map[string]string "ID de cabaña inválido"
+// @Failure 404 {object} map[string]string "La cabaña no tiene imágenes registradas"
+// @Router /cabins/images/{cabinId}/principal [get]
 func (c *Controller) GetMainImageByCabin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -170,6 +204,16 @@ func (c *Controller) GetMainImageByCabin(w http.ResponseWriter, r *http.Request)
 }
 
 // GetImageByID retorna una imagen por su identificador.
+// @Summary Obtener imagen por ID
+// @Description Devuelve una imagen según su identificador. Requiere token.
+// @Tags Imágenes
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de imagen"
+// @Success 200 {object} ImageResponse "Imagen"
+// @Failure 400 {object} map[string]string "ID de imagen inválido"
+// @Failure 404 {object} map[string]string "Imagen no encontrada"
+// @Router /images/{id} [get]
 func (c *Controller) GetImageByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -198,7 +242,17 @@ func (c *Controller) GetImageByID(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, image.ToResponse())
 }
 
-// DeleteImage elimina una imagen de una cabaña. Solo el propietario o un admin.
+// DeleteImage elimina una imagen por su ID.
+// @Summary Eliminar imagen
+// @Description Elimina una imagen y su archivo físico. Solo el dueño de la cabaña o un administrador. Requiere token.
+// @Tags Imágenes
+// @Security BearerAuth
+// @Param id path int true "ID de imagen"
+// @Success 200 {object} map[string]interface{} "Imagen eliminada exitosamente"
+// @Failure 400 {object} map[string]string "ID de imagen inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Imagen no encontrada"
+// @Router /images/{id} [delete]
 func (c *Controller) DeleteImage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")

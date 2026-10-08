@@ -1,3 +1,13 @@
+// Casa Del Valle API
+// @title Casa Del Valle API
+// @version 1.0
+// @description Documentación de los endpoints de la API de Casa Del Valle.
+// @host localhost:8080
+// @BasePath /cdv-api
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Token JWT obtenido en el endpoint login. Enviar como: Bearer <token>
 package main
 
 import (
@@ -7,12 +17,16 @@ import (
 	"net/http"
 	"os"
 
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
 	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
+
+	_ "cdv-api/docs"
 )
 
 func main() {
@@ -99,6 +113,9 @@ func main() {
 		"/cdv-api/uploads/",
 		http.StripPrefix("/cdv-api/uploads/", http.FileServer(http.Dir("./uploads"))),
 	)
+
+	// Swagger UI: documentación interactiva de la API (acceso público).
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
 	handler := middleware.CORS(middleware.Auth(mux))
 

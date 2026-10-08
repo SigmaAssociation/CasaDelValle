@@ -29,6 +29,20 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, ErrorResponse{Message: message})
 }
 
+// CreateReservation registra una nueva reservación.
+// @Summary Crear reservación
+// @Description Crea una reservación. Para clientes el usuario se toma del token; para administradores puede indicarse. Requiere token.
+// @Tags Reservaciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param reservation body ReservationRequest true "Datos de la reservación"
+// @Success 201 {object} CreateReservationResponse "Reservación registrada exitosamente"
+// @Failure 400 {object} map[string]string "Datos inválidos"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Cabaña o usuario no existe"
+// @Failure 409 {object} map[string]string "Conflicto de fechas"
+// @Router /reservations [post]
 func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -78,6 +92,19 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// CancelReservation cancela una reservación.
+// @Summary Cancelar reservación
+// @Description Cancela una reservación activa. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
+// @Tags Reservaciones
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Success 200 {object} CancelReservationResponse "Reservación cancelada exitosamente"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Failure 409 {object} map[string]string "No cancelable o con menos de 3 días de anticipación"
+// @Router /reservations/{id}/cancel [patch]
 func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -134,6 +161,21 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateReservation actualiza una reservación.
+// @Summary Actualizar reservación
+// @Description Actualiza la cabaña y las fechas de una reservación activa. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
+// @Tags Reservaciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Param reservation body UpdateReservationRequest true "Datos a actualizar"
+// @Success 200 {object} UpdateReservationResponse "Reservación actualizada exitosamente"
+// @Failure 400 {object} map[string]string "Datos inválidos"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Failure 409 {object} map[string]string "Conflicto de fechas o reservación no editable"
+// @Router /reservations/{id} [put]
 func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
