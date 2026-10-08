@@ -1,0 +1,21 @@
+name: Recordatorio Diario Telegram
+
+on:
+  schedule:
+    # 01:00 UTC equivale a las 7:00 PM CST (hora local Centroamérica / México)
+    # Corre de lunes a viernes (martes a sábado en tiempo UTC)
+    - cron: '0 1 * * 2-6'
+  workflow_dispatch: # Permite probar el flujo manualmente desde la pestaña Actions en GitHub
+
+jobs:
+  send-telegram-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enviar recordatorio al grupo de Telegram
+        run: |
+          MESSAGE="🤖 <b>Recordatorio del Equipo de Desarrollo</b>%0A%0A1. 📌 Revisen el tablero de tareas.%0A2. 🔍 Verifiquen si hay Pull Requests pendientes por revisar.%0A3. 📝 Actualicen el estado de sus tarjetas si avanzaron hoy."
+          
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=$MESSAGE" \
+            -d "parse_mode=HTML"
