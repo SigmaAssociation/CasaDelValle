@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
@@ -6,13 +6,16 @@ import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
 import { CabinService } from '../../services/cabin.service';
 import { AuthService } from '../../services/auth.service';
+import { ReservationForm } from '../../components/reservation-form/reservation-form';
 
 @Component({
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, ReservationForm],
   selector: 'app-cabin-detail-page',
   templateUrl: './cabin-detail-page.html',
 })
 export class CabinDetailPage implements OnInit {
+  @ViewChild('reservationSection') reservationSection?: ElementRef<HTMLElement>;
+
   cabin: Cabin | null = null;
   images: CabinImage[] = [];
   selectedImage: string | null = null;
@@ -21,6 +24,7 @@ export class CabinDetailPage implements OnInit {
   isDeleting = false;
   currentUserId: number | null = null;
   isAdmin = false;
+  showReservationForm = false;
 
   constructor(
     private cabinService: CabinService,
@@ -62,6 +66,21 @@ export class CabinDetailPage implements OnInit {
 
   canEdit(): boolean {
     return !!this.cabin && (this.isAdmin || this.cabin.host_id === this.currentUserId);
+  }
+
+  canReserve(): boolean {
+    return !!this.cabin && this.cabin.host_id !== this.currentUserId;
+  }
+
+  toggleReservationForm(): void {
+    this.showReservationForm = !this.showReservationForm;
+    if (this.showReservationForm) {
+      // Espera a que Angular renderice el formulario antes de desplazarse.
+      setTimeout(() => this.reservationSection?.nativeElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      }));
+    }
   }
 
   formatPrice(price: number | string | null | undefined): string {
