@@ -7,6 +7,7 @@ type RegisterRequest struct {
 	Email    string `json:"email"`
 	Address  string `json:"address"`
 	Password string `json:"password"`
+	IDRole   uint   `json:"id_role"`
 }
 
 type RegisterResponse struct {
@@ -39,6 +40,16 @@ type UserLoginRequest struct {
 
 type UserLoginResponse struct {
 	Message string `json:"message"`
+	Token   string `json:"token,omitempty"`
+}
+
+type UpdateRoleRequest struct {
+	IDRole uint `json:"id_role"`
+}
+
+type UpdateRoleResponse struct {
+	Message string `json:"message"`
+	IDRole  uint   `json:"id_role,omitempty"`
 	Token   string `json:"token,omitempty"`
 }
 

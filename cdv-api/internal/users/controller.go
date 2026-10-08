@@ -3,10 +3,15 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 
 	"cdv-api/internal/middleware"
 )
+
+func getJWTSecret() string {
+	return os.Getenv("JWT_SECRET")
+}
 
 type Controller struct {
 	service *Service
@@ -216,4 +221,66 @@ func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+
+func (c *Controller) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido en la URL"})
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(userID)) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"message": "No tiene permisos para cambiar este rol"})
+		return
+	}
+
+	var req UpdateRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Datos de entrada inválidos"})
+		return
+	}
+
+	if req.IDRole != middleware.RoleHost {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Solo se permite el cambio de huésped a anfitrión"})
+		return
+	}
+
+	authUser, err := c.service.UpgradeToHost(r.Context(), userID)
+	if err != nil {
+		status := http.StatusBadRequest
+		message := err.Error()
+		if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": message})
+		return
+	}
+
+	// El rol viaja en el JWT: si el usuario se actualiza a sí mismo se le
+	// entrega un token fresco para que el nuevo rol aplique de inmediato.
+	resp := UpdateRoleResponse{
+		Message: "Rol actualizado a anfitrión exitosamente",
+		IDRole:  authUser.IDRole,
+	}
+	if authUserID, ok := middleware.UserIDFromContext(r.Context()); ok && authUserID == authUser.ID {
+		if token, err := GenerateToken(authUser, getJWTSecret()); err == nil {
+			resp.Token = token
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }

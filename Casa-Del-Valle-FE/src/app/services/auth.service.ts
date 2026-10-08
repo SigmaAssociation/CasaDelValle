@@ -50,6 +50,16 @@ export class AuthService {
         this.tokenState.set(null);
     }
 
+    public setToken(token: string): void {
+        localStorage.setItem(this.tokenKey, token);
+        this.tokenState.set(token);
+    }
+
+    public isHostOrAdmin(): boolean {
+        const role = this.user()?.role;
+        return role === 1 || role === 3;
+    }
+
     private persistSession(response: LoginResponse): void {
         if (!response.token) {
             return;

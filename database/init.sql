@@ -145,7 +145,8 @@ CREATE TABLE IF NOT EXISTS comentario (
 
 INSERT INTO roles (id, tipo) VALUES 
 (1, 'Administrador'), 
-(2, 'Usuario');
+(2, 'Huésped'),
+(3, 'Anfitrión');
 
 INSERT INTO usuarios (nombre, telefono, direccion, dpi, correo, contrasena, id_rol) VALUES 
 ('Admin', '12345678', 'Direccion Admin', '1234567890123', 'admin@admin.com', '$2a$10$SFxM4MJU3I1zjpotR/LfyeKREmKO7gqCIoiijEznmZD94cbiJJg7a', 1);

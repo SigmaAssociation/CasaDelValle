@@ -72,6 +72,11 @@ func (c *Controller) CreateCabin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !middleware.IsHostOrAdmin(r) {
+		writeError(w, http.StatusForbidden, "Solo los anfitriones pueden registrar cabañas")
+		return
+	}
+
 	cabinID, err := c.service.CreateCabin(r.Context(), req)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -113,6 +118,11 @@ func (c *Controller) DeleteCabin(w http.ResponseWriter, r *http.Request) {
 
 	if !middleware.AuthorizeSelfOrAdmin(r, uint(cabin.HostID)) {
 		writeError(w, http.StatusForbidden, "No tiene permisos para eliminar esta cabaña")
+		return
+	}
+
+	if !middleware.IsHostOrAdmin(r) {
+		writeError(w, http.StatusForbidden, "Solo los anfitriones pueden eliminar cabañas")
 		return
 	}
 
@@ -314,6 +324,11 @@ func (c *Controller) UpdateCabin(w http.ResponseWriter, r *http.Request) {
 
 	if !middleware.AuthorizeSelfOrAdmin(r, uint(existing.HostID)) {
 		writeError(w, http.StatusForbidden, "No tiene permisos para editar esta cabaña")
+		return
+	}
+
+	if !middleware.IsHostOrAdmin(r) {
+		writeError(w, http.StatusForbidden, "Solo los anfitriones pueden editar cabañas")
 		return
 	}
 

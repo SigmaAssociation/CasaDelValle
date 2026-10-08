@@ -13,6 +13,7 @@ import { GuidePage } from './pages/guide-page/guide-page';
 import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
 import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
+import { hostGuard } from './guards/host-guard';
 
 export const routes: Routes = [
     {
@@ -47,12 +48,12 @@ export const routes: Routes = [
     {
         path: 'cabins/:id/edit',
         component: CabinEditPage,
-        canActivate: [authGuard],
+        canActivate: [authGuard, hostGuard],
     },
     {
         path: 'mis-cabanas',
         component: MyCabinsPage,
-        canActivate: [authGuard],
+        canActivate: [authGuard, hostGuard],
     },
     {
         path: 'registro', component: Registro
@@ -68,7 +69,7 @@ export const routes: Routes = [
     {
         path: 'registrar-cabana',
         component: RegistrarCabana,
-        canActivate: [authGuard],
+        canActivate: [authGuard, hostGuard],
     },
     {
         path: '**',

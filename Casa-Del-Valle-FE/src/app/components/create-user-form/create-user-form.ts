@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { UserRequest } from '../../models/create-user';
 import { UserService } from '../../services/user.service';
@@ -9,7 +10,7 @@ import { RegisterResponse } from '../../models/register-response';
 @Component({
   standalone: true,
   selector: 'app-create-user-form',
-  imports: [ReactiveFormsModule, RouterModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   templateUrl: './create-user-form.html',
   styleUrl: './create-user-form.css',
 })
@@ -62,8 +63,6 @@ export class CreateUserForm implements OnInit {
         Validators.pattern(this.phoneRegex)
       ]],
       address: ['', [
-        Validators.required,
-        Validators.minLength(5),
         Validators.maxLength(255),
         Validators.pattern(this.addressRegex)
       ]],
@@ -80,6 +79,9 @@ export class CreateUserForm implements OnInit {
         Validators.required,
         Validators.maxLength(255),
         this.passwordStrengthValidator()
+      ]],
+      id_role: [2, [
+        Validators.required
       ]]
     });
   }
@@ -104,7 +106,7 @@ export class CreateUserForm implements OnInit {
   create(): void {
     if (this.userForm.valid) {
       const newUser = this.userForm.value as UserRequest;
-
+      newUser.id_role = Number(newUser.id_role);
       this.userService.createUser(newUser).subscribe({
         next: (response: RegisterResponse) => {
           console.log(response.mensaje, response.user_id);
