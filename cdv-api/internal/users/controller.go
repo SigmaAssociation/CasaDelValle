@@ -3,10 +3,15 @@ package users
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"strconv"
 
 	"cdv-api/internal/middleware"
 )
+
+func getJWTSecret() string {
+	return os.Getenv("JWT_SECRET")
+}
 
 type Controller struct {
 	service *Service
@@ -18,6 +23,16 @@ func NewController(service *Service) *Controller {
 	}
 }
 
+// GetUsersList obtiene el listado de usuarios del sistema.
+// @Summary Listar usuarios
+// @Description Devuelve todos los usuarios registrados. Requiere rol de administrador.
+// @Tags Usuarios
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {array} User "Lista de usuarios"
+// @Failure 403 {object} map[string]string "Sin permisos de administrador"
+// @Failure 500 {object} map[string]string "Error al obtener usuarios"
+// @Router /users [get]
 func (c *Controller) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if !middleware.IsAdmin(r) {
 		w.Header().Set(
@@ -52,6 +67,17 @@ func (c *Controller) GetUsers(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(usuarios)
 }
 
+// RegisterUser registra un nuevo usuario en el sistema.
+// @Summary Registrar usuario
+// @Description Crea una cuenta de usuario. Endpoint público, no requiere token.
+// @Tags Usuarios
+// @Accept json
+// @Produce json
+// @Param user body RegisterRequest true "Datos del usuario"
+// @Success 201 {object} RegisterResponse "Usuario registrado exitosamente"
+// @Failure 400 {object} map[string]string "Datos de entrada inválidos"
+// @Failure 409 {object} map[string]string "El correo o DPI ya está registrado"
+// @Router /users [post]
 func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
@@ -80,6 +106,21 @@ func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// UpdateUser actualiza el perfil de un usuario.
+// @Summary Actualizar usuario
+// @Description Actualiza los datos de perfil. Solo el propio usuario o un administrador. Requiere token.
+// @Tags Usuarios
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de usuario"
+// @Param user body UserUpdate true "Datos a actualizar"
+// @Success 200 {object} map[string]interface{} "Usuario actualizado exitosamente"
+// @Failure 400 {object} map[string]string "Datos de entrada inválidos"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Usuario no encontrado"
+// @Failure 409 {object} map[string]string "El correo ya está registrado por otro usuario"
+// @Router /users/{id} [put]
 func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -133,10 +174,17 @@ func (c *Controller) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-/*
-Intenta autenticar a un usuario con el correo y la contraseña proporcionados en la solicitud.
-Si la autenticación es exitosa, devuelve un mensaje y el token JWT. Si falla, devuelve un mensaje de error.
-*/
+// LoginUser autentica a un usuario y devuelve un token JWT.
+// @Summary Iniciar sesión
+// @Description Autentica con correo y contraseña y devuelve un token Bearer. Endpoint público.
+// @Tags Usuarios
+// @Accept json
+// @Produce json
+// @Param credentials body UserLoginRequest true "Credenciales de acceso"
+// @Success 200 {object} UserLoginResponse "Usuario autenticado exitosamente"
+// @Failure 400 {object} map[string]string "Datos de entrada inválidos"
+// @Failure 401 {object} map[string]string "Correo o contraseña incorrectos"
+// @Router /login [post]
 func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPost {
@@ -171,6 +219,18 @@ func (c *Controller) LoginUser(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetUserByID obtiene el perfil de un usuario.
+// @Summary Obtener usuario por ID
+// @Description Devuelve el perfil de un usuario. Solo el propio usuario o un administrador. Requiere token.
+// @Tags Usuarios
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de usuario"
+// @Success 200 {object} User "Perfil del usuario"
+// @Failure 400 {object} map[string]string "ID de usuario inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Usuario no encontrado"
+// @Router /users/{id} [get]
 func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodGet {
@@ -216,4 +276,66 @@ func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(user)
+}
+
+func (c *Controller) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if r.Method != http.MethodPatch {
+		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
+		return
+	}
+
+	idStr := r.PathValue("id")
+	userID, err := strconv.Atoi(idStr)
+	if err != nil || userID <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "ID de usuario inválido en la URL"})
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(userID)) {
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]string{"message": "No tiene permisos para cambiar este rol"})
+		return
+	}
+
+	var req UpdateRoleRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Datos de entrada inválidos"})
+		return
+	}
+
+	if req.IDRole != middleware.RoleHost {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"message": "Solo se permite el cambio de huésped a anfitrión"})
+		return
+	}
+
+	authUser, err := c.service.UpgradeToHost(r.Context(), userID)
+	if err != nil {
+		status := http.StatusBadRequest
+		message := err.Error()
+		if err.Error() == "Usuario no encontrado" {
+			status = http.StatusNotFound
+		}
+		w.WriteHeader(status)
+		json.NewEncoder(w).Encode(map[string]string{"message": message})
+		return
+	}
+
+	// El rol viaja en el JWT: si el usuario se actualiza a sí mismo se le
+	// entrega un token fresco para que el nuevo rol aplique de inmediato.
+	resp := UpdateRoleResponse{
+		Message: "Rol actualizado a anfitrión exitosamente",
+		IDRole:  authUser.IDRole,
+	}
+	if authUserID, ok := middleware.UserIDFromContext(r.Context()); ok && authUserID == authUser.ID {
+		if token, err := GenerateToken(authUser, getJWTSecret()); err == nil {
+			resp.Token = token
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(resp)
 }

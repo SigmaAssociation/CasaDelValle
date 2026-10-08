@@ -18,6 +18,15 @@ export class Perfil implements OnInit {
   isLoading = false;
   editMode = false;
   errorMessage: string | null = null;
+  isUpgrading = false;
+  upgradeMessage: string | null = null;
+  upgradeError: string | null = null;
+
+  private readonly roleNames: Record<number, string> = {
+    1: 'Administrador',
+    2: 'Huésped',
+    3: 'Anfitrión',
+  };
 
   constructor(
     private auth: AuthService,
@@ -47,6 +56,48 @@ export class Perfil implements OnInit {
       error: () => {
         this.errorMessage = 'No se pudo cargar la información del perfil.';
         this.isLoading = false;
+        this.cd.detectChanges();
+      },
+    });
+  }
+
+  roleName(role: number | undefined): string {
+    if (role === undefined) {
+      return '—';
+    }
+    return this.roleNames[role] ?? '—';
+  }
+
+  get canUpgradeToHost(): boolean {
+    return this.user?.id_role === 2;
+  }
+
+  upgradeToHost(): void {
+    if (!this.userId || this.isUpgrading) {
+      return;
+    }
+    if (!confirm('¿Quieres convertirte en anfitrión? Podrás publicar cabañas. Este cambio no se puede deshacer.')) {
+      return;
+    }
+    this.isUpgrading = true;
+    this.upgradeMessage = null;
+    this.upgradeError = null;
+
+    this.userService.upgradeToHost(this.userId).subscribe({
+      next: (response) => {
+        if (response.token) {
+          this.auth.setToken(response.token);
+        }
+        this.upgradeMessage = response.message ?? 'Ahora eres anfitrión.';
+        this.isUpgrading = false;
+        this.loadUser(this.userId as number);
+      },
+      error: (err) => {
+        const backendMessage = err?.error?.message ?? err?.error?.mensaje;
+        this.upgradeError = typeof backendMessage === 'string' && backendMessage.trim().length > 0
+          ? backendMessage
+          : 'No se pudo completar el cambio de rol.';
+        this.isUpgrading = false;
         this.cd.detectChanges();
       },
     });

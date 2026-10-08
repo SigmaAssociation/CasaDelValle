@@ -19,9 +19,7 @@ services:
       - cdv-net
 
   backend-api:
-    build:
-      context: ./cdv-api
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/mynordaniel/casadelvalle-backend:${BACKEND_IMAGE_TAG:-latest}
     container_name: go_api
     restart: unless-stopped
     environment:
@@ -42,9 +40,7 @@ services:
       - cdv-net
 
   frontend-app:
-    build:
-      context: ./Casa-Del-Valle-FE
-      dockerfile: Dockerfile.prod
+    image: ghcr.io/mynordaniel/casadelvalle-frontend:${FRONTEND_IMAGE_TAG:-latest}
     container_name: angular_frontend
     restart: unless-stopped
     ports:

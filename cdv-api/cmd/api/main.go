@@ -1,3 +1,13 @@
+// Casa Del Valle API
+// @title Casa Del Valle API
+// @version 1.0
+// @description Documentación de los endpoints de la API de Casa Del Valle.
+// @host localhost:8080
+// @BasePath /cdv-api
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Token JWT obtenido en el endpoint login. Enviar como: Bearer <token>
 package main
 
 import (
@@ -7,10 +17,16 @@ import (
 	"net/http"
 	"os"
 
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
+	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
+	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
+
+	_ "cdv-api/docs"
 )
 
 func main() {
@@ -44,6 +60,14 @@ func main() {
 	cabinService := cabins.NewService(cabinRepository)
 	cabinController := cabins.NewController(cabinService)
 
+	reservationRepository := reservations.NewRepository(pool)
+	reservationService := reservations.NewService(reservationRepository)
+	reservationController := reservations.NewController(reservationService)
+
+	imageRepository := images.NewRepository(pool)
+	imageService := images.NewService(imageRepository)
+	imageController := images.NewController(imageService)
+
 	// -------------------------
 	// Router
 	// -------------------------
@@ -53,15 +77,28 @@ func main() {
 	mux.HandleFunc("POST /cdv-api/users", userController.RegisterUser)
 	mux.HandleFunc("GET /cdv-api/users/{id}", userController.GetUserByID)
 	mux.HandleFunc("PUT /cdv-api/users/{id}", userController.UpdateUser)
+	mux.HandleFunc("PATCH /cdv-api/users/{id}/role", userController.UpdateUserRole)
 
 	mux.HandleFunc("GET /cdv-api/cabins", cabinController.GetCabins)
 	mux.HandleFunc("POST /cdv-api/cabins", cabinController.CreateCabin)
+
 	mux.HandleFunc("GET /cdv-api/cabins/search", cabinController.SearchCabins)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
+
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
 
+	mux.HandleFunc("POST /cdv-api/cabins/images/{cabinId}", imageController.CreateImage)
+	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}", imageController.GetImagesByCabin)
+	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}/principal", imageController.GetMainImageByCabin)
+	mux.HandleFunc("GET /cdv-api/images/{id}", imageController.GetImageByID)
+	mux.HandleFunc("DELETE /cdv-api/images/{id}", imageController.DeleteImage)
+
+	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
+	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
+	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	// -------------------------
 	// Server
 	// -------------------------
@@ -71,6 +108,17 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", port)
+
+	// Servir archivos subidos (imágenes de cabañas) de forma pública, para que
+	// cualquier usuario pueda verlas como referencia visual del catálogo.
+	mux.Handle(
+		"/cdv-api/uploads/",
+		http.StripPrefix("/cdv-api/uploads/", http.FileServer(http.Dir("./uploads"))),
+	)
+
+	// Swagger UI: documentación interactiva de la API (acceso público).
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
+
 	handler := middleware.CORS(middleware.Auth(mux))
 
 	log.Printf("Servidor escuchando en %s", addr)

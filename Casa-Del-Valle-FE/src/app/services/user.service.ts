@@ -7,6 +7,7 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { RegisterResponse } from "../models/register-response";
 import { UpdateUserResponse } from "../models/update-user-response";
+import { UpgradeRoleResponse } from "../models/upgrade-role-response";
 
 @Injectable({
     providedIn: 'root',
@@ -32,6 +33,12 @@ export class UserService {
     public updateUser(id: number, user: UpdateUserRequest): Observable<UpdateUserResponse> {
         return this.httpClient.put<UpdateUserResponse>(
             `${this.restConstants.getApiURL()}users/${id}`, user
+        );
+    }
+
+    public upgradeToHost(id: number): Observable<UpgradeRoleResponse> {
+        return this.httpClient.patch<UpgradeRoleResponse>(
+            `${this.restConstants.getApiURL()}users/${id}/role`, { id_role: 3 }
         );
     }
 }

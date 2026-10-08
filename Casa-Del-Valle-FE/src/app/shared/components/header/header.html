@@ -4,10 +4,13 @@
       <a routerLink="/">Casa Del Valle</a>
     </h1>
     <nav class="space-x-6 font-sans text-sm font-medium">
-      <a routerLink="/" class="hover:text-orange transition">Inicio</a>
       @if (auth.isAuthenticated()) {
-        <a routerLink="/mis-cabanas" class="hover:text-orange transition">Mis Cabañas</a>
-        <a routerLink="/registrar-cabana" class="hover:text-orange transition">Registrar Cabaña</a>
+        <a routerLink="/" class="hover:text-orange transition">Inicio</a>
+        <a routerLink="/mis-reservaciones" class="hover:text-orange transition">Mis Reservaciones</a>
+        @if (auth.isHostOrAdmin()) {
+          <a routerLink="/mis-cabanas" class="hover:text-orange transition">Mis Cabañas</a>
+          <a routerLink="/registrar-cabana" class="hover:text-orange transition">Registrar Cabaña</a>
+        }
         <a routerLink="/perfil" class="hover:text-orange transition">Perfil</a>
         <button type="button" (click)="onLogout()" class="hover:text-orange transition cursor-pointer bg-transparent border-0 p-0 font-sans text-sm font-medium text-cream">
           Cerrar Sesión

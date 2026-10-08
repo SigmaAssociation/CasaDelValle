@@ -11,7 +11,10 @@ import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
 import { BackendGuidePage } from './pages/backend-guide-page/backend-guide-page';
 import { GuidePage } from './pages/guide-page/guide-page';
 import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
+import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
+import { MyReservationsPage } from './pages/my-reservations-page/my-reservations-page';
+import { hostGuard } from './guards/host-guard';
 
 export const routes: Routes = [
     {
@@ -39,14 +42,19 @@ export const routes: Routes = [
         component: StartPage,
     },
     {
+        path: 'cabins/:id',
+        component: CabinDetailPage,
+        canActivate: [authGuard],
+    },
+    {
         path: 'cabins/:id/edit',
         component: CabinEditPage,
-        canActivate: [authGuard],
+        canActivate: [authGuard, hostGuard],
     },
     {
         path: 'mis-cabanas',
         component: MyCabinsPage,
-        canActivate: [authGuard],
+        canActivate: [authGuard, hostGuard],
     },
     {
         path: 'registro', component: Registro
@@ -62,6 +70,11 @@ export const routes: Routes = [
     {
         path: 'registrar-cabana',
         component: RegistrarCabana,
+        canActivate: [authGuard, hostGuard],
+    },
+    {
+        path: 'mis-reservaciones',
+        component: MyReservationsPage,
         canActivate: [authGuard],
     },
     {
