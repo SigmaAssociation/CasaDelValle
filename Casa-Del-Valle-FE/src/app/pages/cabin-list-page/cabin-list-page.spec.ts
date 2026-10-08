@@ -21,4 +21,30 @@ describe('CabinListPage', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('inicia con los filtros ocultos y los alterna al hacer clic en el botón', () => {
+    expect(component.filtersVisible).toBe(false);
+
+    const button = fixture.nativeElement.querySelector('button[type="button"]');
+    button.click();
+    expect(component.filtersVisible).toBe(true);
+
+    button.click();
+    expect(component.filtersVisible).toBe(false);
+  });
+
+  it('resolveImageUrl devuelve null cuando no hay imagen', () => {
+    expect(component.resolveImageUrl(null)).toBeNull();
+    expect(component.resolveImageUrl(undefined)).toBeNull();
+    expect(component.resolveImageUrl('')).toBeNull();
+  });
+
+  it('resolveImageUrl conserva las URLs absolutas y las rutas que inician con /', () => {
+    expect(component.resolveImageUrl('https://ejemplo.com/foto.jpg')).toBe('https://ejemplo.com/foto.jpg');
+    expect(component.resolveImageUrl('/uploads/foto.jpg')).toBe('/uploads/foto.jpg');
+  });
+
+  it('resolveImageUrl resuelve las rutas relativas contra la URL del API', () => {
+    expect(component.resolveImageUrl('uploads/foto.jpg')).toBe('/cdv-api/uploads/foto.jpg');
+  });
 });

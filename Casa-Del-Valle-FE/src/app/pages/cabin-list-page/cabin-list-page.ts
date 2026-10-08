@@ -74,7 +74,13 @@ export class CabinListPage implements OnInit, OnChanges {
     return Number.isFinite(value) ? `Q${value.toFixed(2)}` : 'Q—';
   }
 
-  /** Resuelve la ruta guardada en BD a una URL servida por el backend. */
+  onImageError(event: Event): void {
+    const target = event.target as HTMLImageElement | null;
+    if (target) {
+      target.style.visibility = 'hidden';
+    }
+  }
+
   resolveImageUrl(path: string | null | undefined): string | null {
     if (!path) {
       return null;
@@ -83,14 +89,6 @@ export class CabinListPage implements OnInit, OnChanges {
       return path;
     }
     return `${this.cabinService.restConstants.getApiURL()}${path}`;
-  }
-
-  /** Oculta la miniatura cuando la ruta guardada en la BD no resuelve. */
-  onImageError(event: Event): void {
-    const target = event.target as HTMLImageElement | null;
-    if (target) {
-      target.style.visibility = 'hidden';
-    }
   }
 
   loadAll(): void {
