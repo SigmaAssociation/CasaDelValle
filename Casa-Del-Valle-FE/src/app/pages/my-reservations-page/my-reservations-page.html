@@ -1,0 +1,80 @@
+@if (userId) {
+  <div class="max-w-5xl mx-auto flex flex-col gap-4 font-sans">
+    <div class="flex items-center justify-between">
+      <h2 class="font-serif text-3xl text-black">Mis reservaciones</h2>
+      <div class="flex gap-2 text-sm">
+        <button
+          type="button"
+          (click)="tab.set('upcoming')"
+          class="px-4 py-1.5 rounded-full border"
+          [class]="
+            tab() === 'upcoming' ? 'bg-green text-white border-green' : 'border-brown/30 text-brown'
+          "
+        >
+          Próximas
+        </button>
+
+        <button
+          type="button"
+          (click)="tab.set('finished')"
+          class="px-4 py-1.5 rounded-full border"
+          [class]="
+            tab() === 'finished' ? 'bg-green text-white border-green' : 'border-brown/30 text-brown'
+          "
+        >
+          Finalizadas
+        </button>
+
+        <button
+          type="button"
+          (click)="tab.set('cancelled')"
+          class="px-4 py-1.5 rounded-full border"
+          [class]="
+            tab() === 'cancelled'
+              ? 'bg-green text-white border-green'
+              : 'border-brown/30 text-brown'
+          "
+        >
+          Canceladas
+        </button>
+      </div>
+    </div>
+
+    @if (cancelMessage(); as text) {
+      <div
+        role="status"
+        class="px-4 py-3  rounded-md text-sm border bg-green/10 text-green border-green/10"
+      >
+        {{ text }}
+      </div>
+    }
+
+    @if (isLoading()) {
+      <p class="py-8 text-center text-brown/60">Cargando reservaciones…</p>
+    } @else if (loadError()) {
+      <div class="py-8 text-center">
+        <p class="text-orange mb-4">No se pudieron cargar tus reservaciones.</p>
+        <button
+          type="button"
+          (click)="getReservations()"
+          class="px-4 py-2 rounded-md bg-orange text-white text-sm font-medium"
+        >
+          Reintentar
+        </button>
+      </div>
+    } @else {
+      @for (r of visible(); track r.id) {
+        <app-reservation-card [reservation]="r" (cancelled)="onCancelled($event)" />
+      } @empty {
+        <p class="py-8 text-center text-brown/60">{{ emptyMessage() }}</p>
+      }
+    }
+  </div>
+} @else {
+  <div
+    class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-brown/15 text-center font-sans"
+  >
+    <h2 class="font-serif text-xl text-black mb-2">Sesión no válida</h2>
+    <p class="text-brown text-sm">No se pudo identificar al usuario actual.</p>
+  </div>
+}

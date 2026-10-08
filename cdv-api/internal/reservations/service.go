@@ -136,6 +136,13 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 	return s.repository.GetReservationByID(ctx, id)
 }
 
+func (s *Service) GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error) {
+	if userID == 0 {
+		return nil, errors.New("El usuario es requerido")
+	}
+
+	return s.repository.GetReservationsByUserID(ctx, userID)
+}
 func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) (*ReservationDetail, error) {
 	if id <= 0 {
 		return nil, errors.New("ID de reservación inválido")

@@ -1,0 +1,42 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 font-sans"
+  (click)="!loading && dismiss.emit()"
+>
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cancel-title"
+    class="bg-white rounded-xl shadow-lg border border-brown/15 p-6 w-full max-w-md"
+    (click)="$event.stopPropagation()"
+  >
+    <h3 id="cancel-title" class="font-serif text-xl text-black mb-1">
+      ¿Cancelar esta reservación?
+    </h3>
+    <p class="text-sm text-brown mb-4">Esta accion no se puede deshacer.</p>
+
+    <div class="bg-cream rounded-lg p-3 text-sm text-brown mb-5">
+      <p class="font-medium text-black">{{ reservation.cabinName }}</p>
+      <p>{{ formatDate(reservation.startDate) }} – {{ formatDate(reservation.endDate) }}</p>
+      <p>{{ formatPrice(reservation.totalPrice) }}</p>
+    </div>
+
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+      <button
+        type="button"
+        (click)="dismiss.emit()"
+        [disabled]="loading"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Mantener reservacion
+      </button>
+      <button
+        type="button"
+        (click)="confirm.emit()"
+        [disabled]="loading"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-orange text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ loading ? 'Cancelando…' : 'Sí, cancelar' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -107,6 +107,50 @@ func (r *Repository) CancelReservation(ctx context.Context, id int, cancelledAt 
 	return nil
 }
 
+func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error) {
+	query := `
+		SELECT r.id, r.id_cabana, c.nombre,
+		       img.ruta,
+		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+		       ((r.fecha_fin - r.fecha_inicio) * c.precio)::float8,
+		       r.estado, r.fecha_creacion, r.fecha_cancelacion
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		LEFT JOIN LATERAL (
+			SELECT i.ruta
+			FROM imagenes i
+			WHERE i.id_cabana = c.id
+			ORDER BY i.fecha_creacion DESC, i.id DESC
+			LIMIT 1
+		) img ON TRUE
+		WHERE r.id_usuario = $1
+		ORDER BY r.fecha_inicio DESC, r.id DESC
+	`
+	rows, err := r.pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cards := []ReservationCard{}
+	for rows.Next() {
+		var c ReservationCard
+		if err := rows.Scan(
+			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.StartDate, &c.EndDate, &c.TotalPrice,
+			&c.Status, &c.CreatedAt, &c.CancelledAt,
+		); err != nil {
+			return nil, err
+		}
+		cards = append(cards, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cards, nil
+}
+
 // HasUserOverlap indica si el usuario ya tiene otra reservación activa
 // (en cualquier cabaña) que se cruza con [startDate, endDate].
 // excludeID permite ignorar una reservación (útil al editar).

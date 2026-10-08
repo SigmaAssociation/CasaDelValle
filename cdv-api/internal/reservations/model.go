@@ -66,6 +66,18 @@ type CancelReservationResponse struct {
 	Reservation *ReservationDetail `json:"reservation"`
 }
 
+type ReservationCard struct {
+	ID            int        `json:"id"`
+	CabinID       int        `json:"cabinId"`
+	CabinName     string     `json:"cabinName"`
+	CabinImageURL *string    `json:"cabinImageUrl,omitempty"`
+	StartDate     string     `json:"startDate"` 
+	EndDate       string     `json:"endDate"`
+	TotalPrice    float64    `json:"totalPrice"`
+	Status        string     `json:"status"`
+	CreatedAt     time.Time  `json:"createdAt"`
+	CancelledAt   *time.Time `json:"cancelledAt"`
+}
 type UpdateReservationResponse struct {
 	Message     string             `json:"message"`
 	Reservation *ReservationDetail `json:"reservation"`

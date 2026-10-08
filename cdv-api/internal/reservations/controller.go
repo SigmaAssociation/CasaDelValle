@@ -132,7 +132,6 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Pueden cancelar: quien reservó, el dueño de la cabaña o un administrador.
 	canCancel := middleware.AuthorizeSelfOrAdmin(r, reservation.UserID) ||
 		middleware.AuthorizeSelfOrAdmin(r, reservation.HostID)
 	if !canCancel {
@@ -159,6 +158,33 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 		Message:     "Reservación cancelada exitosamente",
 		Reservation: cancelled,
 	})
+}
+
+func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("userId")
+	userID, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil || userID == 0 {
+		writeError(w, http.StatusBadRequest, "ID de usuario inválido")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, uint(userID)) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para ver estas reservaciones")
+		return
+	}
+
+	cards, err := c.service.GetReservationsByUserID(r.Context(), uint(userID))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Error al obtener las reservaciones")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, cards)
 }
 
 // UpdateReservation actualiza una reservación.

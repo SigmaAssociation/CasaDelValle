@@ -98,6 +98,7 @@ func main() {
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
+	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	// -------------------------
 	// Server
 	// -------------------------
