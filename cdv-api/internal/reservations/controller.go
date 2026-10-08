@@ -61,7 +61,8 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	reservationID, err := c.service.CreateReservation(r.Context(), req)
 	if err != nil {
 		switch err.Error() {
-		case "La cabaña no está disponible en el rango de fechas seleccionado":
+		case "La cabaña no está disponible en el rango de fechas seleccionado",
+			"El usuario ya tiene otra reservación en el rango de fechas seleccionado":
 			writeError(w, http.StatusConflict, err.Error())
 		case "La cabaña especificada no existe", "El usuario especificado no existe":
 			writeError(w, http.StatusNotFound, err.Error())
@@ -157,4 +158,69 @@ func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	writeJSON(w, http.StatusOK, cards)
+}
+
+func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de reservación inválido")
+		return
+	}
+
+	var req UpdateReservationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+		return
+	}
+
+	existing, err := c.service.GetReservationByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrReservationNotFound) {
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la reservación")
+		return
+	}
+
+	// Pueden editar: quien reservó, el dueño de la cabaña o un administrador.
+	canEdit := middleware.AuthorizeSelfOrAdmin(r, existing.UserID) ||
+		middleware.AuthorizeSelfOrAdmin(r, existing.HostID)
+	if !canEdit {
+		writeError(w, http.StatusForbidden, "No tiene permisos para editar esta reservación")
+		return
+	}
+
+	updated, err := c.service.UpdateReservation(r.Context(), id, req)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrReservationNotFound):
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+		case errors.Is(err, ErrReservationNotEditable):
+			writeError(w, http.StatusConflict, "La reservación no se puede modificar")
+		case err.Error() == "La cabaña no está disponible en el rango de fechas seleccionado" ||
+			err.Error() == "El usuario ya tiene otra reservación en el rango de fechas seleccionado":
+			writeError(w, http.StatusConflict, err.Error())
+		case err.Error() == "La cabaña especificada no existe":
+			writeError(w, http.StatusNotFound, err.Error())
+		default:
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, UpdateReservationResponse{
+		Message:     "Reservación actualizada exitosamente",
+		Reservation: updated,
+	})
 }

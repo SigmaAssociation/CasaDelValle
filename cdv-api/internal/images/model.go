@@ -25,6 +25,17 @@ type ImagesListResponse struct {
 	Total int             `json:"total"`
 }
 
+type CreateImageResponse struct {
+	Message string `json:"message"`
+	ImageID int    `json:"image_id,omitempty"`
+	Path    string `json:"path,omitempty"`
+}
+
+type DeleteImageResponse struct {
+	Message      string `json:"message"`
+	RowsAffected int    `json:"rows_affected,omitempty"`
+}
+
 type ErrorResponse struct {
 	Message string `json:"message"`
 }

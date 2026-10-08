@@ -74,11 +74,14 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
 
-	mux.HandleFunc("GET /cdv-api/cabins/images/{id}", imageController.GetImagesByCabin)
-	mux.HandleFunc("GET /cdv-api/cabins/images/{id}/principal", imageController.GetMainImageByCabin)
+	mux.HandleFunc("POST /cdv-api/cabins/images/{cabinId}", imageController.CreateImage)
+	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}", imageController.GetImagesByCabin)
+	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}/principal", imageController.GetMainImageByCabin)
 	mux.HandleFunc("GET /cdv-api/images/{id}", imageController.GetImageByID)
+	mux.HandleFunc("DELETE /cdv-api/images/{id}", imageController.DeleteImage)
 
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
+	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	// -------------------------
@@ -90,6 +93,14 @@ func main() {
 	}
 
 	addr := fmt.Sprintf(":%s", port)
+
+	// Servir archivos subidos (imágenes de cabañas) de forma pública, para que
+	// cualquier usuario pueda verlas como referencia visual del catálogo.
+	mux.Handle(
+		"/cdv-api/uploads/",
+		http.StripPrefix("/cdv-api/uploads/", http.FileServer(http.Dir("./uploads"))),
+	)
+
 	handler := middleware.CORS(middleware.Auth(mux))
 
 	log.Printf("Servidor escuchando en %s", addr)

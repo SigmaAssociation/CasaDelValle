@@ -7,13 +7,14 @@ import { Cabin } from "../models/cabin";
 import { CabinResponse, CabinsListResponse, CabinCardResponse, CabinCardsListResponse, CabinSearchParams } from "../models/cabin-response";
 import { CabinRequest } from "../models/create-cabin";
 import { RegisterResponse } from "../models/register-response";
+import { CabinImage, CreateImageResponse, CabinImagesListResponse, DeleteImageResponse } from "../models/cabin-image";
 
 @Injectable({
     providedIn: 'root'
 })
 
 export class CabinService {
-    restConstants = new RestConstants();
+    public restConstants = new RestConstants();
 
     constructor(private httpClient: HttpClient) { }
 
@@ -69,6 +70,26 @@ export class CabinService {
 
         return this.httpClient.get<CabinCardsListResponse>(
             `${this.restConstants.getApiURL()}cabins/search`, { params }
+        );
+    }
+
+    public uploadImage(cabinId: number, file: File): Observable<CreateImageResponse> {
+        const formData = new FormData();
+        formData.append('image', file);
+        return this.httpClient.post<CreateImageResponse>(
+            `${this.restConstants.getApiURL()}cabins/images/${cabinId}`, formData
+        );
+    }
+
+    public getImagesByCabin(cabinId: number): Observable<CabinImage[]> {
+        return this.httpClient.get<CabinImagesListResponse | CabinImage[]>(
+            `${this.restConstants.getApiURL()}cabins/images/${cabinId}`
+        ).pipe(map((res) => Array.isArray(res) ? res : res.data));
+    }
+
+    public deleteImage(imageId: number): Observable<DeleteImageResponse> {
+        return this.httpClient.delete<DeleteImageResponse>(
+            `${this.restConstants.getApiURL()}images/${imageId}`
         );
     }
 }

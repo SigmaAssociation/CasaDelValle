@@ -2,7 +2,9 @@ package images
 
 import (
 	"context"
+	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -35,6 +37,24 @@ func scanImage(scan func(dest ...any) error) (Image, error) {
 	)
 
 	return i, err
+}
+
+func (r *Repository) CreateImage(ctx context.Context, img Image) (int, error) {
+	var id int
+	query := `
+		INSERT INTO imagenes (ruta, id_usuario, id_cabana)
+		VALUES ($1, $2, $3)
+		RETURNING id
+	`
+	err := r.pool.QueryRow(ctx, query, img.Path, img.UserID, img.CabinID).Scan(&id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			return 0, errors.New("La cabaña especificada no existe")
+		}
+		return 0, err
+	}
+	return id, nil
 }
 
 // GetByCabinID retorna todas las imágenes que pertenecen a una cabaña.
@@ -87,4 +107,18 @@ func (r *Repository) GetByID(ctx context.Context, id int) (Image, error) {
 	)
 
 	return scanImage(row.Scan)
+}
+
+func (r *Repository) DeleteImage(ctx context.Context, id int) (int, error) {
+	result, err := r.pool.Exec(ctx, `DELETE FROM imagenes WHERE id = $1`, id)
+	if err != nil {
+		return 0, err
+	}
+	return int(result.RowsAffected()), nil
+}
+
+func (r *Repository) GetCabinHostID(ctx context.Context, cabinID int) (int, error) {
+	var hostID int
+	err := r.pool.QueryRow(ctx, `SELECT id_anfitrion FROM cabanas WHERE id = $1`, cabinID).Scan(&hostID)
+	return hostID, err
 }

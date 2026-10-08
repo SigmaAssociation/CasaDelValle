@@ -46,26 +46,29 @@ func (r *Repository) CreateReservation(ctx context.Context, req ReservationReque
 	return id, nil
 }
 
-func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string) (bool, error) {
+// HasOverlap indica si ya existe otra reservación activa para la cabaña
+// cuyo rango de fechas se cruza con [startDate, endDate].
+// excludeID permite ignorar una reservación (útil al editar).
+func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string, excludeID int) (bool, error) {
 	var exists bool
 	query := `
 		SELECT EXISTS (
 			SELECT 1 FROM reservaciones
 			WHERE id_cabana = $1
+			  AND id <> $4
 			  AND estado <> 'cancelada'
 			  AND fecha_inicio <= $3
 			  AND fecha_fin >= $2
 		)
 	`
-	err := r.pool.QueryRow(ctx, query, cabinID, startDate, endDate).Scan(&exists)
+	err := r.pool.QueryRow(ctx, query, cabinID, startDate, endDate, excludeID).Scan(&exists)
 	if err != nil {
 		return false, err
 	}
 	return exists, nil
 }
 
-func (r *Repository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
-	query := `
+func (r *Repository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {	query := `
 		SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
@@ -146,4 +149,55 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		return nil, err
 	}
 	return cards, nil
+}
+
+// HasUserOverlap indica si el usuario ya tiene otra reservación activa
+// (en cualquier cabaña) que se cruza con [startDate, endDate].
+// excludeID permite ignorar una reservación (útil al editar).
+func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate, endDate string, excludeID int) (bool, error) {
+	var exists bool
+	query := `
+		SELECT EXISTS (
+			SELECT 1 FROM reservaciones
+			WHERE id_usuario = $1
+			  AND id <> $4
+			  AND estado = 'activa'
+			  AND fecha_inicio <= $3
+			  AND fecha_fin >= $2
+		)
+	`
+	err := r.pool.QueryRow(ctx, query, userID, startDate, endDate, excludeID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+// UpdateReservation modifica cabaña y fechas de una reservación activa.
+func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
+	query := `
+		UPDATE reservaciones
+		SET id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
+		WHERE id = $4 AND estado = 'activa'
+	`
+	tag, err := r.pool.Exec(ctx, query, req.CabinID, req.StartDate, req.EndDate, id)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23503":
+				if pgErr.ConstraintName == "fk_reservacion_cabana" {
+					return errors.New("La cabaña especificada no existe")
+				}
+				return errors.New("La cabaña o el usuario especificado no existe")
+			case "23514":
+				return errors.New("La fecha de fin no puede ser anterior a la fecha de inicio")
+			}
+		}
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotEditable
+	}
+	return nil
 }

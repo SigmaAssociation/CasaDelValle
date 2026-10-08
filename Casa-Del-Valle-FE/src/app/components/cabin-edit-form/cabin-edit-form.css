@@ -1,0 +1,18 @@
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+input[type="file"] {
+  display: block;
+  width: 100%;
+}
+
+img[src] {
+  display: block;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
