@@ -15,6 +15,7 @@ import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
 import { MyReservationsPage } from './pages/my-reservations-page/my-reservations-page';
 import { hostGuard } from './guards/host-guard';
+import { NotificacionesPage } from './pages/notificaciones-page/notificaciones-page';
 
 export const routes: Routes = [
     {
@@ -75,6 +76,11 @@ export const routes: Routes = [
     {
         path: 'mis-reservaciones',
         component: MyReservationsPage,
+        canActivate: [authGuard],
+    },
+    {
+        path: 'notificaciones',
+        component: NotificacionesPage,
         canActivate: [authGuard],
     },
     {
