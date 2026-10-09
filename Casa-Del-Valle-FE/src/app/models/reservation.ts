@@ -3,6 +3,8 @@ export interface Reservation {
   cabinId: number;
   cabinName: string;
   cabinImageUrl?: string;
+  guestId?: number;
+  guestName?: string;
   startDate: string;
   endDate: string;
   totalPrice: number;

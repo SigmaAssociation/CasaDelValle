@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Lista de cabañas",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinsListResponse"
+                            "$ref": "#/definitions/cabins.CabinsListResponse"
                         }
                     },
                     "500": {
@@ -72,7 +72,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CreateCabinRequest"
+                            "$ref": "#/definitions/cabins.CreateCabinRequest"
                         }
                     }
                 ],
@@ -80,7 +80,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Cabaña registrada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CreateCabinResponse"
+                            "$ref": "#/definitions/cabins.CreateCabinResponse"
                         }
                     },
                     "400": {
@@ -132,7 +132,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Lista de imágenes",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImagesListResponse"
+                            "$ref": "#/definitions/images.ImagesListResponse"
                         }
                     },
                     "400": {
@@ -192,7 +192,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Imagen subida exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.CreateImageResponse"
+                            "$ref": "#/definitions/images.CreateImageResponse"
                         }
                     },
                     "400": {
@@ -253,7 +253,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Imagen principal",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImageResponse"
+                            "$ref": "#/definitions/images.ImageResponse"
                         }
                     },
                     "400": {
@@ -340,7 +340,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Resultados de la búsqueda",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinCardsListResponse"
+                            "$ref": "#/definitions/cabins.CabinCardsListResponse"
                         }
                     },
                     "400": {
@@ -383,7 +383,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Cabañas del usuario",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinsListResponse"
+                            "$ref": "#/definitions/cabins.CabinsListResponse"
                         }
                     },
                     "400": {
@@ -435,7 +435,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Detalle de la cabaña",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinResponse"
+                            "$ref": "#/definitions/cabins.CabinResponse"
                         }
                     },
                     "400": {
@@ -489,7 +489,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.UpdateCabinRequest"
+                            "$ref": "#/definitions/cabins.UpdateCabinRequest"
                         }
                     }
                 ],
@@ -556,7 +556,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Cabaña eliminada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.DeleteCabinResponse"
+                            "$ref": "#/definitions/cabins.DeleteCabinResponse"
                         }
                     },
                     "400": {
@@ -617,7 +617,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Imagen",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImageResponse"
+                            "$ref": "#/definitions/images.ImageResponse"
                         }
                     },
                     "400": {
@@ -718,7 +718,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserLoginRequest"
+                            "$ref": "#/definitions/users.UserLoginRequest"
                         }
                     }
                 ],
@@ -726,7 +726,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Usuario autenticado exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserLoginResponse"
+                            "$ref": "#/definitions/users.UserLoginResponse"
                         }
                     },
                     "400": {
@@ -740,6 +740,210 @@ const docTemplate = `{
                     },
                     "401": {
                         "description": "Correo o contraseña incorrectos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve las notificaciones personales del usuario autenticado en orden cronológico descendente (más reciente primero). El buzón es personal: siempre corresponde al usuario del token. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notificaciones"
+                ],
+                "summary": "Obtener buzón de notificaciones",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Cantidad máxima por página (por defecto 20, máximo 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Desplazamiento para paginar (por defecto 0)",
+                        "name": "offset",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Lista de notificaciones del usuario",
+                        "schema": {
+                            "$ref": "#/definitions/notifications.NotificationListResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Usuario no autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno al obtener las notificaciones",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/read-all": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marca como leídas todas las notificaciones del usuario autenticado. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notificaciones"
+                ],
+                "summary": "Marcar todas las notificaciones como leídas",
+                "responses": {
+                    "200": {
+                        "description": "Resultado de la actualización",
+                        "schema": {
+                            "$ref": "#/definitions/notifications.MarkAllReadResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Usuario no autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno al actualizar las notificaciones",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/unread-count": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve cuántas notificaciones sin leer tiene el usuario autenticado. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notificaciones"
+                ],
+                "summary": "Contar notificaciones no leídas",
+                "responses": {
+                    "200": {
+                        "description": "Cantidad de notificaciones no leídas",
+                        "schema": {
+                            "$ref": "#/definitions/notifications.UnreadCountResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Usuario no autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Error interno al contar las notificaciones",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notifications/{id}/read": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marca como leída la notificación indicada. Solo su dueño puede marcarla; si no existe o pertenece a otro usuario se devuelve 404. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notificaciones"
+                ],
+                "summary": "Marcar una notificación como leída",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la notificación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Notificación marcada como leída",
+                        "schema": {
+                            "$ref": "#/definitions/notifications.MarkReadResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de notificación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Usuario no autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Notificación no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -775,7 +979,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.ReservationRequest"
+                            "$ref": "#/definitions/reservations.ReservationRequest"
                         }
                     }
                 ],
@@ -783,7 +987,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Reservación registrada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.CreateReservationResponse"
+                            "$ref": "#/definitions/reservations.CreateReservationResponse"
                         }
                     },
                     "400": {
@@ -825,7 +1029,185 @@ const docTemplate = `{
                 }
             }
         },
+        "/reservations/cabin/{cabinId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna las reservaciones de la cabaña indicada, incluyendo quién reservó. Solo el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Listar reservaciones por cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de reservaciones",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/reservations.ReservationCard"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID de cabaña inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Cabaña no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/user/{userId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Listar reservaciones por usuario",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de usuario",
+                        "name": "userId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Listado de reservaciones",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/reservations.ReservationCard"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID de usuario inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna el detalle de una reservación. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Obtener reservación por ID",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detalle de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.ReservationDetail"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
             "put": {
                 "security": [
                     {
@@ -857,7 +1239,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.UpdateReservationRequest"
+                            "$ref": "#/definitions/reservations.UpdateReservationRequest"
                         }
                     }
                 ],
@@ -865,7 +1247,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Reservación actualizada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.UpdateReservationResponse"
+                            "$ref": "#/definitions/reservations.UpdateReservationResponse"
                         }
                     },
                     "400": {
@@ -935,7 +1317,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Reservación cancelada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.CancelReservationResponse"
+                            "$ref": "#/definitions/reservations.CancelReservationResponse"
                         }
                     },
                     "400": {
@@ -998,7 +1380,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_users.User"
+                                "$ref": "#/definitions/users.User"
                             }
                         }
                     },
@@ -1041,7 +1423,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.RegisterRequest"
+                            "$ref": "#/definitions/users.RegisterRequest"
                         }
                     }
                 ],
@@ -1049,7 +1431,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Usuario registrado exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.RegisterResponse"
+                            "$ref": "#/definitions/users.RegisterResponse"
                         }
                     },
                     "400": {
@@ -1101,7 +1483,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Perfil del usuario",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.User"
+                            "$ref": "#/definitions/users.User"
                         }
                     },
                     "400": {
@@ -1164,7 +1546,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserUpdate"
+                            "$ref": "#/definitions/users.UserUpdate"
                         }
                     }
                 ],
@@ -1214,10 +1596,83 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/{id}/role": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Convierte la cuenta indicada de huésped a anfitrión. Solo el mismo usuario o un admin. Si el usuario se actualiza a sí mismo, la respuesta incluye un token fresco con el nuevo rol. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Usuarios"
+                ],
+                "summary": "Cambiar rol a anfitrión",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de usuario",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rol destino (solo anfitrión)",
+                        "name": "role",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UpdateRoleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Rol actualizado",
+                        "schema": {
+                            "$ref": "#/definitions/users.UpdateRoleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos o cambio no permitido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Usuario no encontrado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
-        "internal_cabins.CabinCardResponse": {
+        "cabins.CabinCardResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1246,13 +1701,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinCardsListResponse": {
+        "cabins.CabinCardsListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_cabins.CabinCardResponse"
+                        "$ref": "#/definitions/cabins.CabinCardResponse"
                     }
                 },
                 "total": {
@@ -1260,7 +1715,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinResponse": {
+        "cabins.CabinResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1292,13 +1747,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinsListResponse": {
+        "cabins.CabinsListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_cabins.CabinResponse"
+                        "$ref": "#/definitions/cabins.CabinResponse"
                     }
                 },
                 "total": {
@@ -1306,7 +1761,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CreateCabinRequest": {
+        "cabins.CreateCabinRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1335,7 +1790,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CreateCabinResponse": {
+        "cabins.CreateCabinResponse": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1346,7 +1801,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.DeleteCabinResponse": {
+        "cabins.DeleteCabinResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1357,7 +1812,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.UpdateCabinRequest": {
+        "cabins.UpdateCabinRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1380,7 +1835,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.CreateImageResponse": {
+        "images.CreateImageResponse": {
             "type": "object",
             "properties": {
                 "image_id": {
@@ -1394,7 +1849,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.ImageResponse": {
+        "images.ImageResponse": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1414,13 +1869,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.ImagesListResponse": {
+        "images.ImagesListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_images.ImageResponse"
+                        "$ref": "#/definitions/images.ImageResponse"
                     }
                 },
                 "total": {
@@ -1428,18 +1883,97 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.CancelReservationResponse": {
+        "notifications.MarkAllReadResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "updated": {
+                    "type": "integer"
+                }
+            }
+        },
+        "notifications.MarkReadResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "notifications.Notification": {
+            "type": "object",
+            "properties": {
+                "entidad_id": {
+                    "type": "integer"
+                },
+                "entidad_tipo": {
+                    "type": "string"
+                },
+                "fecha_creacion": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "leida": {
+                    "type": "boolean"
+                },
+                "mensaje": {
+                    "type": "string"
+                },
+                "tipo": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "notifications.NotificationListResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/notifications.Notification"
+                    }
+                },
+                "has_more": {
+                    "type": "boolean"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "notifications.UnreadCountResponse": {
+            "type": "object",
+            "properties": {
+                "unread_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 },
                 "reservation": {
-                    "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
-        "internal_reservations.CreateReservationResponse": {
+        "reservations.CreateReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1450,7 +1984,48 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.ReservationDetail": {
+        "reservations.ReservationCard": {
+            "type": "object",
+            "properties": {
+                "cabinId": {
+                    "type": "integer"
+                },
+                "cabinImageUrl": {
+                    "type": "string"
+                },
+                "cabinName": {
+                    "type": "string"
+                },
+                "cancelledAt": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "guestId": {
+                    "type": "integer"
+                },
+                "guestName": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "totalPrice": {
+                    "type": "number"
+                }
+            }
+        },
+        "reservations.ReservationDetail": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1479,7 +2054,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.ReservationRequest": {
+        "reservations.ReservationRequest": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1498,7 +2073,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.UpdateReservationRequest": {
+        "reservations.UpdateReservationRequest": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1514,18 +2089,18 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.UpdateReservationResponse": {
+        "reservations.UpdateReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 },
                 "reservation": {
-                    "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
-        "internal_users.RegisterRequest": {
+        "users.RegisterRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1536,6 +2111,9 @@ const docTemplate = `{
                 },
                 "email": {
                     "type": "string"
+                },
+                "id_role": {
+                    "type": "integer"
                 },
                 "name": {
                     "type": "string"
@@ -1548,7 +2126,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.RegisterResponse": {
+        "users.RegisterResponse": {
             "type": "object",
             "properties": {
                 "mensaje": {
@@ -1559,7 +2137,29 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.User": {
+        "users.UpdateRoleRequest": {
+            "type": "object",
+            "properties": {
+                "id_role": {
+                    "type": "integer"
+                }
+            }
+        },
+        "users.UpdateRoleResponse": {
+            "type": "object",
+            "properties": {
+                "id_role": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "users.User": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1585,7 +2185,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserLoginRequest": {
+        "users.UserLoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -1596,7 +2196,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserLoginResponse": {
+        "users.UserLoginResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1607,7 +2207,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserUpdate": {
+        "users.UserUpdate": {
             "type": "object",
             "properties": {
                 "address": {

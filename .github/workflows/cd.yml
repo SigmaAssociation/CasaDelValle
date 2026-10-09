@@ -1,69 +1,27 @@
-name: CI/CD
+name: CD
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
 env:
-  GO_VERSION: '1.26'
-  NODE_VERSION: '22.22.3'
   IMAGE_OWNER: mynordaniel
   VM_APP_PATH: /home/CasaDelValle
 
 jobs:
-  backend-tests:
-    name: Backend tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: cdv-api/go.sum
-
-      - name: Run Go tests
-        working-directory: cdv-api
-        run: go test ./...
-
-  frontend-tests:
-    name: Frontend tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: Casa-Del-Valle-FE/package-lock.json
-
-      - name: Install dependencies
-        working-directory: Casa-Del-Valle-FE
-        run: npm ci
-
-      - name: Run Angular tests
-        working-directory: Casa-Del-Valle-FE
-        run: npm test -- --watch=false
-
   build-images:
     name: Build and push images
     runs-on: ubuntu-latest
-    needs:
-      - backend-tests
-      - frontend-tests
 
     steps:
       - name: Checkout repository
@@ -125,4 +83,4 @@ jobs:
           VM_USER: ${{ secrets.VM_USER }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          ssh "$VM_USER@$VM_HOST" "cd '${VM_APP_PATH}' && export BACKEND_IMAGE_TAG='${IMAGE_TAG}' FRONTEND_IMAGE_TAG='${IMAGE_TAG}' && sudo docker compose -f docker-compose.prod.yml pull && sudo docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans"
+          ssh "$VM_USER@$VM_HOST" "cd '${VM_APP_PATH}' && git pull --ff-only origin main && export BACKEND_IMAGE_TAG='${IMAGE_TAG}' FRONTEND_IMAGE_TAG='${IMAGE_TAG}' && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d --no-build --remove-orphans"

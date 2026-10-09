@@ -15,9 +15,7 @@ type Repository struct {
 }
 
 func NewRepository(pool *pgxpool.Pool) *Repository {
-	return &Repository{
-		pool: pool,
-	}
+	return &Repository{pool: pool}
 }
 
 func (r *Repository) CreateReservation(ctx context.Context, req ReservationRequest) (int, error) {
@@ -46,29 +44,69 @@ func (r *Repository) CreateReservation(ctx context.Context, req ReservationReque
 	return id, nil
 }
 
+func datesOverlap(existingStart, existingEnd, newStart, newEnd time.Time) bool {
+	return existingStart.Before(newEnd) && existingEnd.After(newStart)
+}
+
 // HasOverlap indica si ya existe otra reservación activa para la cabaña
 // cuyo rango de fechas se cruza con [startDate, endDate].
 // excludeID permite ignorar una reservación (útil al editar).
 func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string, excludeID int) (bool, error) {
-	var exists bool
 	query := `
-		SELECT EXISTS (
-			SELECT 1 FROM reservaciones
-			WHERE id_cabana = $1
-			  AND id <> $4
-			  AND estado <> 'cancelada'
-			  AND fecha_inicio <= $3
-			  AND fecha_fin >= $2
-		)
+		SELECT fecha_inicio, fecha_fin
+		FROM reservaciones
+		WHERE id_cabana = $1
+		  AND id <> $2
+		  AND estado <> 'cancelada'
 	`
-	err := r.pool.QueryRow(ctx, query, cabinID, startDate, endDate, excludeID).Scan(&exists)
+
+	rows, err := r.pool.Query(ctx, query, cabinID, excludeID)
 	if err != nil {
 		return false, err
 	}
-	return exists, nil
+	defer rows.Close()
+
+	newStart, err := parseReservationDate(startDate, "fecha de inicio")
+	if err != nil {
+		return false, err
+	}
+	newEnd, err := parseReservationDate(endDate, "fecha de fin")
+	if err != nil {
+		return false, err
+	}
+
+	for rows.Next() {
+		var existingStart, existingEnd time.Time
+		if err := rows.Scan(&existingStart, &existingEnd); err != nil {
+			return false, err
+		}
+		if datesOverlap(existingStart, existingEnd, newStart, newEnd) {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
-func (r *Repository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {	query := `
+// GetCabinName devuelve el nombre de una cabaña para redactar los mensajes
+// del buzón de notificaciones.
+func (r *Repository) GetCabinName(ctx context.Context, cabinID int) (string, error) {
+	var name string
+	query := "SELECT nombre FROM cabanas WHERE id = $1"
+	if err := r.pool.QueryRow(ctx, query, cabinID).Scan(&name); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", errors.New("Cabaña no encontrada")
+		}
+		return "", err
+	}
+	return name, nil
+}
+
+func (r *Repository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
+	query := `
 		SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
@@ -77,6 +115,7 @@ func (r *Repository) GetReservationByID(ctx context.Context, id int) (*Reservati
 		JOIN cabanas c ON c.id = r.id_cabana
 		WHERE r.id = $1
 	`
+
 	var res ReservationDetail
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&res.ID, &res.UserID, &res.CabinID, &res.HostID,
@@ -111,12 +150,14 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	query := `
 		SELECT r.id, r.id_cabana, c.nombre,
 		       img.ruta,
+		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
-		       ((r.fecha_fin - r.fecha_inicio) * c.precio)::float8,
+		       c.precio,
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
+		JOIN usuarios u ON u.id = r.id_usuario
 		LEFT JOIN LATERAL (
 			SELECT i.ruta
 			FROM imagenes i
@@ -127,6 +168,7 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		WHERE r.id_usuario = $1
 		ORDER BY r.fecha_inicio DESC, r.id DESC
 	`
+
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, err
@@ -136,13 +178,21 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	cards := []ReservationCard{}
 	for rows.Next() {
 		var c ReservationCard
+		var nightlyRate float64
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
-			&c.StartDate, &c.EndDate, &c.TotalPrice,
+			&c.GuestID, &c.GuestName,
+			&c.StartDate, &c.EndDate, &nightlyRate,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
 		}
+
+		totalPrice, err := calculateReservationTotalPrice(c.StartDate, c.EndDate, nightlyRate)
+		if err != nil {
+			return nil, err
+		}
+		c.TotalPrice = totalPrice
 		cards = append(cards, c)
 	}
 	if err := rows.Err(); err != nil {
@@ -151,26 +201,117 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	return cards, nil
 }
 
+// GetReservationsByCabinID retorna las reservaciones de una cabaña,
+// incluyendo quién reservó. De la más próxima a la más antigua.
+func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error) {
+	query := `
+		SELECT r.id, r.id_cabana, c.nombre,
+		       img.ruta,
+		       r.id_usuario, u.nombre,
+		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+		       c.precio,
+		       r.estado, r.fecha_creacion, r.fecha_cancelacion
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		JOIN usuarios u ON u.id = r.id_usuario
+		LEFT JOIN LATERAL (
+			SELECT i.ruta
+			FROM imagenes i
+			WHERE i.id_cabana = c.id
+			ORDER BY i.fecha_creacion DESC, i.id DESC
+			LIMIT 1
+		) img ON TRUE
+		WHERE r.id_cabana = $1
+		ORDER BY r.fecha_inicio DESC, r.id DESC
+	`
+
+	rows, err := r.pool.Query(ctx, query, cabinID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cards := []ReservationCard{}
+	for rows.Next() {
+		var c ReservationCard
+		var nightlyRate float64
+		if err := rows.Scan(
+			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.GuestID, &c.GuestName,
+			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.Status, &c.CreatedAt, &c.CancelledAt,
+		); err != nil {
+			return nil, err
+		}
+
+		totalPrice, err := calculateReservationTotalPrice(c.StartDate, c.EndDate, nightlyRate)
+		if err != nil {
+			return nil, err
+		}
+		c.TotalPrice = totalPrice
+		cards = append(cards, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cards, nil
+}
+
+// GetCabinHostID devuelve el anfitrión de una cabaña.
+func (r *Repository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
+	var hostID uint
+	err := r.pool.QueryRow(ctx, `SELECT id_anfitrion FROM cabanas WHERE id = $1`, cabinID).Scan(&hostID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrCabinNotFound
+		}
+		return 0, err
+	}
+	return hostID, nil
+}
+
 // HasUserOverlap indica si el usuario ya tiene otra reservación activa
 // (en cualquier cabaña) que se cruza con [startDate, endDate].
 // excludeID permite ignorar una reservación (útil al editar).
 func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate, endDate string, excludeID int) (bool, error) {
-	var exists bool
 	query := `
-		SELECT EXISTS (
-			SELECT 1 FROM reservaciones
-			WHERE id_usuario = $1
-			  AND id <> $4
-			  AND estado = 'activa'
-			  AND fecha_inicio <= $3
-			  AND fecha_fin >= $2
-		)
+		SELECT fecha_inicio, fecha_fin
+		FROM reservaciones
+		WHERE id_usuario = $1
+		  AND id <> $2
+		  AND estado = 'activa'
 	`
-	err := r.pool.QueryRow(ctx, query, userID, startDate, endDate, excludeID).Scan(&exists)
+
+	rows, err := r.pool.Query(ctx, query, userID, excludeID)
 	if err != nil {
 		return false, err
 	}
-	return exists, nil
+	defer rows.Close()
+
+	newStart, err := parseReservationDate(startDate, "fecha de inicio")
+	if err != nil {
+		return false, err
+	}
+	newEnd, err := parseReservationDate(endDate, "fecha de fin")
+	if err != nil {
+		return false, err
+	}
+
+	for rows.Next() {
+		var existingStart, existingEnd time.Time
+		if err := rows.Scan(&existingStart, &existingEnd); err != nil {
+			return false, err
+		}
+		if datesOverlap(existingStart, existingEnd, newStart, newEnd) {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+
+	return false, nil
 }
 
 // UpdateReservation modifica cabaña y fechas de una reservación activa.
@@ -200,4 +341,34 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 		return ErrReservationNotEditable
 	}
 	return nil
+}
+
+// FinalizePastReservations marca como finalizadas las reservaciones activas
+// cuya fecha de fin ya pasó y devuelve los IDs afectados.
+func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error) {
+	query := `
+		UPDATE reservaciones
+		SET estado = 'finalizada'
+		WHERE estado = 'activa' AND fecha_fin < CURRENT_DATE
+		RETURNING id
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := []int{}
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }

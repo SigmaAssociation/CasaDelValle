@@ -5,7 +5,12 @@
   <div class="flex-1 p-5 flex flex-col gap-3">
     <div class="flex items-start justify-between gap-3">
       <div>
-        <h3 class="font-serif text-lg text-black">{{ reservation.cabinName }}</h3>
+        <a
+          [routerLink]="['/cabins', reservation.cabinId]"
+          class="font-serif text-lg text-black hover:text-orange transition-colors"
+        >
+          {{ reservation.cabinName }}
+        </a>
         <p class="text-sm text-brown">
           {{ formatDate(reservation.startDate) }} – {{ formatDate(reservation.endDate) }}
         </p>
@@ -27,6 +32,12 @@
     </div>
 
     <p class="text-sm text-brown">{{ nights }} {{ nights === 1 ? 'noche' : 'noches' }}</p>
+
+    @if (reservation.guestName) {
+      <p class="text-sm text-brown">
+        Huésped: <span class="font-medium text-black">{{ reservation.guestName }}</span>
+      </p>
+    }
 
     <div
       class="mt-auto pt-3 border-t border-brown/15 flex flex-wrap items-center justify-between gap-3"

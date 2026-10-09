@@ -7,7 +7,7 @@ import {
 import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthService } from './auth.service';
 
-const API_URL = 'http://localhost:8080/cdv-api/login';
+const API_URL = '/cdv-api/login';
 
 function buildToken(payload: Record<string, unknown>): string {
     const encoded = btoa(JSON.stringify(payload));
@@ -15,25 +15,20 @@ function buildToken(payload: Record<string, unknown>): string {
 }
 
 describe('AuthService', () => {
-    let service: AuthService;
-    let httpMock: HttpTestingController;
-
-    beforeEach(() => {
+    function createService() {
+        TestBed.resetTestingModule();
         TestBed.configureTestingModule({
             providers: [provideHttpClient(), provideHttpClientTesting()],
         });
-        service = TestBed.inject(AuthService);
-        httpMock = TestBed.inject(HttpTestingController);
-        localStorage.clear();
-        service.logout();
-    });
-
-    afterEach(() => {
-        httpMock.verify();
-        TestBed.resetTestingModule();
-    });
+        return {
+            service: TestBed.inject(AuthService),
+            httpMock: TestBed.inject(HttpTestingController),
+        };
+    }
 
     it('almacena el JWT cuando el login es exitoso', () => {
+        localStorage.clear();
+        const { service, httpMock } = createService();
         const token = buildToken({
             sub: 1,
             name: 'Ana',
@@ -55,9 +50,12 @@ describe('AuthService', () => {
         expect(service.isAuthenticated()).toBe(true);
         expect(service.user()?.email).toBe('ana@ejemplo.com');
         expect(localStorage.getItem('cdv_token')).toBe(token);
+        httpMock.verify();
     });
 
     it('no autentica cuando el backend responde 401', () => {
+        localStorage.clear();
+        const { service, httpMock } = createService();
         service.login('ana@ejemplo.com', 'mala').subscribe({
             error: (err: { status: number }) => expect(err.status).toBe(401),
         });
@@ -70,18 +68,24 @@ describe('AuthService', () => {
 
         expect(service.isAuthenticated()).toBe(false);
         expect(service.getToken()).toBeNull();
+        httpMock.verify();
     });
 
     it('no autentica si el backend responde 200 sin token', () => {
+        localStorage.clear();
+        const { service, httpMock } = createService();
         service.login('ana@ejemplo.com', 'Contraseña123!').subscribe();
 
         httpMock.expectOne(API_URL).flush({ message: 'Error inesperado', token: '' });
 
         expect(service.isAuthenticated()).toBe(false);
         expect(service.getToken()).toBeNull();
+        httpMock.verify();
     });
 
     it('logout limpia el token del almacenamiento', () => {
+        localStorage.clear();
+        const { service, httpMock } = createService();
         const token = buildToken({ sub: 1, name: 'Ana', email: 'ana@ejemplo.com', role: 2 });
 
         service.login('ana@ejemplo.com', 'Contraseña123!').subscribe();
@@ -91,20 +95,18 @@ describe('AuthService', () => {
         expect(service.isAuthenticated()).toBe(false);
         expect(service.getToken()).toBeNull();
         expect(localStorage.getItem('cdv_token')).toBeNull();
+        httpMock.verify();
     });
 
     it('cierra la sesión al iniciar si el token guardado expiró', () => {
-        TestBed.resetTestingModule();
+        localStorage.clear();
         const expired = buildToken({ sub: 1, exp: Math.floor(Date.now() / 1000) - 10 });
         localStorage.setItem('cdv_token', expired);
-        TestBed.configureTestingModule({
-            providers: [provideHttpClient(), provideHttpClientTesting()],
-        });
+        const { service, httpMock } = createService();
 
-        const fresh = TestBed.inject(AuthService);
-
-        expect(fresh.isAuthenticated()).toBe(false);
-        expect(fresh.getToken()).toBeNull();
+        expect(service.isAuthenticated()).toBe(false);
+        expect(service.getToken()).toBeNull();
         expect(localStorage.getItem('cdv_token')).toBeNull();
+        httpMock.verify();
     });
 });
