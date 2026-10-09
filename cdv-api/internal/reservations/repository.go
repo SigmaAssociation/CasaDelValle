@@ -91,6 +91,20 @@ func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, en
 	return false, nil
 }
 
+// GetCabinName devuelve el nombre de una cabaña para redactar los mensajes
+// del buzón de notificaciones.
+func (r *Repository) GetCabinName(ctx context.Context, cabinID int) (string, error) {
+	var name string
+	query := "SELECT nombre FROM cabanas WHERE id = $1"
+	if err := r.pool.QueryRow(ctx, query, cabinID).Scan(&name); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", errors.New("Cabaña no encontrada")
+		}
+		return "", err
+	}
+	return name, nil
+}
+
 func (r *Repository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
 	query := `
 		SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
@@ -254,4 +268,34 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 		return ErrReservationNotEditable
 	}
 	return nil
+}
+
+// FinalizePastReservations marca como finalizadas las reservaciones activas
+// cuya fecha de fin ya pasó y devuelve los IDs afectados.
+func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error) {
+	query := `
+		UPDATE reservaciones
+		SET estado = 'finalizada'
+		WHERE estado = 'activa' AND fecha_fin < CURRENT_DATE
+		RETURNING id
+	`
+
+	rows, err := r.pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ids := []int{}
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return ids, nil
 }
