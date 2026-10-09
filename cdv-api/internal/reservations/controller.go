@@ -160,6 +160,56 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetReservationByID retorna el detalle de una reservación.
+// @Summary Obtener reservación por ID
+// @Description Retorna el detalle de una reservación. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.
+// @Tags Reservaciones
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Success 200 {object} ReservationDetail "Detalle de la reservación"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Router /reservations/{id} [get]
+func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de reservación inválido")
+		return
+	}
+
+	reservation, err := c.service.GetReservationByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrReservationNotFound) {
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la reservación")
+		return
+	}
+
+	// Puede verla: quien reservó, el dueño de la cabaña o un administrador.
+	canView := middleware.AuthorizeSelfOrAdmin(r, reservation.UserID) ||
+		middleware.AuthorizeSelfOrAdmin(r, reservation.HostID)
+	if !canView {
+		writeError(w, http.StatusForbidden, "No tiene permisos para ver esta reservación")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, reservation)
+}
+
 func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -179,6 +229,52 @@ func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Reques
 	}
 
 	cards, err := c.service.GetReservationsByUserID(r.Context(), uint(userID))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Error al obtener las reservaciones")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, cards)
+}
+
+// GetReservationsByCabin retorna las reservaciones de una cabaña.
+// @Summary Obtener reservaciones por cabaña
+// @Description Retorna el listado de reservaciones de una cabaña. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.
+// @Tags Reservaciones, Cabañas
+// @Produce json
+// @Security BearerAuth
+// @Param cabinId path int true "ID de cabaña"
+// @Success 200 {object} ReservationCard[] "Listado de reservaciones de la cabaña"
+// @Router /reservations/cabin/{cabinId} [get]
+func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("cabinId")
+	cabinID, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil || cabinID == 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
+	hostID, err := c.service.GetCabinHostID(r.Context(), uint(cabinID))
+	if err != nil {
+		if errors.Is(err, ErrCabinNotFound) {
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener las reservaciones")
+		return
+	}
+
+	if !middleware.AuthorizeSelfOrAdmin(r, hostID) {
+		writeError(w, http.StatusForbidden, "No tiene permisos para ver estas reservaciones")
+		return
+	}
+
+	cards, err := c.service.GetReservationsByCabinID(r.Context(), uint(cabinID))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "Error al obtener las reservaciones")
 		return

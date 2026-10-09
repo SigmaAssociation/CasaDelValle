@@ -135,6 +135,8 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
+	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
+	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)
 
 	// Buzón de notificaciones (personal: siempre el usuario del token).
 	mux.HandleFunc("GET /cdv-api/notifications", notificationController.GetNotifications)

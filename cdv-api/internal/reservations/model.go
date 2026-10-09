@@ -42,6 +42,7 @@ var (
 	ErrReservationNotCancellable = errors.New("reservation not cancellable")
 	ErrReservationNotEditable    = errors.New("reservation not editable")
 	ErrCancellationTooLate       = errors.New("cancellation too late")
+	ErrCabinNotFound             = errors.New("cabin not found")
 )
 
 type UpdateReservationRequest struct {
@@ -71,6 +72,8 @@ type ReservationCard struct {
 	CabinID       int        `json:"cabinId"`
 	CabinName     string     `json:"cabinName"`
 	CabinImageURL *string    `json:"cabinImageUrl,omitempty"`
+	GuestID       int        `json:"guestId"`
+	GuestName     string     `json:"guestName"`
 	StartDate     string     `json:"startDate"` 
 	EndDate       string     `json:"endDate"`
 	TotalPrice    float64    `json:"totalPrice"`

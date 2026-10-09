@@ -31,8 +31,10 @@ type ReservationRepository interface {
 	GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error)
 	CancelReservation(ctx context.Context, id int, cancelledAt time.Time) error
 	GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error)
+	GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error)
 	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
 	GetCabinName(ctx context.Context, cabinID int) (string, error)
+	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
 	FinalizePastReservations(ctx context.Context) ([]int, error)
 }
 
@@ -291,6 +293,22 @@ func (s *Service) GetReservationsByUserID(ctx context.Context, userID uint) ([]R
 	}
 
 	return s.repository.GetReservationsByUserID(ctx, userID)
+}
+
+func (s *Service) GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error) {
+	if cabinID == 0 {
+		return nil, errors.New("La cabaña es requerida")
+	}
+
+	return s.repository.GetReservationsByCabinID(ctx, cabinID)
+}
+
+func (s *Service) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
+	if cabinID == 0 {
+		return 0, errors.New("La cabaña es requerida")
+	}
+
+	return s.repository.GetCabinHostID(ctx, cabinID)
 }
 func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) (*ReservationDetail, error) {
 	if id <= 0 {

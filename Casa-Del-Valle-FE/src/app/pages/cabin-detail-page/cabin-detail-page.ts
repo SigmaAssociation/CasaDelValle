@@ -4,12 +4,16 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
+import { Reservation } from '../../models/reservation';
+import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CabinService } from '../../services/cabin.service';
+import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { ReservationForm } from '../../components/reservation-form/reservation-form';
+import { ReservationCard } from '../../components/reservation-card/reservation-card';
 
 @Component({
-  imports: [CommonModule, RouterLink, ReservationForm],
+  imports: [CommonModule, RouterLink, ReservationForm, ReservationCard],
   selector: 'app-cabin-detail-page',
   templateUrl: './cabin-detail-page.html',
 })
@@ -25,9 +29,13 @@ export class CabinDetailPage implements OnInit {
   currentUserId: number | null = null;
   isAdmin = false;
   showReservationForm = false;
+  cabinReservations: Reservation[] = [];
+  isLoadingReservations = false;
+  reservationsError: string | null = null;
 
   constructor(
     private cabinService: CabinService,
+    private reservationService: ReservationService,
     private authService: AuthService,
     private route: ActivatedRoute,
     private router: Router,
@@ -54,6 +62,9 @@ export class CabinDetailPage implements OnInit {
         this.images = images ?? [];
         this.selectedImage = this.images.length > 0 ? this.images[0].path : null;
         this.isLoading = false;
+        if (this.canEdit()) {
+          this.loadCabinReservations(id);
+        }
         this.cd.detectChanges();
       },
       error: () => {
@@ -62,6 +73,31 @@ export class CabinDetailPage implements OnInit {
         this.cd.detectChanges();
       },
     });
+  }
+
+  loadCabinReservations(cabinId: number): void {
+    this.isLoadingReservations = true;
+    this.reservationsError = null;
+    this.reservationService.getReservationsByCabin(cabinId).subscribe({
+      next: (list) => {
+        this.cabinReservations = list ?? [];
+        this.isLoadingReservations = false;
+        this.cd.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error al cargar reservaciones de la cabaña:', err);
+        this.isLoadingReservations = false;
+        this.reservationsError = 'No se pudieron cargar las reservaciones de esta cabaña.';
+        this.cd.detectChanges();
+      },
+    });
+  }
+
+  onReservationCancelled(res: CancelReservationResponse): void {
+    this.cabinReservations = this.cabinReservations.map((r) =>
+      r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
+    );
+    this.cd.detectChanges();
   }
 
   canEdit(): boolean {
