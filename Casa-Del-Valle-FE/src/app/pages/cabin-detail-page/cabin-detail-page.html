@@ -114,6 +114,19 @@
             <span class="text-sm font-normal text-gray-500">/ noche</span>
           </p>
 
+          @if (canReserve()) {
+            <button
+              type="button"
+              (click)="toggleReservationForm()"
+              class="mt-4 w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors inline-flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              {{ showReservationForm ? 'Ocultar formulario de reservación' : 'Reservar esta cabaña' }}
+            </button>
+          }
+
           <dl class="mt-5 space-y-3 text-sm">
             <div class="flex gap-2">
               <dt class="w-28 shrink-0 font-medium text-gray-500">Dirección</dt>
@@ -161,7 +174,53 @@
             </p>
           }
         </div>
+
+        @if (canReserve() && showReservationForm) {
+          <div #reservationSection class="mt-6 scroll-mt-24">
+            <app-reservation-form
+              [cabinId]="cabin.id"
+              [nightlyPrice]="cabin.price"
+            />
+          </div>
+        }
       </div>
     </div>
+
+    @if (canEdit()) {
+      <section class="mt-8">
+        <h2 class="text-2xl text-brown mb-1">Reservaciones de esta cabaña</h2>
+        <p class="text-gray-500 text-sm mb-4 font-sans">
+          Quién reservó, en qué fechas y la opción de cancelar si es necesario.
+        </p>
+
+        @if (isLoadingReservations) {
+          <p class="text-sm text-gray-500">Cargando reservaciones…</p>
+        } @else if (reservationsError) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 py-6 px-4 text-center">
+            <p class="text-red-500 text-sm mb-3">{{ reservationsError }}</p>
+            <button
+              type="button"
+              (click)="cabin && loadCabinReservations(cabin.id)"
+              class="px-4 py-2 rounded-md bg-orange text-white text-sm font-medium hover:bg-orange-dark transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        } @else if (cabinReservations.length === 0) {
+          <div class="bg-white rounded-xl shadow-sm border border-gray-100 py-8 px-4 text-center">
+            <p class="text-gray-500 text-sm">Esta cabaña aún no tiene reservaciones.</p>
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            @for (reservation of cabinReservations; track reservation.id) {
+              <app-reservation-card
+                [reservation]="reservation"
+                (cancelled)="onReservationCancelled($event)"
+              />
+            }
+          </div>
+        }
+      </section>
+    }
   }
 </div>

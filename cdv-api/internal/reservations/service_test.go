@@ -22,6 +22,10 @@ type mockReservationRepository struct {
 	cancelReturnErr   error
 	getByUserReturn   []ReservationCard
 	getByUserErr      error
+	getByCabinReturn  []ReservationCard
+	getByCabinErr     error
+	getCabinHostID    uint
+	getCabinHostErr   error
 	updateReturnErr   error
 	getCabinName      string
 	getCabinNameErr   error
@@ -75,6 +79,14 @@ func (m *mockReservationRepository) CancelReservation(ctx context.Context, id in
 
 func (m *mockReservationRepository) GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error) {
 	return m.getByUserReturn, m.getByUserErr
+}
+
+func (m *mockReservationRepository) GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error) {
+	return m.getByCabinReturn, m.getByCabinErr
+}
+
+func (m *mockReservationRepository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
+	return m.getCabinHostID, m.getCabinHostErr
 }
 
 func (m *mockReservationRepository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {

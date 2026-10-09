@@ -1,4 +1,5 @@
 import { Component, EventEmitter, inject, Input, Output, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { Reservation } from '../../models/reservation';
 import { ReservationService } from '../../services/reservation.service';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
@@ -6,7 +7,7 @@ import { CancelReservationModal } from '../cancel-reservation-modal/cancel-reser
 
 @Component({
   selector: 'app-reservation-card',
-  imports: [CancelReservationModal],
+  imports: [CancelReservationModal, RouterLink],
   templateUrl: './reservation-card.html',
 })
 export class ReservationCard {

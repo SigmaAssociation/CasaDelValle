@@ -34,6 +34,7 @@ describe('NotificacionesPage', () => {
     };
 
     expect(component.linkFor({ ...base, entidad_tipo: 'reservacion' })).toBe('/mis-reservaciones');
+    expect(component.linkFor({ ...base, entidad_tipo: 'cabana', entidad_id: 7 })).toBe('/cabins/7');
     expect(component.linkFor({ ...base, entidad_tipo: 'cabana' })).toBe('/mis-cabanas');
     expect(component.linkFor({ ...base, entidad_tipo: 'usuario' })).toBe('/perfil');
     expect(component.linkFor({ ...base, entidad_tipo: null })).toBe('/notificaciones');
