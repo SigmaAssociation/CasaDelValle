@@ -32,6 +32,7 @@ services:
       SERVER_PORT: 8080
       CORS_ALLOW_ORIGIN: ${CORS_ALLOW_ORIGIN:-*}
     volumes:
+      # Imágenes subidas por los usuarios (persisten entre despliegues)
       - uploads_data:/app/uploads
     expose:
       - "8080"
