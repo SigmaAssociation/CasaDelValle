@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.26'
+  NODE_VERSION: '22.22.3'
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: cdv-api/go.sum
+
+      - name: Run Go tests
+        working-directory: cdv-api
+        run: go test ./...
+
+  frontend-tests:
+    name: Frontend tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: Casa-Del-Valle-FE/package-lock.json
+
+      - name: Install dependencies
+        working-directory: Casa-Del-Valle-FE
+        run: npm ci
+
+      - name: Run Angular tests
+        working-directory: Casa-Del-Valle-FE
+        run: npm test -- --watch=false
