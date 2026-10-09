@@ -15,6 +15,7 @@ import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
 import { MyReservationsPage } from './pages/my-reservations-page/my-reservations-page';
 import { hostGuard } from './guards/host-guard';
+import { cabinOwnerGuard } from './guards/cabin-owner-guard';
 import { NotificacionesPage } from './pages/notificaciones-page/notificaciones-page';
 
 export const routes: Routes = [
@@ -50,7 +51,7 @@ export const routes: Routes = [
     {
         path: 'cabins/:id/edit',
         component: CabinEditPage,
-        canActivate: [authGuard, hostGuard],
+        canActivate: [authGuard, hostGuard, cabinOwnerGuard],
     },
     {
         path: 'mis-cabanas',
