@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { firstValueFrom } from 'rxjs';
 import { Notification } from '../models/notification';
 import { NotificationNavigationService } from './notification-navigation.service';
 
@@ -33,22 +34,17 @@ describe('NotificationNavigationService', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should resolve cabin notifications to the cabin detail view', (done) => {
-    service
-      .resolveLink({ ...base, entidad_tipo: 'cabana', entidad_id: 7 })
-      .subscribe((link) => {
-        expect(link).toBe('/cabins/7');
-        done();
-      });
+  it('should resolve cabin notifications to the cabin detail view', async () => {
+    const link = await firstValueFrom(
+      service.resolveLink({ ...base, entidad_tipo: 'cabana', entidad_id: 7 })
+    );
+    expect(link).toBe('/cabins/7');
   });
 
-  it('should resolve reservation notifications to their cabin detail view', (done) => {
-    service
-      .resolveLink({ ...base, entidad_tipo: 'reservacion', entidad_id: 10 })
-      .subscribe((link) => {
-        expect(link).toBe('/cabins/5');
-        done();
-      });
+  it('should resolve reservation notifications to their cabin detail view', async () => {
+    const pending = firstValueFrom(
+      service.resolveLink({ ...base, entidad_tipo: 'reservacion', entidad_id: 10 })
+    );
 
     const req = httpMock.expectOne('/cdv-api/reservations/10');
     expect(req.request.method).toBe('GET');
@@ -61,17 +57,18 @@ describe('NotificationNavigationService', () => {
       end_date: '2026-11-12',
       status: 'activa',
     });
+
+    expect(await pending).toBe('/cabins/5');
   });
 
-  it('should fall back to my reservations when the reservation cannot be resolved', (done) => {
-    service
-      .resolveLink({ ...base, entidad_tipo: 'reservacion', entidad_id: 999 })
-      .subscribe((link) => {
-        expect(link).toBe('/mis-reservaciones');
-        done();
-      });
+  it('should fall back to my reservations when the reservation cannot be resolved', async () => {
+    const pending = firstValueFrom(
+      service.resolveLink({ ...base, entidad_tipo: 'reservacion', entidad_id: 999 })
+    );
 
     const req = httpMock.expectOne('/cdv-api/reservations/999');
     req.flush('No encontrada', { status: 404, statusText: 'Not Found' });
+
+    expect(await pending).toBe('/mis-reservaciones');
   });
 });

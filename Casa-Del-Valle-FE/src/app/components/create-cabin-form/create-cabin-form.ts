@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { CabinRequest } from '../../models/create-cabin';
 import { RegisterResponse } from '../../models/register-response';
 import { AuthService } from '../../services/auth.service';
@@ -12,7 +12,7 @@ const REDIRECT_DELAY_MS = 2000;
 @Component({
   selector: 'app-create-cabin-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule],
   templateUrl: './create-cabin-form.html',
   styleUrl: './create-cabin-form.css'
 })
