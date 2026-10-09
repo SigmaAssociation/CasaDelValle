@@ -3,6 +3,7 @@ import { RestConstants } from "../components/rest-constants";
 import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { Reservation } from "../models/reservation";
+import { ReservationDetail } from "../models/reservation-detail";
 import { CancelReservationResponse } from "../models/cancelReservationResponse";
 import { ReservationRequest } from "../models/create-reservation";
 import { CreateReservationResponse } from "../models/create-reservation-response";
@@ -19,6 +20,18 @@ export class ReservationService {
     public getReservationsByUser(id: number): Observable<Reservation[]> {
         return this.httpClient.get<Reservation[]>(
             `${this.restConstants.getApiURL()}reservations/user/${id}`
+        );
+    }
+
+    public getReservationsByCabin(cabinId: number): Observable<Reservation[]> {
+        return this.httpClient.get<Reservation[]>(
+            `${this.restConstants.getApiURL()}reservations/cabin/${cabinId}`
+        );
+    }
+
+    public getById(id: number): Observable<ReservationDetail> {
+        return this.httpClient.get<ReservationDetail>(
+            `${this.restConstants.getApiURL()}reservations/${id}`
         );
     }
 

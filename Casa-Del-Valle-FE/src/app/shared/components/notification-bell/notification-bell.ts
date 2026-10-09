@@ -10,6 +10,7 @@ import { NavigationEnd, Router, RouterModule } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { filter, interval } from 'rxjs';
 import { NotificationService } from '../../../services/notification.service';
+import { NotificationNavigationService } from '../../../services/notification-navigation.service';
 import { Notification } from '../../../models/notification';
 
 type NotificationCategory = 'reserva' | 'cabana' | 'cuenta';
@@ -25,6 +26,7 @@ export class NotificationBell implements OnInit {
   private readonly POLLING_MS = 60_000;
 
   private notificationService = inject(NotificationService);
+  private navigationService = inject(NotificationNavigationService);
   private router = inject(Router);
   private elementRef = inject(ElementRef<HTMLElement>);
 
@@ -125,22 +127,16 @@ export class NotificationBell implements OnInit {
       });
     }
     this.close();
-    this.router.navigateByUrl(this.linkFor(notification));
+    this.navigationService.resolveLink(notification).subscribe({
+      next: (link) => this.router.navigateByUrl(link),
+      error: () => this.router.navigateByUrl('/notificaciones'),
+    });
   }
 
-  // linkFor resuelve a dónde llevar al usuario según la entidad de la
-  // notificación; si no hay una vista relacionada, va al buzón completo.
+  // linkFor resuelve el destino inmediato según la entidad de la
+  // notificación (ver NotificationNavigationService para el destino final).
   linkFor(notification: Notification): string {
-    switch (notification.entidad_tipo) {
-      case 'reservacion':
-        return '/mis-reservaciones';
-      case 'cabana':
-        return '/mis-cabanas';
-      case 'usuario':
-        return '/perfil';
-      default:
-        return '/notificaciones';
-    }
+    return this.navigationService.linkFor(notification);
   }
 
   category(notification: Notification): NotificationCategory {

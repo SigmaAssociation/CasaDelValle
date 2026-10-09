@@ -150,12 +150,14 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	query := `
 		SELECT r.id, r.id_cabana, c.nombre,
 		       img.ruta,
+		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 		       c.precio,
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
+		JOIN usuarios u ON u.id = r.id_usuario
 		LEFT JOIN LATERAL (
 			SELECT i.ruta
 			FROM imagenes i
@@ -179,6 +181,7 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		var nightlyRate float64
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.GuestID, &c.GuestName,
 			&c.StartDate, &c.EndDate, &nightlyRate,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
@@ -196,6 +199,76 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		return nil, err
 	}
 	return cards, nil
+}
+
+// GetReservationsByCabinID retorna las reservaciones de una cabaña,
+// incluyendo quién reservó. De la más próxima a la más antigua.
+func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error) {
+	query := `
+		SELECT r.id, r.id_cabana, c.nombre,
+		       img.ruta,
+		       r.id_usuario, u.nombre,
+		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+		       c.precio,
+		       r.estado, r.fecha_creacion, r.fecha_cancelacion
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		JOIN usuarios u ON u.id = r.id_usuario
+		LEFT JOIN LATERAL (
+			SELECT i.ruta
+			FROM imagenes i
+			WHERE i.id_cabana = c.id
+			ORDER BY i.fecha_creacion DESC, i.id DESC
+			LIMIT 1
+		) img ON TRUE
+		WHERE r.id_cabana = $1
+		ORDER BY r.fecha_inicio DESC, r.id DESC
+	`
+
+	rows, err := r.pool.Query(ctx, query, cabinID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cards := []ReservationCard{}
+	for rows.Next() {
+		var c ReservationCard
+		var nightlyRate float64
+		if err := rows.Scan(
+			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.GuestID, &c.GuestName,
+			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.Status, &c.CreatedAt, &c.CancelledAt,
+		); err != nil {
+			return nil, err
+		}
+
+		totalPrice, err := calculateReservationTotalPrice(c.StartDate, c.EndDate, nightlyRate)
+		if err != nil {
+			return nil, err
+		}
+		c.TotalPrice = totalPrice
+		cards = append(cards, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return cards, nil
+}
+
+// GetCabinHostID devuelve el anfitrión de una cabaña.
+func (r *Repository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
+	var hostID uint
+	err := r.pool.QueryRow(ctx, `SELECT id_anfitrion FROM cabanas WHERE id = $1`, cabinID).Scan(&hostID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrCabinNotFound
+		}
+		return 0, err
+	}
+	return hostID, nil
 }
 
 // HasUserOverlap indica si el usuario ya tiene otra reservación activa

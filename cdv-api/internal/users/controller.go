@@ -279,6 +279,20 @@ func (c *Controller) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
+// UpdateUserRole convierte un huésped en anfitrión (una sola vía).
+// @Summary Cambiar rol a anfitrión
+// @Description Convierte la cuenta indicada de huésped a anfitrión. Solo el mismo usuario o un admin. Si el usuario se actualiza a sí mismo, la respuesta incluye un token fresco con el nuevo rol. Requiere token.
+// @Tags Usuarios
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de usuario"
+// @Param role body UpdateRoleRequest true "Rol destino (solo anfitrión)"
+// @Success 200 {object} UpdateRoleResponse "Rol actualizado"
+// @Failure 400 {object} map[string]string "Datos inválidos o cambio no permitido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Usuario no encontrado"
+// @Router /users/{id}/role [patch]
 func (c *Controller) UpdateUserRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if r.Method != http.MethodPatch {
