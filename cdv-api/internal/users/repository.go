@@ -23,8 +23,26 @@ func (r *Repository) CreateUser(ctx context.Context, req RegisterRequest, hashPa
 	query := "INSERT INTO usuarios (nombre, dpi, correo, contrasena, id_rol, direccion, telefono) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id"
 	err := r.pool.QueryRow(ctx, query, req.Name, req.DPI, req.Email, hashPassword, req.IDRole, req.Address, req.Phone).Scan(&id)
 	if err != nil {
-		if pgErr, ok := err.(*pgconn.PgError); ok && pgErr.Code == "23505" {
-			return 0, errors.New("El correo o dpi ya está registrado")
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23505": // unique_violation: correo o DPI duplicado
+				switch pgErr.ConstraintName {
+				case "usuarios_correo_key":
+					return 0, ErrDuplicateEmail
+				case "usuarios_dpi_key":
+					return 0, ErrDuplicateDPI
+				default:
+					return 0, ErrDuplicateUser
+				}
+			case "23503": // foreign_key_violation: el rol solicitado no existe
+				if pgErr.ConstraintName == "fk_usuario_rol" {
+					return 0, ErrInvalidRole
+				}
+				return 0, ErrInvalidData
+			case "23514": // check_violation
+				return 0, ErrInvalidData
+			}
 		}
 		return 0, err
 	}
@@ -70,7 +88,6 @@ func (r *Repository) UpdateRole(ctx context.Context, userID int, role uint) (int
 
 	return int(result.RowsAffected()), nil
 }
-
 
 func (r *Repository) GetAll(ctx context.Context) ([]User, error) {
 

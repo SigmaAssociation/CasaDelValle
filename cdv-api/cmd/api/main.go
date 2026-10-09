@@ -16,6 +16,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 
@@ -23,6 +24,7 @@ import (
 	"cdv-api/internal/database"
 	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
+	"cdv-api/internal/notifications"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
 
@@ -52,21 +54,55 @@ func main() {
 	// -------------------------
 	// Dependency Injection
 	// -------------------------
+	notificationRepository := notifications.NewRepository(pool)
+	notificationService := notifications.NewService(notificationRepository)
+	notificationController := notifications.NewController(notificationService)
+
 	userRepository := users.NewRepository(pool)
-	userService := users.NewService(userRepository)
+	userService := users.NewService(userRepository, notificationService)
 	userController := users.NewController(userService)
 
 	cabinRepository := cabins.NewRepository(pool)
-	cabinService := cabins.NewService(cabinRepository)
+	cabinService := cabins.NewService(cabinRepository, notificationService)
 	cabinController := cabins.NewController(cabinService)
 
 	reservationRepository := reservations.NewRepository(pool)
-	reservationService := reservations.NewService(reservationRepository)
+	reservationService := reservations.NewService(reservationRepository, notificationService)
 	reservationController := reservations.NewController(reservationService)
 
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
 	imageController := images.NewController(imageService)
+
+	// -------------------------
+	// Jobs en segundo plano
+	// -------------------------
+	// Finaliza las reservaciones cuya fecha de fin ya pasó y notifica al
+	// huésped, al anfitrión y a los administradores. Se ejecuta al arrancar y
+	// luego cada 6 horas; los errores nunca detienen la API.
+	go func() {
+		const finalizeInterval = 6 * time.Hour
+
+		finalize := func() {
+			jobCtx := context.Background()
+			count, err := reservationService.FinalizePastReservations(jobCtx)
+			if err != nil {
+				log.Printf("reservations: error al finalizar reservaciones vencidas: %v", err)
+				return
+			}
+			if count > 0 {
+				log.Printf("reservations: %d reservación(es) finalizada(s)", count)
+			}
+		}
+
+		finalize()
+
+		ticker := time.NewTicker(finalizeInterval)
+		defer ticker.Stop()
+		for range ticker.C {
+			finalize()
+		}
+	}()
 
 	// -------------------------
 	// Router
@@ -99,6 +135,12 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
+
+	// Buzón de notificaciones (personal: siempre el usuario del token).
+	mux.HandleFunc("GET /cdv-api/notifications", notificationController.GetNotifications)
+	mux.HandleFunc("GET /cdv-api/notifications/unread-count", notificationController.GetUnreadCount)
+	mux.HandleFunc("POST /cdv-api/notifications/read-all", notificationController.MarkAllRead)
+	mux.HandleFunc("PATCH /cdv-api/notifications/{id}/read", notificationController.MarkRead)
 	// -------------------------
 	// Server
 	// -------------------------

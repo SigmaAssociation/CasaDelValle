@@ -62,6 +62,23 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
    docker compose down
    ```
 
+### Migraciones de base de datos
+
+`database/init.sql` contiene el esquema completo (incluida la tabla `notificaciones` y el rol de **Anfitrión**), por lo que las bases **nuevas** no necesitan nada extra. Para una base **existente** que se creó antes de estas funcionalidades, se deben aplicar en orden los siguientes scripts (son idempotentes y se pueden repetir):
+
+```bash
+# 1. Agrega el rol "Anfitrión" (necesario para registrar anfitriones).
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_roles.sql
+
+# 2. Crea el buzón de notificaciones personales.
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications.sql
+
+# 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
+```
+
+Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
+
 ## Estilo de diseño
 
 La aplicación usara la siguiente paleta de colores y se puede utilizar con su respectiva clase:

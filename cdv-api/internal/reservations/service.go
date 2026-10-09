@@ -3,12 +3,25 @@ package reservations
 import (
 	"context"
 	"errors"
+	"fmt"
 	"regexp"
+	"strings"
 	"time"
+
+	"cdv-api/internal/notifications"
 )
 
 type Service struct {
 	repository ReservationRepository
+	notifier   Notifier
+}
+
+// Notifier registra notificaciones en el buzón personal de los usuarios.
+// Interfaz declarada en este package para desacoplarlo del módulo de
+// notifications y poder sustituirla en pruebas.
+type Notifier interface {
+	Notify(ctx context.Context, input notifications.NotificationInput)
+	NotifyAdmins(ctx context.Context, input notifications.NotificationInput)
 }
 
 type ReservationRepository interface {
@@ -19,12 +32,53 @@ type ReservationRepository interface {
 	CancelReservation(ctx context.Context, id int, cancelledAt time.Time) error
 	GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error)
 	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
+	GetCabinName(ctx context.Context, cabinID int) (string, error)
+	FinalizePastReservations(ctx context.Context) ([]int, error)
 }
 
-func NewService(repository ReservationRepository) *Service {
+func NewService(repository ReservationRepository, notifier Notifier) *Service {
 	return &Service{
 		repository: repository,
+		notifier:   notifier,
 	}
+}
+
+// notify registra una notificación en el buzón del usuario sin interrumpir
+// la operación principal: los errores quedan en el log del notifier.
+func (s *Service) notify(ctx context.Context, userID uint, tipo, mensaje, entidadTipo string, entidadID int) {
+	if s.notifier == nil || userID == 0 {
+		return
+	}
+	s.notifier.Notify(ctx, notifications.NotificationInput{
+		UserID:      userID,
+		Tipo:        tipo,
+		Mensaje:     mensaje,
+		EntidadTipo: entidadTipo,
+		EntidadID:   entidadID,
+	})
+}
+
+// notifyAdmins replica un evento del sistema en el buzón de los administradores.
+func (s *Service) notifyAdmins(ctx context.Context, tipo, mensaje, entidadTipo string, entidadID int) {
+	if s.notifier == nil {
+		return
+	}
+	s.notifier.NotifyAdmins(ctx, notifications.NotificationInput{
+		Tipo:        tipo,
+		Mensaje:     mensaje,
+		EntidadTipo: entidadTipo,
+		EntidadID:   entidadID,
+	})
+}
+
+// cabinDisplayName devuelve el nombre de la cabaña para los mensajes del
+// buzón; si no se puede obtener, se usa una referencia genérica por ID.
+func (s *Service) cabinDisplayName(ctx context.Context, cabinID uint) string {
+	name, err := s.repository.GetCabinName(ctx, int(cabinID))
+	if err != nil || strings.TrimSpace(name) == "" {
+		return fmt.Sprintf("la cabaña #%d", cabinID)
+	}
+	return name
 }
 
 const dateLayout = "2006-01-02"
@@ -120,7 +174,41 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 		return 0, errors.New("El usuario ya tiene otra reservación en el rango de fechas seleccionado")
 	}
 
-	return s.repository.CreateReservation(ctx, req)
+	reservationID, err := s.repository.CreateReservation(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+
+	s.notifyReservationCreated(ctx, reservationID, req)
+
+	return reservationID, nil
+}
+
+// notifyReservationCreated avisa al huésped y al anfitrión de la nueva
+// reservación. Se ejecuta después del éxito de la operación; los fallos al
+// notificar nunca afectan la reservación.
+func (s *Service) notifyReservationCreated(ctx context.Context, reservationID int, req ReservationRequest) {
+	detail, err := s.repository.GetReservationByID(ctx, reservationID)
+	if err != nil || detail == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, req.CabinID)
+	period := fmt.Sprintf("del %s al %s", req.StartDate, req.EndDate)
+
+	s.notify(ctx, detail.UserID, notifications.TipoReservaCreada,
+		fmt.Sprintf("Tu reserva en %s %s fue registrada exitosamente.", cabinName, period),
+		notifications.EntidadReservacion, detail.ID)
+
+	if detail.HostID != detail.UserID {
+		s.notify(ctx, detail.HostID, notifications.TipoReservaCreada,
+			fmt.Sprintf("Tu cabaña %s recibió una nueva reserva %s.", cabinName, period),
+			notifications.EntidadReservacion, detail.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaCreada,
+		fmt.Sprintf("Nueva reserva registrada en %s %s (reserva #%d).", cabinName, period, detail.ID),
+		notifications.EntidadReservacion, detail.ID)
 }
 
 const cancellationTimezone = "America/Guatemala"
@@ -167,7 +255,34 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 		return nil, err
 	}
 
+	s.notifyReservationCancelled(ctx, reservation)
+
 	return s.repository.GetReservationByID(ctx, id)
+}
+
+// notifyReservationCancelled avisa al huésped y al anfitrión de la
+// cancelación de la reservación.
+func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaCancelada,
+		fmt.Sprintf("Tu reserva en %s %s fue cancelada.", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaCancelada,
+			fmt.Sprintf("La reserva de tu cabaña %s %s fue cancelada.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaCancelada,
+		fmt.Sprintf("Se canceló la reserva #%d en %s %s.", reservation.ID, cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
 }
 
 func (s *Service) GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error) {
@@ -238,5 +353,82 @@ func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReser
 		return nil, err
 	}
 
-	return s.repository.GetReservationByID(ctx, id)
+	updated, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	s.notifyReservationUpdated(ctx, updated)
+
+	return updated, nil
+}
+
+// notifyReservationUpdated avisa al huésped y al anfitrión de que la
+// reservación fue modificada.
+func (s *Service) notifyReservationUpdated(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaActualizada,
+		fmt.Sprintf("Tu reserva en %s %s fue actualizada.", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaActualizada,
+			fmt.Sprintf("La reserva de tu cabaña %s %s fue actualizada.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaActualizada,
+		fmt.Sprintf("Se actualizó la reserva #%d en %s %s.", reservation.ID, cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+}
+
+// FinalizePastReservations cierra las reservaciones cuya fecha de fin ya pasó
+// y avisa al huésped y al anfitrión. Está pensada para ejecutarse de forma
+// periódica desde un job en segundo plano; devuelve cuántas finalizó.
+func (s *Service) FinalizePastReservations(ctx context.Context) (int, error) {
+	ids, err := s.repository.FinalizePastReservations(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, id := range ids {
+		detail, err := s.repository.GetReservationByID(ctx, id)
+		if err != nil || detail == nil {
+			continue
+		}
+		s.notifyReservationFinished(ctx, detail)
+	}
+
+	return len(ids), nil
+}
+
+// notifyReservationFinished avisa al huésped y al anfitrión de que la
+// reservación concluyó.
+func (s *Service) notifyReservationFinished(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaFinalizada,
+		fmt.Sprintf("Tu reserva en %s %s ha finalizado. ¡Gracias por tu visita!", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaFinalizada,
+			fmt.Sprintf("La reserva de tu cabaña %s %s ha finalizado.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaFinalizada,
+		fmt.Sprintf("Finalizó la reserva #%d en %s %s.", reservation.ID, cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
 }

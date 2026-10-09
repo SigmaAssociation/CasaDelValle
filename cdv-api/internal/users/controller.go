@@ -2,6 +2,7 @@ package users
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"strconv"
@@ -92,7 +93,7 @@ func (c *Controller) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := c.service.RegisterUser(r.Context(), req)
 	if err != nil {
 		status := http.StatusBadRequest
-		if err.Error() == "El correo o dpi ya está registrado" {
+		if errors.Is(err, ErrDuplicateUser) || errors.Is(err, ErrDuplicateEmail) || errors.Is(err, ErrDuplicateDPI) {
 			status = http.StatusConflict
 		}
 		w.WriteHeader(status)
