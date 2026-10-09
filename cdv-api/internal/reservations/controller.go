@@ -210,6 +210,17 @@ func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, reservation)
 }
 
+// GetReservationsByUser lista las reservaciones de un usuario.
+// @Summary Listar reservaciones por usuario
+// @Description Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.
+// @Tags Reservaciones
+// @Produce json
+// @Security BearerAuth
+// @Param userId path int true "ID de usuario"
+// @Success 200 {array} ReservationCard "Listado de reservaciones"
+// @Failure 400 {object} map[string]string "ID de usuario inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Router /reservations/user/{userId} [get]
 func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -237,14 +248,17 @@ func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, cards)
 }
 
-// GetReservationsByCabin retorna las reservaciones de una cabaña.
-// @Summary Obtener reservaciones por cabaña
-// @Description Retorna el listado de reservaciones de una cabaña. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.
-// @Tags Reservaciones, Cabañas
+// GetReservationsByCabin lista las reservaciones de una cabaña.
+// @Summary Listar reservaciones por cabaña
+// @Description Retorna las reservaciones de la cabaña indicada, incluyendo quién reservó. Solo el anfitrión de la cabaña o un admin. Requiere token.
+// @Tags Reservaciones
 // @Produce json
 // @Security BearerAuth
 // @Param cabinId path int true "ID de cabaña"
-// @Success 200 {object} ReservationCard[] "Listado de reservaciones de la cabaña"
+// @Success 200 {array} ReservationCard "Listado de reservaciones"
+// @Failure 400 {object} map[string]string "ID de cabaña inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Cabaña no encontrada"
 // @Router /reservations/cabin/{cabinId} [get]
 func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
