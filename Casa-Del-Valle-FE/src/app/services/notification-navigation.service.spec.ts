@@ -55,7 +55,7 @@ describe('NotificationNavigationService', () => {
       host_id: 2,
       start_date: '2026-11-10',
       end_date: '2026-11-12',
-      status: 'activa',
+      status: 'confirmada',
     });
 
     expect(await pending).toBe('/cabins/5');

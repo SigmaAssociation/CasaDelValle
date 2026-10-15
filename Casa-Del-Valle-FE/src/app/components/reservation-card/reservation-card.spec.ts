@@ -4,6 +4,7 @@ import { of, throwError } from 'rxjs';
 import { vi } from 'vitest';
 import { ReservationCard } from './reservation-card';
 import { ReservationService } from '../../services/reservation.service';
+import { AuthService } from '../../services/auth.service';
 
 const reservation = {
   id: 1,
@@ -12,14 +13,16 @@ const reservation = {
   startDate: '2026-10-10',
   endDate: '2026-10-15',
   totalPrice: 1500,
-  status: 'activa',
+  paidTotal: 1500,
+  guestId: 1,
+  status: 'confirmada',
   createdAt: '2026-10-01T00:00:00Z',
   cancelledAt: null,
 };
 
 const checkinResponse = {
   message: 'Check-in registrado exitosamente',
-  reservation: { ...reservation, status: 'checkin' },
+  reservation: { ...reservation, status: 'en_curso' },
 };
 
 function textOf(fixture: ComponentFixture<ReservationCard>): string {
@@ -42,6 +45,13 @@ describe('ReservationCard', () => {
           useValue: {
             cancel: () => of({ message: 'ok', reservation }),
             checkin: () => of(checkinResponse),
+            payAnticipo: () => of({ message: 'ok', amount: 450, reservation }),
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUserId: () => 1,
           },
         },
       ],

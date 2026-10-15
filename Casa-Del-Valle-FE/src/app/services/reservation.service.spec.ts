@@ -24,7 +24,7 @@ describe('ReservationService check-in', () => {
     expect(service).toBeTruthy();
   });
 
-  it('should register the check-in with PATCH and empty body', () => {
+  it('should register the check-in with PATCH and cash amount', () => {
     const detail = {
       id: 10,
       user_id: 1,
@@ -32,17 +32,17 @@ describe('ReservationService check-in', () => {
       host_id: 2,
       start_date: '2026-11-10',
       end_date: '2026-11-12',
-      status: 'checkin',
+      status: 'en_curso',
     };
 
-    service.checkin(10).subscribe((res) => {
+    service.checkin(10, 200).subscribe((res) => {
       expect(res.message).toBe('Check-in registrado exitosamente');
-      expect(res.reservation.status).toBe('checkin');
+      expect(res.reservation.status).toBe('en_curso');
     });
 
     const req = httpMock.expectOne('/cdv-api/reservations/10/checkin');
     expect(req.request.method).toBe('PATCH');
-    expect(req.request.body).toEqual({});
+    expect(req.request.body).toEqual({ cash_amount: 200 });
     req.flush({ message: 'Check-in registrado exitosamente', reservation: detail });
   });
 

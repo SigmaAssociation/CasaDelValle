@@ -7,6 +7,7 @@ import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
+import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
@@ -109,6 +110,13 @@ export class CabinDetailPage implements OnInit {
     } else {
       this.cd.detectChanges();
     }
+  }
+
+  onReservationPaid(res: PayAnticipoResponse): void {
+    this.cabinReservations = this.cabinReservations.map((r) =>
+      r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
+    );
+    this.cd.detectChanges();
   }
 
   canEdit(): boolean {

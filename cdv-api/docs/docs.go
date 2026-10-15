@@ -1098,21 +1098,16 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "BearerAuth": []
                     }
                 ],
-                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.\nRegistra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.",
+                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.",
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "Reservaciones",
                     "Reservaciones"
                 ],
-                "summary": "Registrar check-in",
+                "summary": "Listar reservaciones por usuario",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1124,13 +1119,16 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Check-in registrado",
+                        "description": "Listado de reservaciones",
                         "schema": {
-                            "$ref": "#/definitions/reservations.CheckinReservationResponse"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/reservations.ReservationCard"
+                            }
                         }
                     },
                     "400": {
-                        "description": "ID de reservación inválido",
+                        "description": "ID de usuario inválido",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1140,24 +1138,6 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "No cumple requisitos (estado, fechas o pago)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1234,7 +1214,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Actualiza la cabaña y las fechas de una reservación activa. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.",
+                "description": "Actualiza la cabaña y las fechas de una reservación pendiente o confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1316,7 +1296,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancela una reservación activa. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.",
+                "description": "Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1384,18 +1364,16 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
-                    },
-                    {
-                        "BearerAuth": []
                     }
                 ],
-                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.\nRegistra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.",
+                "description": "Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva confirmada dentro de su periodo y con el pago total completado. Acepta cash_amount opcional para que el anfitrión registre en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
-                    "application/json",
                     "application/json"
                 ],
                 "tags": [
-                    "Reservaciones",
                     "Reservaciones"
                 ],
                 "summary": "Registrar check-in",
@@ -1406,6 +1384,14 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Efectivo a registrar (opcional)",
+                        "name": "checkin",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckinRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1444,6 +1430,87 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "No cumple requisitos (estado, fechas o pago)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/{id}/payment": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'. Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Pagar anticipo y confirmar reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Monto y método (opcionales)",
+                        "name": "payment",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.PayAnticipoRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Anticipo registrado y reservación confirmada",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.PayAnticipoResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación o cabaña no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La reservación no está pendiente de anticipo",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2068,6 +2135,14 @@ const docTemplate = `{
                 }
             }
         },
+        "reservations.CheckinRequest": {
+            "type": "object",
+            "properties": {
+                "cash_amount": {
+                    "type": "number"
+                }
+            }
+        },
         "reservations.CheckinReservationResponse": {
             "type": "object",
             "properties": {
@@ -2087,6 +2162,31 @@ const docTemplate = `{
                 },
                 "reservation_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "reservations.PayAnticipoRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "method": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.PayAnticipoResponse": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "reservation": {
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
@@ -2119,6 +2219,9 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "paidTotal": {
+                    "type": "number"
                 },
                 "startDate": {
                     "type": "string"

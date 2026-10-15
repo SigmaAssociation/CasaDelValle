@@ -8,7 +8,7 @@ const reservation = {
   startDate: '2026-10-10',
   endDate: '2026-10-15',
   totalPrice: 1500,
-  status: 'activa',
+  status: 'confirmada',
   createdAt: '2026-10-01T00:00:00Z',
 };
 

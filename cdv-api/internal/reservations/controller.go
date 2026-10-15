@@ -3,6 +3,7 @@ package reservations
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"strconv"
 
@@ -94,7 +95,7 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 
 // CancelReservation cancela una reservación.
 // @Summary Cancelar reservación
-// @Description Cancela una reservación activa. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
+// @Description Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
 // @Tags Reservaciones
 // @Produce json
 // @Security BearerAuth
@@ -160,6 +161,92 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// PayAnticipo registra el pago del anticipo y confirma la reservación.
+// @Summary Pagar anticipo y confirmar reservación
+// @Description Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'. Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin. Requiere token.
+// @Tags Reservaciones
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Param payment body PayAnticipoRequest false "Monto y método (opcionales)"
+// @Success 200 {object} PayAnticipoResponse "Anticipo registrado y reservación confirmada"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación o cabaña no encontrada"
+// @Failure 409 {object} map[string]string "La reservación no está pendiente de anticipo"
+// @Router /reservations/{id}/payment [post]
+func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de reservación inválido")
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
+		return
+	}
+
+	reservation, err := c.service.GetReservationByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrReservationNotFound) {
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la reservación")
+		return
+	}
+
+	if userID != reservation.UserID && !middleware.IsAdmin(r) {
+		writeError(w, http.StatusForbidden, "Solo quien reservó puede pagar el anticipo")
+		return
+	}
+
+	var payReq PayAnticipoRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&payReq); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+			return
+		}
+	}
+
+	updated, amount, err := c.service.PayAnticipo(r.Context(), id, payReq.Amount, payReq.Method)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrReservationNotPending):
+			writeError(w, http.StatusConflict, "La reservación no está pendiente de anticipo")
+		case errors.Is(err, ErrReservationNotFound):
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+		case errors.Is(err, ErrCabinNotFound):
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+		case err.Error() == "Método de pago inválido: usa tarjeta, transferencia o efectivo" ||
+			err.Error() == "El anticipo debe ser al menos el 30% del total" ||
+			err.Error() == "El monto no puede superar el total de la reservación":
+			writeError(w, http.StatusBadRequest, err.Error())
+		default:
+			writeError(w, http.StatusInternalServerError, "Error al registrar el anticipo")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, PayAnticipoResponse{		Message:     "Anticipo registrado. La reservación fue confirmada",
+		Amount:      amount,
+		Reservation: updated,
+	})
+}
+
 // GetReservationByID retorna el detalle de una reservación.
 // @Summary Obtener reservación por ID
 // @Description Retorna el detalle de una reservación. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.
@@ -212,11 +299,13 @@ func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) 
 
 // Checkin registra el inicio de la estadía de una reservación.
 // @Summary Registrar check-in
-// @Description Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.
+// @Description Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva confirmada dentro de su periodo y con el pago total completado. Acepta cash_amount opcional para que el anfitrión registre en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.
 // @Tags Reservaciones
+// @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID de reservación"
+// @Param checkin body CheckinRequest false "Efectivo a registrar (opcional)"
 // @Success 200 {object} CheckinReservationResponse "Check-in registrado"
 // @Failure 400 {object} map[string]string "ID de reservación inválido"
 // @Failure 403 {object} map[string]string "Sin permisos"
@@ -256,7 +345,17 @@ func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkedIn, err := c.service.Checkin(r.Context(), id)
+	// cash_amount es opcional: permite al anfitrión registrar en efectivo el
+	// saldo pendiente al momento del check-in. Debe cubrirlo exactamente.
+	var checkinReq CheckinRequest
+	if r.Body != nil {
+		if err := json.NewDecoder(r.Body).Decode(&checkinReq); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "Datos de entrada inválidos")
+			return
+		}
+	}
+
+	checkedIn, err := c.service.Checkin(r.Context(), id, checkinReq.CashAmount)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrReservationNotFound):
@@ -265,10 +364,9 @@ func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "La reservación no admite check-in")
 		case errors.Is(err, ErrCheckinPaymentIncomplete):
 			writeError(w, http.StatusConflict, "El pago total de la reservación no está completo")
-		case errors.Is(err, ErrCheckinNotMigrated):
-			writeError(w, http.StatusInternalServerError, "Check-in no disponible: falta la migración de base de datos (fecha_checkin)")
 		case err.Error() == "El check-in solo puede registrarse a partir de la fecha de inicio de la reserva" ||
-			err.Error() == "El periodo de la reserva ya finalizó":
+			err.Error() == "El periodo de la reserva ya finalizó" ||
+			err.Error() == "El monto en efectivo debe cubrir exactamente el saldo pendiente":
 			writeError(w, http.StatusConflict, err.Error())
 		default:
 			writeError(w, http.StatusBadRequest, err.Error())
@@ -371,7 +469,7 @@ func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Reque
 
 // UpdateReservation actualiza una reservación.
 // @Summary Actualizar reservación
-// @Description Actualiza la cabaña y las fechas de una reservación activa. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
+// @Description Actualiza la cabaña y las fechas de una reservación pendiente o confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
 // @Tags Reservaciones
 // @Accept json
 // @Produce json
