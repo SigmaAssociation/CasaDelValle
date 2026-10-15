@@ -18,7 +18,7 @@ El proyecto está diseñado sobre una arquitectura desacoplada utilizando el sig
 
 ## Arquitectura y Módulos
 
-El sistema se divide en los siguientes subsistemas:
+El sistema se divide en los siguientes subsistemas: 
 
 * **Módulo de Autenticación y Usuarios:** Control de acceso, perfiles de huésped y anfitrión.
 * **Módulo de Catálogo:** Gestión de cabañas, amenidades y filtros de búsqueda.
@@ -75,9 +75,23 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notificat
 
 # 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
+
+# 4. Migra estados de reservaciones y pagos (pendiente/confirmada/en_curso + anticipo 30%).
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_estados_pagos.sql
 ```
 
 Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
+
+### Documentación Swagger
+
+La UI de Swagger está en `http://localhost:8080/swagger/index.html` (solo con el backend en ejecución). Los archivos de `cdv-api/docs/` se generan a partir de las anotaciones del código, **no se editan a mano**. Cada vez que agregues o modifiques un endpoint, regenéralos desde `cdv-api/`:
+
+```bash
+cd cdv-api
+swag init -g cmd/api/main.go -o docs
+```
+
+> El CI verifica que `cdv-api/docs/` esté al día y falla si olvidas regenerarlo.
 
 ## Estilo de diseño
 
