@@ -25,6 +25,7 @@ import (
 	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/notifications"
+	"cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
 
@@ -73,6 +74,10 @@ func main() {
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
 	imageController := images.NewController(imageService)
+
+	reportRepository := reportreservations.NewRepository(pool)
+	reportService := reportreservations.NewService(reportRepository)
+	reportController := reportreservations.NewController(reportService)
 
 	// -------------------------
 	// Jobs en segundo plano
@@ -145,6 +150,10 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/notifications/unread-count", notificationController.GetUnreadCount)
 	mux.HandleFunc("POST /cdv-api/notifications/read-all", notificationController.MarkAllRead)
 	mux.HandleFunc("PATCH /cdv-api/notifications/{id}/read", notificationController.MarkRead)
+
+	//Reportes
+	mux.HandleFunc("GET /cdv-api/reports/reservations", reportController.GetReservationsReport)
+
 	// -------------------------
 	// Server
 	// -------------------------
