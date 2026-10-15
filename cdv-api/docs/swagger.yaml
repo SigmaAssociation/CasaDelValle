@@ -188,8 +188,6 @@ definitions:
       unread_count:
         type: integer
     type: object
-<<<<<<< HEAD
-=======
   payments.CreatePaymentRequest:
     properties:
       amount:
@@ -246,7 +244,6 @@ definitions:
       total:
         type: number
     type: object
->>>>>>> feature/pagos
   reservations.CancelReservationResponse:
     properties:
       message:
