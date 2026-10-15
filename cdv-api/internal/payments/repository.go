@@ -84,15 +84,10 @@ func (r *Repository) ListByReservation(ctx context.Context, reservationID int) (
 	return payments, nil
 }
 
-// Create inserta el pago y devuelve el registro creado (con la fecha asignada
-// por la base de datos). El pago manual se guarda como tipo_pago 'pago' con el
-// código de medio correspondiente en la columna method.
+// Create inserta el abono (tipo_pago 'pago' con su canal simulado en
+// español) y devuelve el registro creado (con la fecha asignada por la
+// base de datos).
 func (r *Repository) Create(ctx context.Context, reservationID int, payerID uint, amount float64, method string) (*Payment, error) {
-	dbMethod, ok := dbMethodCode(method)
-	if !ok {
-		dbMethod = dbMethodCash
-	}
-
 	payment := &Payment{
 		ReservationID: reservationID,
 		UserID:        payerID,
@@ -104,7 +99,7 @@ func (r *Repository) Create(ctx context.Context, reservationID int, payerID uint
 		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
 		VALUES ($1, $2, 'pago', $3, $4)
 		RETURNING id, fecha
-	`, payerID, amount, dbMethod, reservationID).Scan(&payment.ID, &payment.Date)
+	`, payerID, amount, method, reservationID).Scan(&payment.ID, &payment.Date)
 	if err != nil {
 		return nil, err
 	}

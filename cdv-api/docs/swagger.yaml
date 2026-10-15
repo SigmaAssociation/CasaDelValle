@@ -312,6 +312,18 @@ definitions:
       reservation:
         $ref: '#/definitions/reservations.ReservationDetail'
     type: object
+  reservations.CheckinRequest:
+    properties:
+      cash_amount:
+        type: number
+    type: object
+  reservations.CheckinReservationResponse:
+    properties:
+      message:
+        type: string
+      reservation:
+        $ref: '#/definitions/reservations.ReservationDetail'
+    type: object
   reservations.CreateReservationResponse:
     properties:
       message:
@@ -329,6 +341,13 @@ definitions:
         type: string
       id:
         type: integer
+    type: object
+  reservations.PayAnticipoRequest:
+    properties:
+      amount:
+        type: number
+      method:
+        type: string
     type: object
   reservations.PayAnticipoResponse:
     properties:
@@ -422,6 +441,8 @@ definitions:
         type: string
       id:
         type: integer
+      paidTotal:
+        type: number
       startDate:
         type: string
       status:
@@ -1183,6 +1204,119 @@ paths:
       summary: Contar notificaciones no leídas
       tags:
       - Notificaciones
+  /payments/reservation/{reservationId}:
+    get:
+      description: Devuelve el historial de pagos y el desglose de total, pagado y
+        saldo pendiente. Puede verlo quien reservó, el dueño de la cabaña o un admin.
+        Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: reservationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Historial de pagos y saldo
+          schema:
+            $ref: '#/definitions/payments.ReservationPayments'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: No autenticado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Listar pagos de una reservación
+      tags:
+      - Pagos
+    post:
+      consumes:
+      - application/json
+      description: Registra un pago simulado (tarjeta, transferencia o efectivo) sobre
+        una reservación confirmada o en curso. El monto debe ser mayor que 0 y no
+        puede exceder el saldo pendiente. Puede registrarlo quien reservó, el dueño
+        de la cabaña o un admin. Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: ID de reservación
+        in: path
+        name: reservationId
+        required: true
+        type: integer
+      - description: Monto y método de pago
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/payments.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Pago registrado exitosamente
+          schema:
+            $ref: '#/definitions/payments.CreatePaymentResponse'
+        "400":
+          description: Datos inválidos, monto o método no válidos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: No autenticado
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: La reservación no admite pagos o el monto excede el saldo
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar pago de una reservación
+      tags:
+      - Pagos
   /reports/reservations:
     get:
       description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),
@@ -1364,47 +1498,6 @@ paths:
       summary: Actualizar reservación
       tags:
       - Reservaciones
-  /reservations/{id}/balance:
-    get:
-      description: Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente.
-        Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere
-        token.
-      parameters:
-      - description: ID de reservación
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Saldo de la reservación
-          schema:
-            $ref: '#/definitions/reservations.ReservationBalance'
-        "400":
-          description: ID de reservación inválido
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "403":
-          description: Sin permisos
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Reservación no encontrada
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Consultar saldo de una reservación
-      tags:
-      - Reservaciones
   /reservations/{id}/cancel:
     patch:
       description: Cancela una reservación pendiente o confirmada. Puede cancelar
@@ -1452,17 +1545,80 @@ paths:
       summary: Cancelar reservación
       tags:
       - Reservaciones
-  /reservations/{id}/payment:
-    post:
-      description: Registra el anticipo (30% del total, calculado en el servidor)
-        y pasa la reservación de 'pendiente' a 'confirmada'. Solo quien reservó o
-        un admin. Requiere token.
+  /reservations/{id}/checkin:
+    patch:
+      consumes:
+      - application/json
+      description: Registra fecha y hora del check-in. Solo el anfitrión de la cabaña
+        o un admin. Requiere reserva confirmada dentro de su periodo y con el pago
+        total completado. Acepta cash_amount opcional para que el anfitrión registre
+        en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.
       parameters:
       - description: ID de reservación
         in: path
         name: id
         required: true
         type: integer
+      - description: Efectivo a registrar (opcional)
+        in: body
+        name: checkin
+        schema:
+          $ref: '#/definitions/reservations.CheckinRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Check-in registrado
+          schema:
+            $ref: '#/definitions/reservations.CheckinReservationResponse'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: No cumple requisitos (estado, fechas o pago)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar check-in
+      tags:
+      - Reservaciones
+  /reservations/{id}/payment:
+    post:
+      consumes:
+      - application/json
+      description: Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'.
+        Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método
+        simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin.
+        Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Monto y método (opcionales)
+        in: body
+        name: payment
+        schema:
+          $ref: '#/definitions/reservations.PayAnticipoRequest'
       produces:
       - application/json
       responses:
@@ -1499,11 +1655,11 @@ paths:
       summary: Pagar anticipo y confirmar reservación
       tags:
       - Reservaciones
-  /reservations/{id}/payments:
+  /reservations/balance/{id}:
     get:
-      description: Devuelve el historial de pagos y el desglose de total, pagado y
-        saldo pendiente. Puede verlo quien reservó, el dueño de la cabaña o un admin.
-        Requiere token.
+      description: Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente.
+        Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere
+        token.
       parameters:
       - description: ID de reservación
         in: path
@@ -1514,21 +1670,15 @@ paths:
       - application/json
       responses:
         "200":
-          description: Historial de pagos y saldo
+          description: Saldo de la reservación
           schema:
-            $ref: '#/definitions/payments.ReservationPayments'
+            $ref: '#/definitions/reservations.ReservationBalance'
         "400":
           description: ID de reservación inválido
           schema:
             additionalProperties:
               type: string
             type: object
-        "401":
-          description: No autenticado
-          schema:
-            additionalProperties:
-              type: string
-            type: object
         "403":
           description: Sin permisos
           schema:
@@ -1543,70 +1693,9 @@ paths:
             type: object
       security:
       - BearerAuth: []
-      summary: Listar pagos de una reservación
+      summary: Consultar saldo de una reservación
       tags:
-      - Pagos
-    post:
-      consumes:
-      - application/json
-      description: Registra un pago simulado (tarjeta, transferencia o efectivo) sobre
-        una reservación confirmada o en curso. El monto debe ser mayor que 0 y no
-        puede exceder el saldo pendiente. Puede registrarlo quien reservó, el dueño
-        de la cabaña o un admin. Requiere token.
-      parameters:
-      - description: ID de reservación
-        in: path
-        name: id
-        required: true
-        type: integer
-      - description: Monto y método de pago
-        in: body
-        name: payment
-        required: true
-        schema:
-          $ref: '#/definitions/payments.CreatePaymentRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Pago registrado exitosamente
-          schema:
-            $ref: '#/definitions/payments.CreatePaymentResponse'
-        "400":
-          description: Datos inválidos, monto o método no válidos
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: No autenticado
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "403":
-          description: Sin permisos
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Reservación no encontrada
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "409":
-          description: La reservación no admite pagos o el monto excede el saldo
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Registrar pago de una reservación
-      tags:
-      - Pagos
+      - Reservaciones
   /reservations/cabin/{cabinId}:
     get:
       description: Retorna las reservaciones de la cabaña indicada, incluyendo quién

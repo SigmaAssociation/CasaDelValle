@@ -91,6 +91,9 @@ export class MyReservationsPage implements OnInit {
   }
 
   onPaymentRegistered(res: CreatePaymentResponse): void {
+    this.reservations.update((list) =>
+      list.map((r) => (r.id === res.reservationId ? { ...r, paidTotal: res.paid } : r))
+    );
     this.cancelMessage.set(res.message);
   }
 }

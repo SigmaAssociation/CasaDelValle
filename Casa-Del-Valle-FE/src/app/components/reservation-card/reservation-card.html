@@ -88,6 +88,12 @@
           </a>
         }
 
+        @if (reservation.paidTotal != null && reservation.paidTotal > 0) {
+          <p class="text-xs text-green">
+            Pagado: {{ formatPrice(reservation.paidTotal) }} de {{ formatPrice(reservation.totalPrice) }}
+          </p>
+        }
+
         @if (isCancelled) {
           @if (reservation.cancelledAt) {
             <p class="text-xs text-brown">
@@ -95,16 +101,7 @@
             </p>
           }
         } @else if (isPending) {
-      @if (canViewPayments) {
-        <button
-          type="button"
-          (click)="openPaymentsModal()"
-          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
-        >
-          Pagos
-        </button>
-      }
-      @if (canPay) {
+          @if (canPay) {
             <p class="text-xs text-brown">
               Anticipo (30%): {{ formatPrice(anticipoAmount) }} para confirmar
             </p>
@@ -126,6 +123,21 @@
         }
       </div>
 
+      @if (canViewPayments) {
+        <button
+          type="button"
+          (click)="openPaymentsModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
+        >
+          Pagos
+        </button>
+        <a
+          [routerLink]="['/reservations', reservation.id, 'balance']"
+          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
+        >
+          Ver saldo
+        </a>
+      }
       @if (canPay) {
         <button
           type="button"
@@ -135,7 +147,15 @@
           Pagar anticipo
         </button>
       }
-
+      @if (canAddPayment) {
+        <button
+          type="button"
+          (click)="openPaymentsModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
+        >
+          Agregar pago
+        </button>
+      }
       @if (isPending || isConfirmed) {
         <button
           type="button"
@@ -150,6 +170,38 @@
         >
           Cancelar reservación
         </button>
+      }
+      @if (showCheckin && isConfirmed) {
+        @if (isWithinStay) {
+        <div class="flex flex-col gap-2 w-full sm:w-auto">
+          @if (remainingBalance > 0) {
+            <p class="text-xs text-brown">
+              Saldo pendiente: <span class="font-medium text-black">{{ formatPrice(remainingBalance) }}</span>.
+              Puedes registrarlo en efectivo al hacer check-in.
+            </p>
+            <input
+              type="number"
+              [(ngModel)]="cashAmount"
+              [placeholder]="'Efectivo: ' + formatPrice(remainingBalance)"
+              min="0"
+              step="0.01"
+              class="w-full p-2 border border-gray-300 rounded-md focus:border-orange focus:outline-none text-sm"
+            />
+          }
+          <button
+            type="button"
+            (click)="registerCheckin()"
+            [disabled]="isCheckingIn()"
+            class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white hover:bg-green-dark transition disabled:opacity-50"
+          >
+            {{ isCheckingIn() ? 'Registrando…' : 'Registrar check-in' }}
+          </button>
+        </div>
+        } @else {
+          <p class="text-xs text-brown">
+            El check-in estará disponible del {{ formatDate(reservation.startDate) }} al {{ formatDate(reservation.endDate) }}.
+          </p>
+        }
       }
     </div>
 
@@ -174,7 +226,7 @@
   <app-pay-anticipo-modal
     [reservation]="reservation"
     [loading]="isPaying()"
-    (confirm)="confirmPay()"
+    (confirm)="confirmPay($event)"
     (dismiss)="closePayModal()"
   />
 }

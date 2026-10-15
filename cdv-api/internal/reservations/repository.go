@@ -154,6 +154,7 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 		       c.precio,
+		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
@@ -182,7 +183,7 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
@@ -211,6 +212,7 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 		       c.precio,
+		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
@@ -239,7 +241,7 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
@@ -256,6 +258,108 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 		return nil, err
 	}
 	return cards, nil
+}
+
+// GetCheckinEligibility retorna estado y fechas de la reserva junto con
+// la tarifa por noche de la cabaña y el total pagado según la tabla pagos.
+func (r *Repository) GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error) {
+	var e CheckinEligibility
+	query := `
+	SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
+	       r.estado,
+	       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+	       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+	       r.fecha_checkin,
+	       c.precio,
+	       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id), 0)
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		WHERE r.id = $1
+	`
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&e.ReservationID, &e.UserID, &e.CabinID, &e.HostID,
+		&e.Status, &e.StartDate, &e.EndDate, &e.CheckedInAt,
+		&e.NightlyRate, &e.PaidTotal,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrReservationNotFound
+		}
+		return nil, err
+	}
+	return &e, nil
+}
+
+// RecordCheckin registra fecha y hora del check-in y mueve la reserva de
+// confirmada a en_curso. La migración con fecha_checkin ya está aplicada.
+func (r *Repository) RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error {
+	query := `
+		UPDATE reservaciones
+		SET estado = 'en_curso', fecha_checkin = $2
+		WHERE id = $1 AND estado = 'confirmada'
+	`
+	tag, err := r.pool.Exec(ctx, query, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+	return nil
+}
+
+// RecordCheckinTimestamp registra fecha y hora del check-in en una reserva
+// que ya está en curso (p. ej. avanzada por el job automático) y aún no lo
+// tiene registrado.
+func (r *Repository) RecordCheckinTimestamp(ctx context.Context, id int, checkedInAt time.Time) error {
+	query := `
+		UPDATE reservaciones
+		SET fecha_checkin = $2
+		WHERE id = $1 AND estado = 'en_curso' AND fecha_checkin IS NULL
+	`
+	tag, err := r.pool.Exec(ctx, query, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+	return nil
+}
+
+// CheckinWithCashPayment registra en una sola transacción el pago en efectivo
+// del saldo pendiente y el check-in (pasa a en_curso con fecha_checkin, o solo
+// registra la fecha si el job automático ya la había avanzado).
+func (r *Repository) CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	insert := `
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
+		VALUES ($1, $2, 'pago', 'efectivo', $3)
+	`
+	if _, err := tx.Exec(ctx, insert, payerID, cashAmount, id); err != nil {
+		return err
+	}
+
+	update := `
+		UPDATE reservaciones
+		SET estado = 'en_curso', fecha_checkin = COALESCE(fecha_checkin, $2)
+		WHERE id = $1 AND (estado = 'confirmada'
+			OR (estado = 'en_curso' AND fecha_checkin IS NULL))
+	`
+	tag, err := tx.Exec(ctx, update, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+
+	return tx.Commit(ctx)
 }
 
 // GetCabinHostID devuelve el anfitrión de una cabaña.
@@ -404,7 +508,7 @@ func (r *Repository) GetCabinNightlyRate(ctx context.Context, cabinID uint) (flo
 
 // PayAnticipo registra el pago del anticipo en la tabla pagos y confirma la
 // reservación en una sola transacción: solo aplica si sigue pendiente.
-func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error {
+func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64, method string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -413,9 +517,9 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 
 	insert := `
 		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
-		VALUES ($1, $2, 'anticipo', 'CASH', $3)
+		VALUES ($1, $2, 'anticipo', $3, $4)
 	`
-	if _, err := tx.Exec(ctx, insert, payerID, amount, reservationID); err != nil {
+	if _, err := tx.Exec(ctx, insert, payerID, amount, method, reservationID); err != nil {
 		return err
 	}
 

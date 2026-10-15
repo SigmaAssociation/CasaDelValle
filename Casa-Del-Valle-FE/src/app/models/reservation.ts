@@ -8,6 +8,7 @@ export interface Reservation {
   startDate: string;
   endDate: string;
   totalPrice: number;
+  paidTotal?: number;
   status: string;
   createdAt: string;
   cancelledAt?: string | null;

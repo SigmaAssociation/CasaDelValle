@@ -6,6 +6,7 @@ import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
+import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CabinService } from '../../services/cabin.service';
@@ -34,6 +35,7 @@ export class CabinDetailPage implements OnInit {
   cabinReservations: Reservation[] = [];
   isLoadingReservations = false;
   reservationsError: string | null = null;
+  reservationNotice: string | null = null;
 
   constructor(
     private cabinService: CabinService,
@@ -102,6 +104,15 @@ export class CabinDetailPage implements OnInit {
     this.cd.detectChanges();
   }
 
+  onReservationCheckedIn(res: CheckinReservationResponse): void {
+    this.reservationNotice = res.message ?? 'Check-in registrado exitosamente.';
+    if (this.cabin) {
+      this.loadCabinReservations(this.cabin.id);
+    } else {
+      this.cd.detectChanges();
+    }
+  }
+
   onReservationPaid(res: PayAnticipoResponse): void {
     this.cabinReservations = this.cabinReservations.map((r) =>
       r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
@@ -110,7 +121,11 @@ export class CabinDetailPage implements OnInit {
   }
 
   onPaymentRegistered(_res: CreatePaymentResponse): void {
-    // El pago no cambia el estado de la reservación; no hay nada que actualizar en la tarjeta.
+    // El pago no cambia el estado de la reservación; se recarga el listado
+    // para reflejar el saldo actualizado.
+    if (this.cabin) {
+      this.loadCabinReservations(this.cabin.id);
+    }
   }
 
   canEdit(): boolean {

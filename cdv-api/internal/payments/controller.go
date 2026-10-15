@@ -37,6 +37,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID de reservación"
+// @Param reservationId path int true "ID de reservación"
 // @Param payment body CreatePaymentRequest true "Monto y método de pago"
 // @Success 201 {object} CreatePaymentResponse "Pago registrado exitosamente"
 // @Failure 400 {object} map[string]string "Datos inválidos, monto o método no válidos"
@@ -44,7 +45,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // @Failure 403 {object} map[string]string "Sin permisos"
 // @Failure 404 {object} map[string]string "Reservación no encontrada"
 // @Failure 409 {object} map[string]string "La reservación no admite pagos o el monto excede el saldo"
-// @Router /reservations/{id}/payments [post]
+// @Router /payments/reservation/{reservationId} [post]
 func (c *Controller) CreatePayment(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -107,13 +108,13 @@ func (c *Controller) CreatePayment(w http.ResponseWriter, r *http.Request) {
 // @Tags Pagos
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "ID de reservación"
+// @Param reservationId path int true "ID de reservación"
 // @Success 200 {object} ReservationPayments "Historial de pagos y saldo"
 // @Failure 400 {object} map[string]string "ID de reservación inválido"
 // @Failure 401 {object} map[string]string "No autenticado"
 // @Failure 403 {object} map[string]string "Sin permisos"
 // @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Router /reservations/{id}/payments [get]
+// @Router /payments/reservation/{reservationId} [get]
 func (c *Controller) GetReservationPayments(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -146,9 +147,9 @@ func (c *Controller) GetReservationPayments(w http.ResponseWriter, r *http.Reque
 }
 
 func parseReservationID(w http.ResponseWriter, r *http.Request) (int, bool) {
-	idParam := r.PathValue("id")
+	idParam := r.PathValue("reservationId")
 	if idParam == "" {
-		idParam = r.URL.Query().Get("id")
+		idParam = r.URL.Query().Get("reservationId")
 	}
 
 	id, err := strconv.Atoi(idParam)

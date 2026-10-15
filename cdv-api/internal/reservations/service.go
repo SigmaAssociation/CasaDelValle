@@ -38,7 +38,11 @@ type ReservationRepository interface {
 	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
 	GetReservationLedger(ctx context.Context, reservationID int, cabinID uint) (*ReservationLedger, error)
 	GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error)
-	PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error
+	PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64, method string) error
+	GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error)
+	RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error
+	RecordCheckinTimestamp(ctx context.Context, id int, checkedInAt time.Time) error
+	CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error
 	AdvanceReservationStates(ctx context.Context) ([]int, error)
 }
 
@@ -266,6 +270,113 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 	return s.repository.GetReservationByID(ctx, id)
 }
 
+// Checkin registra el inicio de la estadía. Aplica a reservas confirmadas
+// dentro de su periodo y con el pago total completado. Si cashAmount > 0, el
+// anfitrión registra en ese momento el pago en efectivo del saldo pendiente,
+// que debe cubrir exactamente lo que falta.
+func (s *Service) Checkin(ctx context.Context, id int, cashAmount float64) (*ReservationDetail, error) {
+	if id <= 0 {
+		return nil, errors.New("ID de reservación inválido")
+	}
+	if cashAmount < 0 {
+		return nil, errors.New("El monto en efectivo no puede ser negativo")
+	}
+	cashAmount = math.Round(cashAmount*100) / 100
+
+	eligibility, err := s.repository.GetCheckinEligibility(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	recordTimestampOnly := false
+	switch {
+	case eligibility.Status == StatusConfirmed:
+		// Flujo normal: pasa a en_curso con fecha de check-in.
+	case eligibility.Status == StatusInProgress && eligibility.CheckedInAt == nil:
+		// El job automático se adelantó: solo falta registrar fecha y hora.
+		recordTimestampOnly = true
+	default:
+		return nil, ErrReservationNotCheckinable
+	}
+
+	startDate, err := parseReservationDate(eligibility.StartDate, "fecha de inicio")
+	if err != nil {
+		return nil, err
+	}
+	endDate, err := parseReservationDate(eligibility.EndDate, "fecha de fin")
+	if err != nil {
+		return nil, err
+	}
+
+	today := startOfToday()
+	if today.Before(startDate) {
+		return nil, errors.New("El check-in solo puede registrarse a partir de la fecha de inicio de la reserva")
+	}
+	if today.After(endDate) {
+		return nil, errors.New("El periodo de la reserva ya finalizó")
+	}
+
+	total, err := calculateReservationTotalPrice(eligibility.StartDate, eligibility.EndDate, eligibility.NightlyRate)
+	if err != nil {
+		return nil, err
+	}
+	total = math.Round(total*100) / 100
+	remaining := math.Round((total-eligibility.PaidTotal)*100) / 100
+
+	if cashAmount > 0 {
+		if cashAmount != remaining {
+			return nil, errors.New("El monto en efectivo debe cubrir exactamente el saldo pendiente")
+		}
+		if err := s.repository.CheckinWithCashPayment(ctx, id, eligibility.UserID, cashAmount, time.Now()); err != nil {
+			return nil, err
+		}
+	} else {
+		if remaining > 0 {
+			return nil, ErrCheckinPaymentIncomplete
+		}
+		if recordTimestampOnly {
+			if err := s.repository.RecordCheckinTimestamp(ctx, id, time.Now()); err != nil {
+				return nil, err
+			}
+		} else if err := s.repository.RecordCheckin(ctx, id, time.Now()); err != nil {
+			return nil, err
+		}
+	}
+
+	updated, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	s.notifyCheckin(ctx, updated)
+
+	return updated, nil
+}
+
+// notifyCheckin avisa al huésped y al anfitrión del inicio de la estadía.
+func (s *Service) notifyCheckin(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaCheckin,
+		fmt.Sprintf("Tu estadía en %s %s ha iniciado. ¡Buen viaje!", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaCheckin,
+			fmt.Sprintf("Se registró el check-in de tu cabaña %s %s.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaCheckin,
+		fmt.Sprintf("Check-in registrado en %s %s (reserva #%d).", cabinName, period, reservation.ID),
+		notifications.EntidadReservacion, reservation.ID)
+}
+
 // notifyReservationCancelled avisa al huésped y al anfitrión de la
 // cancelación de la reservación.
 func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *ReservationDetail) {
@@ -291,9 +402,11 @@ func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *R
 		notifications.EntidadReservacion, reservation.ID)
 }
 
-// PayAnticipo registra el pago del anticipo (30% del total) y confirma la
-// reservación pendiente. Devuelve el detalle actualizado y el monto pagado.
-func (s *Service) PayAnticipo(ctx context.Context, id int) (*ReservationDetail, float64, error) {
+// PayAnticipo registra el pago del anticipo y confirma la reservación
+// pendiente. Amount <= 0 usa el 30% del total; si se indica debe estar
+// entre el 30% y el total. Method es simulado (tarjeta, transferencia o
+// efectivo). Devuelve el detalle actualizado y el monto pagado.
+func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, method string) (*ReservationDetail, float64, error) {
 	if id <= 0 {
 		return nil, 0, errors.New("ID de reservación inválido")
 	}
@@ -317,11 +430,30 @@ func (s *Service) PayAnticipo(ctx context.Context, id int) (*ReservationDetail, 
 		return nil, 0, err
 	}
 
-	amount := math.Round(float64(nights)*rate*AnticipoPercent*100) / 100
+	total := float64(nights) * rate
+	minimum := math.Round(total*AnticipoPercent*100) / 100
+
+	if method == "" {
+		method = PaymentMethodCash
+	}
+	if !IsValidPaymentMethod(method) {
+		return nil, 0, errors.New("Método de pago inválido: usa tarjeta, transferencia o efectivo")
+	}
+
+	if amount <= 0 {
+		amount = minimum
+	}
+	amount = math.Round(amount*100) / 100
+	if amount < minimum {
+		return nil, 0, errors.New("El anticipo debe ser al menos el 30% del total")
+	}
+	if amount > total {
+		return nil, 0, errors.New("El monto no puede superar el total de la reservación")
+	}
 
 	// El pagador de registro es quien reservó; la autorización (propietario o
 	// administrador) ya se validó en el controller.
-	if err := s.repository.PayAnticipo(ctx, id, reservation.UserID, amount); err != nil {
+	if err := s.repository.PayAnticipo(ctx, id, reservation.UserID, amount, method); err != nil {
 		return nil, 0, err
 	}
 
