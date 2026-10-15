@@ -17,6 +17,7 @@ import { MyReservationsPage } from './pages/my-reservations-page/my-reservations
 import { hostGuard } from './guards/host-guard';
 import { cabinOwnerGuard } from './guards/cabin-owner-guard';
 import { NotificacionesPage } from './pages/notificaciones-page/notificaciones-page';
+import { ReporteListaReservacionesComponent } from './pages/reporte-lista-reservaciones/reporte-lista-reservaciones';
 
 export const routes: Routes = [
     {
@@ -83,6 +84,11 @@ export const routes: Routes = [
         path: 'notificaciones',
         component: NotificacionesPage,
         canActivate: [authGuard],
+    },
+    {
+        path: 'reporte-reservaciones',
+        component: ReporteListaReservacionesComponent,
+        canActivate:[authGuard]
     },
     {
         path: '**',
