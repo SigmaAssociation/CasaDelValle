@@ -31,14 +31,15 @@ type ErrorResponse struct {
 }
 
 // Estados del ciclo de vida de una reservación. Nace pendiente; el pago del
-// anticipo la confirma; el job en segundo plano la pasa a en_curso al iniciar
-// la estancia y a finalizada al terminar. Cancelada es un estado terminal.
+// anticipo la confirma; el check-in del anfitrión (o el job en segundo plano)
+// la pasa a en_curso al iniciar la estancia y a finalizada al terminar.
+// Cancelada es un estado terminal.
 const (
-	StatusPending    = "pendiente"
-	StatusConfirmed  = "confirmada"
+	StatusPending   = "pendiente"
+	StatusConfirmed = "confirmada"
 	StatusInProgress = "en_curso"
-	StatusFinished   = "finalizada"
-	StatusCancelled  = "cancelada"
+	StatusFinished  = "finalizada"
+	StatusCancelled = "cancelada"
 
 	MinCancellationDays = 3
 

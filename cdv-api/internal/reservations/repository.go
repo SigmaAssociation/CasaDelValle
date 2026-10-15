@@ -280,7 +280,7 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 		FROM reservaciones
 		WHERE id_usuario = $1
 		  AND id <> $2
-		  AND estado IN ('pendiente', 'confirmada', 'en_curso')
+	  AND estado IN ('pendiente', 'confirmada', 'en_curso')
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID, excludeID)
@@ -361,7 +361,9 @@ func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error
 
 	finishQuery := `
 		UPDATE reservaciones
-		SET estado = 'finalizada'
+		SET estado = 'finalizada',
+		    fecha_checkin = COALESCE(fecha_checkin, fecha_inicio::timestamp AT TIME ZONE 'America/Guatemala'),
+		    fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala')
 		WHERE estado IN ('pendiente', 'confirmada', 'en_curso')
 		  AND fecha_fin < CURRENT_DATE
 		RETURNING id
@@ -410,8 +412,8 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 	defer tx.Rollback(ctx)
 
 	insert := `
-		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, id_reservacion)
-		VALUES ($1, $2, 'anticipo', $3)
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
+		VALUES ($1, $2, 'anticipo', 'CASH', $3)
 	`
 	if _, err := tx.Exec(ctx, insert, payerID, amount, reservationID); err != nil {
 		return err
