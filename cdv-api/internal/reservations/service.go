@@ -236,7 +236,6 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 		return nil, err
 	}
 
-	if !IsActiveStatus(reservation.Status) {
 	if reservation.Status != StatusPending && reservation.Status != StatusConfirmed {
 		return nil, ErrReservationNotCancellable
 	}
@@ -421,7 +420,6 @@ func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReser
 	if err != nil {
 		return nil, err
 	}
-	if !IsActiveStatus(existing.Status) {
 	if existing.Status != StatusPending && existing.Status != StatusConfirmed {
 		return nil, ErrReservationNotEditable
 	}

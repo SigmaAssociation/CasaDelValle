@@ -134,7 +134,6 @@ func (r *Repository) CancelReservation(ctx context.Context, id int, cancelledAt 
 	query := `
 		UPDATE reservaciones
 		SET estado = 'cancelada', fecha_cancelacion = $2
-		WHERE id = $1 AND estado IN ('proxima', 'en_curso')
 		WHERE id = $1 AND estado IN ('pendiente', 'confirmada')
 	`
 	tag, err := r.pool.Exec(ctx, query, id, cancelledAt)
@@ -281,8 +280,7 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 		FROM reservaciones
 		WHERE id_usuario = $1
 		  AND id <> $2
-		  AND estado IN ('proxima', 'en_curso')
-		  AND estado IN ('pendiente', 'confirmada', 'en_curso')
+	  AND estado IN ('pendiente', 'confirmada', 'en_curso')
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID, excludeID)
@@ -321,7 +319,6 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 	query := `
 		UPDATE reservaciones
 		SET id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
-		WHERE id = $4 AND estado IN ('proxima', 'en_curso')
 		WHERE id = $4 AND estado IN ('pendiente', 'confirmada')
 	`
 	tag, err := r.pool.Exec(ctx, query, req.CabinID, req.StartDate, req.EndDate, id)
@@ -367,8 +364,6 @@ func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error
 		SET estado = 'finalizada',
 		    fecha_checkin = COALESCE(fecha_checkin, fecha_inicio::timestamp AT TIME ZONE 'America/Guatemala'),
 		    fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala')
-		WHERE estado IN ('proxima', 'en_curso') AND fecha_fin < CURRENT_DATE
-		SET estado = 'finalizada'
 		WHERE estado IN ('pendiente', 'confirmada', 'en_curso')
 		  AND fecha_fin < CURRENT_DATE
 		RETURNING id
@@ -417,8 +412,8 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 	defer tx.Rollback(ctx)
 
 	insert := `
-		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, id_reservacion)
-		VALUES ($1, $2, 'anticipo', $3)
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
+		VALUES ($1, $2, 'anticipo', 'CASH', $3)
 	`
 	if _, err := tx.Exec(ctx, insert, payerID, amount, reservationID); err != nil {
 		return err

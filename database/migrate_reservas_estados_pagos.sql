@@ -4,21 +4,23 @@ BEGIN;
 ALTER TABLE reservaciones
     DROP CONSTRAINT IF EXISTS chk_estado;
 
--- Fecha de hoy en Guatemala
+-- Fecha de hoy en Guatemala.
+-- Las reservas 'activa' ya eran reservas válidas: las futuras pasan a
+-- 'confirmada', las ya iniciadas a 'en_curso' y las vencidas a 'finalizada'.
 UPDATE reservaciones
 SET estado = CASE
     WHEN fecha_fin    <  (now() AT TIME ZONE 'America/Guatemala')::date THEN 'finalizada'
     WHEN fecha_inicio <= (now() AT TIME ZONE 'America/Guatemala')::date THEN 'en_curso'
-    ELSE 'proxima'
+    ELSE 'confirmada'
 END
 WHERE estado = 'activa';
 
 ALTER TABLE reservaciones
     ADD CONSTRAINT chk_estado
-    CHECK (estado IN ('proxima', 'en_curso', 'finalizada', 'cancelada'));
+    CHECK (estado IN ('pendiente', 'confirmada', 'en_curso', 'finalizada', 'cancelada'));
 
 ALTER TABLE reservaciones
-    ALTER COLUMN estado SET DEFAULT 'proxima';
+    ALTER COLUMN estado SET DEFAULT 'pendiente';
 
 
 ALTER TABLE reservaciones
@@ -72,24 +74,45 @@ CREATE INDEX IF NOT EXISTS idx_pagos_reservacion
     ON pagos (id_reservacion);
 
 
+-- Tipo 'reserva_confirmada' para el aviso del pago del anticipo
+-- (las BDs creadas antes no lo tienen en el CHECK).
+ALTER TABLE notificaciones
+    DROP CONSTRAINT IF EXISTS chk_notificacion_tipo;
+
+ALTER TABLE notificaciones
+    ADD CONSTRAINT chk_notificacion_tipo
+    CHECK (tipo IN (
+        'bienvenida',
+        'reserva_creada',
+        'reserva_confirmada',
+        'reserva_cancelada',
+        'reserva_actualizada',
+        'reserva_finalizada',
+        'cabana_creada',
+        'cabana_actualizada',
+        'cabana_eliminada',
+        'rol_actualizado'
+    ));
+
+
 CREATE OR REPLACE FUNCTION actualizar_estados_reservaciones() RETURNS void
 LANGUAGE plpgsql AS $$
 DECLARE
     tz   CONSTANT text := 'America/Guatemala';
     hoy  date := (now() AT TIME ZONE tz)::date;
 BEGIN
-    -- Vencidas: proxima/en_curso cuya fecha_fin ya pasó -> finalizada
+    -- Vencidas: pendiente/confirmada/en_curso cuya fecha_fin ya pasó -> finalizada
     UPDATE reservaciones
     SET estado         = 'finalizada',
         fecha_checkin  = COALESCE(fecha_checkin,  fecha_inicio::timestamp AT TIME ZONE tz),
         fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp    AT TIME ZONE tz)
-    WHERE estado IN ('proxima', 'en_curso') AND fecha_fin < hoy;
+    WHERE estado IN ('pendiente', 'confirmada', 'en_curso') AND fecha_fin < hoy;
 
-    -- Iniciadas: proxima cuya fecha_inicio llegó -> en_curso
+    -- Iniciadas: confirmada cuya fecha_inicio llegó -> en_curso
     UPDATE reservaciones
     SET estado        = 'en_curso',
         fecha_checkin = COALESCE(fecha_checkin, now())
-    WHERE estado = 'proxima' AND fecha_inicio <= hoy;
+    WHERE estado = 'confirmada' AND fecha_inicio <= hoy;
 END $$;
 
 -- Job de pg_cron: actualiza estados cada 15 minutos.

@@ -34,7 +34,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Lista de cabañas",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinsListResponse"
+                            "$ref": "#/definitions/cabins.CabinsListResponse"
                         }
                     },
                     "500": {
@@ -72,7 +72,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CreateCabinRequest"
+                            "$ref": "#/definitions/cabins.CreateCabinRequest"
                         }
                     }
                 ],
@@ -80,7 +80,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Cabaña registrada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CreateCabinResponse"
+                            "$ref": "#/definitions/cabins.CreateCabinResponse"
                         }
                     },
                     "400": {
@@ -132,7 +132,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Lista de imágenes",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImagesListResponse"
+                            "$ref": "#/definitions/images.ImagesListResponse"
                         }
                     },
                     "400": {
@@ -192,7 +192,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Imagen subida exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.CreateImageResponse"
+                            "$ref": "#/definitions/images.CreateImageResponse"
                         }
                     },
                     "400": {
@@ -253,7 +253,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Imagen principal",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImageResponse"
+                            "$ref": "#/definitions/images.ImageResponse"
                         }
                     },
                     "400": {
@@ -340,7 +340,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Resultados de la búsqueda",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinCardsListResponse"
+                            "$ref": "#/definitions/cabins.CabinCardsListResponse"
                         }
                     },
                     "400": {
@@ -383,7 +383,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Cabañas del usuario",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinsListResponse"
+                            "$ref": "#/definitions/cabins.CabinsListResponse"
                         }
                     },
                     "400": {
@@ -435,7 +435,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Detalle de la cabaña",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.CabinResponse"
+                            "$ref": "#/definitions/cabins.CabinResponse"
                         }
                     },
                     "400": {
@@ -489,7 +489,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.UpdateCabinRequest"
+                            "$ref": "#/definitions/cabins.UpdateCabinRequest"
                         }
                     }
                 ],
@@ -556,7 +556,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Cabaña eliminada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_cabins.DeleteCabinResponse"
+                            "$ref": "#/definitions/cabins.DeleteCabinResponse"
                         }
                     },
                     "400": {
@@ -617,7 +617,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Imagen",
                         "schema": {
-                            "$ref": "#/definitions/internal_images.ImageResponse"
+                            "$ref": "#/definitions/images.ImageResponse"
                         }
                     },
                     "400": {
@@ -718,7 +718,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserLoginRequest"
+                            "$ref": "#/definitions/users.UserLoginRequest"
                         }
                     }
                 ],
@@ -726,7 +726,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Usuario autenticado exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserLoginResponse"
+                            "$ref": "#/definitions/users.UserLoginResponse"
                         }
                     },
                     "400": {
@@ -783,7 +783,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Lista de notificaciones del usuario",
                         "schema": {
-                            "$ref": "#/definitions/internal_notifications.NotificationListResponse"
+                            "$ref": "#/definitions/notifications.NotificationListResponse"
                         }
                     },
                     "401": {
@@ -826,7 +826,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Resultado de la actualización",
                         "schema": {
-                            "$ref": "#/definitions/internal_notifications.MarkAllReadResponse"
+                            "$ref": "#/definitions/notifications.MarkAllReadResponse"
                         }
                     },
                     "401": {
@@ -869,7 +869,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Cantidad de notificaciones no leídas",
                         "schema": {
-                            "$ref": "#/definitions/internal_notifications.UnreadCountResponse"
+                            "$ref": "#/definitions/notifications.UnreadCountResponse"
                         }
                     },
                     "401": {
@@ -921,7 +921,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Notificación marcada como leída",
                         "schema": {
-                            "$ref": "#/definitions/internal_notifications.MarkReadResponse"
+                            "$ref": "#/definitions/notifications.MarkReadResponse"
                         }
                     },
                     "400": {
@@ -979,7 +979,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.ReservationRequest"
+                            "$ref": "#/definitions/reservations.ReservationRequest"
                         }
                     }
                 ],
@@ -987,7 +987,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Reservación registrada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.CreateReservationResponse"
+                            "$ref": "#/definitions/reservations.CreateReservationResponse"
                         }
                     },
                     "400": {
@@ -1059,7 +1059,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_reservations.ReservationCard"
+                                "$ref": "#/definitions/reservations.ReservationCard"
                             }
                         }
                     },
@@ -1123,7 +1123,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_reservations.ReservationCard"
+                                "$ref": "#/definitions/reservations.ReservationCard"
                             }
                         }
                     },
@@ -1176,7 +1176,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Detalle de la reservación",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                            "$ref": "#/definitions/reservations.ReservationDetail"
                         }
                     },
                     "400": {
@@ -1239,7 +1239,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.UpdateReservationRequest"
+                            "$ref": "#/definitions/reservations.UpdateReservationRequest"
                         }
                     }
                 ],
@@ -1247,7 +1247,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Reservación actualizada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.UpdateReservationResponse"
+                            "$ref": "#/definitions/reservations.UpdateReservationResponse"
                         }
                     },
                     "400": {
@@ -1317,7 +1317,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Reservación cancelada exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.CancelReservationResponse"
+                            "$ref": "#/definitions/reservations.CancelReservationResponse"
                         }
                     },
                     "400": {
@@ -1387,7 +1387,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Anticipo registrado y reservación confirmada",
                         "schema": {
-                            "$ref": "#/definitions/internal_reservations.PayAnticipoResponse"
+                            "$ref": "#/definitions/reservations.PayAnticipoResponse"
                         }
                     },
                     "400": {
@@ -1450,7 +1450,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/internal_users.User"
+                                "$ref": "#/definitions/users.User"
                             }
                         }
                     },
@@ -1493,7 +1493,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.RegisterRequest"
+                            "$ref": "#/definitions/users.RegisterRequest"
                         }
                     }
                 ],
@@ -1501,7 +1501,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Usuario registrado exitosamente",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.RegisterResponse"
+                            "$ref": "#/definitions/users.RegisterResponse"
                         }
                     },
                     "400": {
@@ -1553,7 +1553,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Perfil del usuario",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.User"
+                            "$ref": "#/definitions/users.User"
                         }
                     },
                     "400": {
@@ -1616,7 +1616,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UserUpdate"
+                            "$ref": "#/definitions/users.UserUpdate"
                         }
                     }
                 ],
@@ -1699,7 +1699,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UpdateRoleRequest"
+                            "$ref": "#/definitions/users.UpdateRoleRequest"
                         }
                     }
                 ],
@@ -1707,7 +1707,7 @@ const docTemplate = `{
                     "200": {
                         "description": "Rol actualizado",
                         "schema": {
-                            "$ref": "#/definitions/internal_users.UpdateRoleResponse"
+                            "$ref": "#/definitions/users.UpdateRoleResponse"
                         }
                     },
                     "400": {
@@ -1742,7 +1742,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_cabins.CabinCardResponse": {
+        "cabins.CabinCardResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1771,13 +1771,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinCardsListResponse": {
+        "cabins.CabinCardsListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_cabins.CabinCardResponse"
+                        "$ref": "#/definitions/cabins.CabinCardResponse"
                     }
                 },
                 "total": {
@@ -1785,7 +1785,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinResponse": {
+        "cabins.CabinResponse": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1817,13 +1817,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CabinsListResponse": {
+        "cabins.CabinsListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_cabins.CabinResponse"
+                        "$ref": "#/definitions/cabins.CabinResponse"
                     }
                 },
                 "total": {
@@ -1831,7 +1831,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CreateCabinRequest": {
+        "cabins.CreateCabinRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1860,7 +1860,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.CreateCabinResponse": {
+        "cabins.CreateCabinResponse": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1871,7 +1871,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.DeleteCabinResponse": {
+        "cabins.DeleteCabinResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1882,7 +1882,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_cabins.UpdateCabinRequest": {
+        "cabins.UpdateCabinRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -1905,7 +1905,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.CreateImageResponse": {
+        "images.CreateImageResponse": {
             "type": "object",
             "properties": {
                 "image_id": {
@@ -1919,7 +1919,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.ImageResponse": {
+        "images.ImageResponse": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -1939,13 +1939,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_images.ImagesListResponse": {
+        "images.ImagesListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_images.ImageResponse"
+                        "$ref": "#/definitions/images.ImageResponse"
                     }
                 },
                 "total": {
@@ -1953,7 +1953,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_notifications.MarkAllReadResponse": {
+        "notifications.MarkAllReadResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1964,7 +1964,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_notifications.MarkReadResponse": {
+        "notifications.MarkReadResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -1972,7 +1972,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_notifications.Notification": {
+        "notifications.Notification": {
             "type": "object",
             "properties": {
                 "entidad_id": {
@@ -2001,13 +2001,13 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_notifications.NotificationListResponse": {
+        "notifications.NotificationListResponse": {
             "type": "object",
             "properties": {
                 "data": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/internal_notifications.Notification"
+                        "$ref": "#/definitions/notifications.Notification"
                     }
                 },
                 "has_more": {
@@ -2024,7 +2024,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_notifications.UnreadCountResponse": {
+        "notifications.UnreadCountResponse": {
             "type": "object",
             "properties": {
                 "unread_count": {
@@ -2032,18 +2032,18 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.CancelReservationResponse": {
+        "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 },
                 "reservation": {
-                    "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
-        "internal_reservations.CreateReservationResponse": {
+        "reservations.CreateReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -2054,7 +2054,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.PayAnticipoResponse": {
+        "reservations.PayAnticipoResponse": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -2064,11 +2064,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "reservation": {
-                    "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
-        "internal_reservations.ReservationCard": {
+        "reservations.ReservationCard": {
             "type": "object",
             "properties": {
                 "cabinId": {
@@ -2109,7 +2109,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.ReservationDetail": {
+        "reservations.ReservationDetail": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -2138,7 +2138,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.ReservationRequest": {
+        "reservations.ReservationRequest": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -2157,7 +2157,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.UpdateReservationRequest": {
+        "reservations.UpdateReservationRequest": {
             "type": "object",
             "properties": {
                 "cabin_id": {
@@ -2173,18 +2173,18 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_reservations.UpdateReservationResponse": {
+        "reservations.UpdateReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
                 },
                 "reservation": {
-                    "$ref": "#/definitions/internal_reservations.ReservationDetail"
+                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
-        "internal_users.RegisterRequest": {
+        "users.RegisterRequest": {
             "type": "object",
             "properties": {
                 "address": {
@@ -2210,7 +2210,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.RegisterResponse": {
+        "users.RegisterResponse": {
             "type": "object",
             "properties": {
                 "mensaje": {
@@ -2221,7 +2221,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UpdateRoleRequest": {
+        "users.UpdateRoleRequest": {
             "type": "object",
             "properties": {
                 "id_role": {
@@ -2229,7 +2229,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UpdateRoleResponse": {
+        "users.UpdateRoleResponse": {
             "type": "object",
             "properties": {
                 "id_role": {
@@ -2243,7 +2243,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.User": {
+        "users.User": {
             "type": "object",
             "properties": {
                 "address": {
@@ -2269,7 +2269,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserLoginRequest": {
+        "users.UserLoginRequest": {
             "type": "object",
             "properties": {
                 "email": {
@@ -2280,7 +2280,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserLoginResponse": {
+        "users.UserLoginResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -2291,7 +2291,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_users.UserUpdate": {
+        "users.UserUpdate": {
             "type": "object",
             "properties": {
                 "address": {

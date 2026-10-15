@@ -99,7 +99,6 @@ CREATE TABLE IF NOT EXISTS reservaciones (
     fecha_fin DATE NOT NULL,
     id_cabana INT NOT NULL, 
     id_usuario INT NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'proxima',
     estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
     fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_cancelacion TIMESTAMPTZ,
@@ -112,11 +111,10 @@ CREATE TABLE IF NOT EXISTS reservaciones (
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE RESTRICT,
 
     CONSTRAINT chk_fechas CHECK (fecha_fin > fecha_inicio),
-    CONSTRAINT chk_estado CHECK (estado IN ('proxima', 'en_curso', 'finalizada', 'cancelada')),
     CONSTRAINT chk_checkin_checkout CHECK (
         fecha_checkout IS NULL
         OR (fecha_checkin IS NOT NULL AND fecha_checkout >= fecha_checkin)
-    )
+    ),
     CONSTRAINT chk_estado CHECK (estado IN ('pendiente', 'confirmada', 'en_curso', 'finalizada', 'cancelada'))
 );
 

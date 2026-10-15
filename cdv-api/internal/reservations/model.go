@@ -31,18 +31,15 @@ type ErrorResponse struct {
 }
 
 // Estados del ciclo de vida de una reservación. Nace pendiente; el pago del
-// anticipo la confirma; el job en segundo plano la pasa a en_curso al iniciar
-// la estancia y a finalizada al terminar. Cancelada es un estado terminal.
+// anticipo la confirma; el check-in del anfitrión (o el job en segundo plano)
+// la pasa a en_curso al iniciar la estancia y a finalizada al terminar.
+// Cancelada es un estado terminal.
 const (
-	StatusUpcoming      = "proxima"
-	StatusInProgress    = "en_curso"
-	StatusCancelled     = "cancelada"
-	StatusFinished      = "finalizada"
-	StatusPending    = "pendiente"
-	StatusConfirmed  = "confirmada"
+	StatusPending   = "pendiente"
+	StatusConfirmed = "confirmada"
 	StatusInProgress = "en_curso"
-	StatusFinished   = "finalizada"
-	StatusCancelled  = "cancelada"
+	StatusFinished  = "finalizada"
+	StatusCancelled = "cancelada"
 
 	MinCancellationDays = 3
 
@@ -50,10 +47,6 @@ const (
 	// pagarse como anticipo para confirmarla.
 	AnticipoPercent = 0.30
 )
-
-func IsActiveStatus(status string) bool {
-	return status == StatusUpcoming || status == StatusInProgress
-}
 
 var (
 	ErrReservationNotFound       = errors.New("reservation not found")
