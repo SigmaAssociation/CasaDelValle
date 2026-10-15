@@ -25,6 +25,7 @@ import (
 	"cdv-api/internal/images"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/notifications"
+	"cdv-api/internal/payments"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
 
@@ -73,6 +74,10 @@ func main() {
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
 	imageController := images.NewController(imageService)
+
+	paymentRepository := payments.NewRepository(pool)
+	paymentService := payments.NewService(paymentRepository, notificationService)
+	paymentController := payments.NewController(paymentService)
 
 	// -------------------------
 	// Jobs en segundo plano
@@ -136,6 +141,8 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
+	mux.HandleFunc("GET /cdv-api/reservations/{id}/payments", paymentController.GetReservationPayments)
+	mux.HandleFunc("POST /cdv-api/reservations/{id}/payments", paymentController.CreatePayment)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)

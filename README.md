@@ -75,6 +75,9 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notificat
 
 # 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
+
+# 4. Registro de pagos/abonos: valida montos y métodos, habilita "pago_registrado".
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_pagos.sql
 ```
 
 Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.

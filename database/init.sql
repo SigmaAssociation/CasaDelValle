@@ -122,7 +122,10 @@ CREATE TABLE IF NOT EXISTS pagos (
 
     CONSTRAINT fk_pago_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
 
-    CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT
+    CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
+
+    CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0),
+    CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'tarjeta', 'transferencia', 'efectivo'))
 );
 
 CREATE TABLE IF NOT EXISTS comentario (
@@ -163,6 +166,7 @@ CREATE TABLE IF NOT EXISTS notificaciones (
             'reserva_cancelada',
             'reserva_actualizada',
             'reserva_finalizada',
+            'pago_registrado',
             'cabana_creada',
             'cabana_actualizada',
             'cabana_eliminada',

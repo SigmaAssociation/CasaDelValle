@@ -7,6 +7,7 @@ import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
+import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
@@ -106,6 +107,10 @@ export class CabinDetailPage implements OnInit {
       r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
     );
     this.cd.detectChanges();
+  }
+
+  onPaymentRegistered(_res: CreatePaymentResponse): void {
+    // El pago no cambia el estado de la reservación; no hay nada que actualizar en la tarjeta.
   }
 
   canEdit(): boolean {
