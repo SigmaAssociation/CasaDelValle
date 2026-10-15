@@ -1283,6 +1283,67 @@
                 }
             }
         },
+        "/reservations/{id}/balance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Consultar saldo de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saldo de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.ReservationBalance"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/{id}/cancel": {
             "patch": {
                 "security": [
@@ -2048,6 +2109,23 @@
                 }
             }
         },
+        "reservations.ExtraCharge": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "concept": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
         "reservations.PayAnticipoResponse": {
             "type": "object",
             "properties": {
@@ -2059,6 +2137,102 @@
                 },
                 "reservation": {
                     "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "paidAt": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.Refund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "paymentId": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "refundedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.ReservationBalance": {
+            "type": "object",
+            "properties": {
+                "baseTotal": {
+                    "type": "number"
+                },
+                "extraCharges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.ExtraCharge"
+                    }
+                },
+                "extraChargesTotal": {
+                    "type": "number"
+                },
+                "grandTotal": {
+                    "type": "number"
+                },
+                "netPaid": {
+                    "type": "number"
+                },
+                "nightlyRate": {
+                    "type": "number"
+                },
+                "nights": {
+                    "type": "integer"
+                },
+                "paymentStatus": {
+                    "type": "string"
+                },
+                "payments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.Payment"
+                    }
+                },
+                "paymentsTotal": {
+                    "type": "number"
+                },
+                "pendingBalance": {
+                    "type": "number"
+                },
+                "refunds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.Refund"
+                    }
+                },
+                "refundsTotal": {
+                    "type": "number"
+                },
+                "reservationId": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },
