@@ -42,6 +42,8 @@ type mockReservationRepository struct {
 	payCalledWith     *payCall
 	advanceReturnIDs  []int
 	advanceErr        error
+	ledgerReturn      *ReservationLedger
+	ledgerErr         error
 }
 
 type mockNotifier struct {
@@ -106,6 +108,14 @@ func (m *mockReservationRepository) UpdateReservation(ctx context.Context, id in
 
 func (m *mockReservationRepository) GetCabinName(ctx context.Context, cabinID int) (string, error) {
 	return m.getCabinName, m.getCabinNameErr
+}
+
+func (m *mockReservationRepository) GetReservationLedger(
+	ctx context.Context,
+	reservationID int,
+	cabinID uint,
+) (*ReservationLedger, error) {
+	return m.ledgerReturn, m.ledgerErr
 }
 
 func (m *mockReservationRepository) GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error) {
@@ -398,7 +408,7 @@ func TestAdvanceReservationStatesNotifiesGuestHostAndAdmins(t *testing.T) {
 		t.Fatalf("AdvanceReservationStates returned error: %v", err)
 	}
 	if count != 1 {
-		t.Fatalf("FinalizePastReservations() = %d, want 1", count)
+		t.Fatalf("AdvanceReservationStates() = %d, want 1", count)
 	}
 
 	finished := notifier.byTipo(notifications.TipoReservaFinalizada)

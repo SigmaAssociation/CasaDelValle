@@ -18,6 +18,7 @@ import { hostGuard } from './guards/host-guard';
 import { cabinOwnerGuard } from './guards/cabin-owner-guard';
 import { NotificacionesPage } from './pages/notificaciones-page/notificaciones-page';
 import { ReporteListaReservacionesComponent } from './pages/reporte-lista-reservaciones/reporte-lista-reservaciones';
+import { ReservationBalancePage } from './pages/reservation-balance-page/reservation-balance-page';
 
 export const routes: Routes = [
     {
@@ -89,6 +90,8 @@ export const routes: Routes = [
         path: 'reporte-reservaciones',
         component: ReporteListaReservacionesComponent,
         canActivate:[authGuard]
+        path: 'reservations/:id/balance',
+        component: ReservationBalancePage
     },
     {
         path: '**',

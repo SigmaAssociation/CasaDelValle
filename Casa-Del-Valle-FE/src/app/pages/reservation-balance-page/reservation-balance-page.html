@@ -1,0 +1,132 @@
+<div class="max-w-3xl mx-auto flex flex-col gap-4 font-sans">
+  <a routerLink="/my-reservations" class="text-sm text-brown hover:text-orange w-fit">
+    ← Volver a mis reservaciones
+  </a>
+
+  @if (isLoading()) {
+    <p class="py-8 text-center text-brown/60">Cargando saldo…</p>
+  } @else if (error()) {
+    <div class="py-8 text-center">
+      <p class="text-orange mb-4">{{ errorMessage() }}</p>
+      @if (error() === 'generic') {
+        <button
+          type="button"
+          (click)="load()"
+          class="px-4 py-2 rounded-md bg-orange text-white text-sm font-medium"
+        >
+          Reintentar
+        </button>
+      }
+    </div>
+  } @else if (balance(); as b) {
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 class="font-serif text-3xl text-black">Saldo de la reservación #{{ b.reservationId }}</h2>
+      <span class="px-3 py-1 rounded-full border border-brown/30 text-brown text-sm">
+        {{ statusLabel() }}
+      </span>
+    </div>
+
+    <!-- Saldo actual -->
+    <section
+      class="bg-white rounded-xl border border-brown/15 shadow-sm p-6 flex flex-wrap items-center justify-between gap-4"
+      aria-live="polite"
+    >
+      <div>
+        <p class="text-sm text-brown/70">{{ balanceLabel() }}</p>
+        <p class="font-serif text-4xl text-black">
+          {{ balanceAmount() | currency: 'GTQ' : 'symbol-narrow' }}
+        </p>
+        <p class="text-sm text-brown/70 mt-1">{{ balanceHint() }}</p>
+      </div>
+      <span class="px-4 py-1.5 rounded-full text-sm font-medium" [class]="paymentBadge().classes">
+        {{ paymentBadge().label }}
+      </span>
+    </section>
+
+    <!-- Desglose -->
+    <section class="bg-white rounded-xl border border-brown/15 shadow-sm p-6">
+      <h3 class="font-serif text-xl text-black mb-4">Desglose</h3>
+      <dl class="flex flex-col text-sm">
+        <div class="flex justify-between py-2">
+          <dt class="text-brown">
+            Estadía ({{ b.nights }} {{ b.nights === 1 ? 'noche' : 'noches' }} ×
+            {{ b.nightlyRate | currency: 'GTQ' : 'symbol-narrow' }})
+          </dt>
+          <dd class="text-black">{{ b.baseTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-2 border-t border-brown/10">
+          <dt class="text-brown">Cargos adicionales</dt>
+          <dd class="text-black">{{ b.extraChargesTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-2 border-t border-brown/20 font-medium">
+          <dt class="text-black">Total</dt>
+          <dd class="text-black">{{ b.grandTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-2 border-t border-brown/10">
+          <dt class="text-brown">Pagos recibidos</dt>
+          <dd class="text-green">{{ b.paymentsTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-2 border-t border-brown/10">
+          <dt class="text-brown">Reembolsos</dt>
+          <dd class="text-orange">− {{ b.refundsTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-2 border-t border-brown/20 font-medium">
+          <dt class="text-black">Pagado neto</dt>
+          <dd class="text-black">{{ b.netPaid | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+        <div class="flex justify-between py-3 border-t-2 border-brown/30 font-medium">
+          <dt class="text-black">{{ balanceLabel() }}</dt>
+          <dd class="text-black">{{ balanceAmount() | currency: 'GTQ' : 'symbol-narrow' }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- Movimientos -->
+    <section class="bg-white rounded-xl border border-brown/15 shadow-sm p-6">
+      <h3 class="font-serif text-xl text-black mb-3">Cargos adicionales</h3>
+      @for (c of b.extraCharges; track c.id) {
+        <div class="flex justify-between py-2 border-t border-brown/10 text-sm first:border-t-0">
+          <div>
+            <p class="text-black">{{ c.concept }}</p>
+            <p class="text-brown/60 text-xs">{{ c.createdAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+          <p class="text-black">{{ c.amount | currency: 'GTQ' : 'symbol-narrow' }}</p>
+        </div>
+      } @empty {
+        <p class="text-sm text-brown/60">No hay cargos adicionales.</p>
+      }
+    </section>
+
+    <section class="bg-white rounded-xl border border-brown/15 shadow-sm p-6">
+      <h3 class="font-serif text-xl text-black mb-3">Pagos</h3>
+      @for (p of b.payments; track p.id) {
+        <div class="flex justify-between py-2 border-t border-brown/10 text-sm first:border-t-0">
+          <div>
+            <p class="text-black capitalize">{{ p.type }}</p>
+            <p class="text-brown/60 text-xs">
+              {{ p.paidAt ? (p.paidAt | date: 'dd/MM/yyyy HH:mm') : 'Sin fecha' }}
+            </p>
+          </div>
+          <p class="text-green">{{ p.amount | currency: 'GTQ' : 'symbol-narrow' }}</p>
+        </div>
+      } @empty {
+        <p class="text-sm text-brown/60">Aún no hay pagos registrados.</p>
+      }
+    </section>
+
+    <section class="bg-white rounded-xl border border-brown/15 shadow-sm p-6">
+      <h3 class="font-serif text-xl text-black mb-3">Reembolsos</h3>
+      @for (r of b.refunds; track r.id) {
+        <div class="flex justify-between py-2 border-t border-brown/10 text-sm first:border-t-0">
+          <div>
+            <p class="text-black">{{ r.reason || 'Reembolso' }}</p>
+            <p class="text-brown/60 text-xs">{{ r.refundedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+          </div>
+          <p class="text-orange">− {{ r.amount | currency: 'GTQ' : 'symbol-narrow' }}</p>
+        </div>
+      } @empty {
+        <p class="text-sm text-brown/60">No hay reembolsos registrados.</p>
+      }
+    </section>
+  }
+</div>

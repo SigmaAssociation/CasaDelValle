@@ -150,6 +150,7 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/payments/reservation/{id}", paymentController.GetReservationPayments)
 	mux.HandleFunc("POST /cdv-api/payments/reservation/{id}", paymentController.CreatePayment)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)
+	mux.HandleFunc("GET /cdv-api/reservations/balance/{id}", reservationController.GetReservationBalance)
 
 	// Buzón de notificaciones (personal: siempre el usuario del token).
 	mux.HandleFunc("GET /cdv-api/notifications", notificationController.GetNotifications)
