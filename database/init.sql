@@ -178,6 +178,7 @@ CREATE TABLE IF NOT EXISTS notificaciones (
             'reserva_cancelada',
             'reserva_actualizada',
             'reserva_finalizada',
+            'pago_registrado',
             'cabana_creada',
             'cabana_actualizada',
             'cabana_eliminada',

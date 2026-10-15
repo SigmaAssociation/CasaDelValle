@@ -64,7 +64,16 @@
             <p class="text-xs text-brown">Cancelada el {{ formatDate(reservation.cancelledAt) }}</p>
           }
         } @else if (isPending) {
-          @if (canPay) {
+      @if (canViewPayments) {
+        <button
+          type="button"
+          (click)="openPaymentsModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
+        >
+          Pagos
+        </button>
+      }
+      @if (canPay) {
             <p class="text-xs text-brown">
               Anticipo (30%): {{ formatPrice(anticipoAmount) }} para confirmar
             </p>
@@ -125,5 +134,13 @@
     [loading]="isPaying()"
     (confirm)="confirmPay()"
     (dismiss)="closePayModal()"
+  />
+}
+
+@if (showPaymentsModal()) {
+  <app-payments-modal
+    [reservation]="reservation"
+    (registered)="onPaymentRegistered($event)"
+    (dismiss)="closePaymentsModal()"
   />
 }
