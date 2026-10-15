@@ -1,7 +1,8 @@
 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
   <h2 class="text-2xl text-brown mb-1">Reservar esta cabaña</h2>
   <p class="text-gray-500 text-sm mb-5">
-    Elige las fechas de hospedaje. El pago se realizará al llegar a la cabaña.
+    Elige las fechas de hospedaje. Para confirmar tu reservación deberás pagar un anticipo del 30%;
+    el resto se paga al llegar a la cabaña.
   </p>
 
   <form [formGroup]="reservationForm" (ngSubmit)="submit()" class="space-y-5">
@@ -61,7 +62,8 @@
     </button>
 
     <p class="text-xs text-gray-400 text-center">
-      Pago en linea no disponible. El total se cancela directamente en la ubicación al llegar.
+      Para confirmar tu reservación deberás pagar un anticipo del 30% desde "Mis reservaciones". El
+      resto se cancela en la ubicación al llegar.
     </p>
   </form>
 </div>
@@ -80,7 +82,7 @@
         <p class="text-sm text-gray-600 mb-1">Número de Reserva: <span class="font-medium">#{{ reservationId() }}</span></p>
       }
       <p class="text-xs text-gray-400 mb-6">
-        El pago se realizará al llegar a la cabaña. Puedes dar seguimiento desde "Mis reservaciones".
+        Recuerda pagar el anticipo (30%) desde "Mis reservaciones" para confirmarla.
       </p>
       <div class="flex flex-col gap-2">
         <a

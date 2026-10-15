@@ -134,7 +134,7 @@ func (r *Repository) CancelReservation(ctx context.Context, id int, cancelledAt 
 	query := `
 		UPDATE reservaciones
 		SET estado = 'cancelada', fecha_cancelacion = $2
-		WHERE id = $1 AND estado = 'activa'
+		WHERE id = $1 AND estado IN ('pendiente', 'confirmada')
 	`
 	tag, err := r.pool.Exec(ctx, query, id, cancelledAt)
 	if err != nil {
@@ -280,7 +280,7 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 		FROM reservaciones
 		WHERE id_usuario = $1
 		  AND id <> $2
-		  AND estado = 'activa'
+		  AND estado IN ('pendiente', 'confirmada', 'en_curso')
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID, excludeID)
@@ -319,7 +319,7 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 	query := `
 		UPDATE reservaciones
 		SET id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
-		WHERE id = $4 AND estado = 'activa'
+		WHERE id = $4 AND estado IN ('pendiente', 'confirmada')
 	`
 	tag, err := r.pool.Exec(ctx, query, req.CabinID, req.StartDate, req.EndDate, id)
 	if err != nil {
@@ -343,17 +343,31 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 	return nil
 }
 
-// FinalizePastReservations marca como finalizadas las reservaciones activas
-// cuya fecha de fin ya pasó y devuelve los IDs afectados.
-func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error) {
-	query := `
+// AdvanceReservationStates aplica las transiciones automáticas del ciclo de
+// vida: marca en curso las reservaciones confirmadas cuya estancia ya comenzó
+// y finaliza las no terminadas cuya estancia ya concluyó. Devuelve los IDs de
+// las reservaciones finalizadas (para notificar).
+func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error) {
+	startQuery := `
+		UPDATE reservaciones
+		SET estado = 'en_curso'
+		WHERE estado = 'confirmada'
+		  AND fecha_inicio <= CURRENT_DATE
+		  AND fecha_fin >= CURRENT_DATE
+	`
+	if _, err := r.pool.Exec(ctx, startQuery); err != nil {
+		return nil, err
+	}
+
+	finishQuery := `
 		UPDATE reservaciones
 		SET estado = 'finalizada'
-		WHERE estado = 'activa' AND fecha_fin < CURRENT_DATE
+		WHERE estado IN ('pendiente', 'confirmada', 'en_curso')
+		  AND fecha_fin < CURRENT_DATE
 		RETURNING id
 	`
 
-	rows, err := r.pool.Query(ctx, query)
+	rows, err := r.pool.Query(ctx, finishQuery)
 	if err != nil {
 		return nil, err
 	}
@@ -371,4 +385,50 @@ func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error
 		return nil, err
 	}
 	return ids, nil
+}
+
+// GetCabinNightlyRate devuelve el precio por noche de una cabaña.
+func (r *Repository) GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error) {
+	var rate float64
+	err := r.pool.QueryRow(ctx, `SELECT precio FROM cabanas WHERE id = $1`, cabinID).Scan(&rate)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, ErrCabinNotFound
+		}
+		return 0, err
+	}
+	return rate, nil
+}
+
+// PayAnticipo registra el pago del anticipo en la tabla pagos y confirma la
+// reservación en una sola transacción: solo aplica si sigue pendiente.
+func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	insert := `
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, id_reservacion)
+		VALUES ($1, $2, 'anticipo', $3)
+	`
+	if _, err := tx.Exec(ctx, insert, payerID, amount, reservationID); err != nil {
+		return err
+	}
+
+	update := `
+		UPDATE reservaciones
+		SET estado = 'confirmada'
+		WHERE id = $1 AND estado = 'pendiente'
+	`
+	tag, err := tx.Exec(ctx, update, reservationID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotPending
+	}
+
+	return tx.Commit(ctx)
 }

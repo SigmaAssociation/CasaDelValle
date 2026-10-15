@@ -1,6 +1,6 @@
 basePath: /cdv-api
 definitions:
-  cabins.CabinCardResponse:
+  internal_cabins.CabinCardResponse:
     properties:
       address:
         type: string
@@ -19,16 +19,16 @@ definitions:
       price:
         type: number
     type: object
-  cabins.CabinCardsListResponse:
+  internal_cabins.CabinCardsListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/cabins.CabinCardResponse'
+          $ref: '#/definitions/internal_cabins.CabinCardResponse'
         type: array
       total:
         type: integer
     type: object
-  cabins.CabinResponse:
+  internal_cabins.CabinResponse:
     properties:
       address:
         type: string
@@ -49,16 +49,16 @@ definitions:
       rules:
         type: string
     type: object
-  cabins.CabinsListResponse:
+  internal_cabins.CabinsListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/cabins.CabinResponse'
+          $ref: '#/definitions/internal_cabins.CabinResponse'
         type: array
       total:
         type: integer
     type: object
-  cabins.CreateCabinRequest:
+  internal_cabins.CreateCabinRequest:
     properties:
       address:
         type: string
@@ -77,21 +77,21 @@ definitions:
       rules:
         type: string
     type: object
-  cabins.CreateCabinResponse:
+  internal_cabins.CreateCabinResponse:
     properties:
       cabin_id:
         type: integer
       message:
         type: string
     type: object
-  cabins.DeleteCabinResponse:
+  internal_cabins.DeleteCabinResponse:
     properties:
       message:
         type: string
       rows_affected:
         type: integer
     type: object
-  cabins.UpdateCabinRequest:
+  internal_cabins.UpdateCabinRequest:
     properties:
       address:
         type: string
@@ -106,7 +106,7 @@ definitions:
       rules:
         type: string
     type: object
-  images.CreateImageResponse:
+  internal_images.CreateImageResponse:
     properties:
       image_id:
         type: integer
@@ -115,7 +115,7 @@ definitions:
       path:
         type: string
     type: object
-  images.ImageResponse:
+  internal_images.ImageResponse:
     properties:
       cabin_id:
         type: integer
@@ -128,28 +128,28 @@ definitions:
       user_id:
         type: integer
     type: object
-  images.ImagesListResponse:
+  internal_images.ImagesListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/images.ImageResponse'
+          $ref: '#/definitions/internal_images.ImageResponse'
         type: array
       total:
         type: integer
     type: object
-  notifications.MarkAllReadResponse:
+  internal_notifications.MarkAllReadResponse:
     properties:
       message:
         type: string
       updated:
         type: integer
     type: object
-  notifications.MarkReadResponse:
+  internal_notifications.MarkReadResponse:
     properties:
       message:
         type: string
     type: object
-  notifications.Notification:
+  internal_notifications.Notification:
     properties:
       entidad_id:
         type: integer
@@ -168,11 +168,11 @@ definitions:
       user_id:
         type: integer
     type: object
-  notifications.NotificationListResponse:
+  internal_notifications.NotificationListResponse:
     properties:
       data:
         items:
-          $ref: '#/definitions/notifications.Notification'
+          $ref: '#/definitions/internal_notifications.Notification'
         type: array
       has_more:
         type: boolean
@@ -183,26 +183,35 @@ definitions:
       total:
         type: integer
     type: object
-  notifications.UnreadCountResponse:
+  internal_notifications.UnreadCountResponse:
     properties:
       unread_count:
         type: integer
     type: object
-  reservations.CancelReservationResponse:
+  internal_reservations.CancelReservationResponse:
     properties:
       message:
         type: string
       reservation:
-        $ref: '#/definitions/reservations.ReservationDetail'
+        $ref: '#/definitions/internal_reservations.ReservationDetail'
     type: object
-  reservations.CreateReservationResponse:
+  internal_reservations.CreateReservationResponse:
     properties:
       message:
         type: string
       reservation_id:
         type: integer
     type: object
-  reservations.ReservationCard:
+  internal_reservations.PayAnticipoResponse:
+    properties:
+      amount:
+        type: number
+      message:
+        type: string
+      reservation:
+        $ref: '#/definitions/internal_reservations.ReservationDetail'
+    type: object
+  internal_reservations.ReservationCard:
     properties:
       cabinId:
         type: integer
@@ -229,7 +238,7 @@ definitions:
       totalPrice:
         type: number
     type: object
-  reservations.ReservationDetail:
+  internal_reservations.ReservationDetail:
     properties:
       cabin_id:
         type: integer
@@ -248,7 +257,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  reservations.ReservationRequest:
+  internal_reservations.ReservationRequest:
     properties:
       cabin_id:
         type: integer
@@ -261,7 +270,7 @@ definitions:
       user_id:
         type: integer
     type: object
-  reservations.UpdateReservationRequest:
+  internal_reservations.UpdateReservationRequest:
     properties:
       cabin_id:
         type: integer
@@ -272,14 +281,14 @@ definitions:
         description: Formato AAAA-MM-DD
         type: string
     type: object
-  reservations.UpdateReservationResponse:
+  internal_reservations.UpdateReservationResponse:
     properties:
       message:
         type: string
       reservation:
-        $ref: '#/definitions/reservations.ReservationDetail'
+        $ref: '#/definitions/internal_reservations.ReservationDetail'
     type: object
-  users.RegisterRequest:
+  internal_users.RegisterRequest:
     properties:
       address:
         type: string
@@ -296,19 +305,19 @@ definitions:
       phone:
         type: string
     type: object
-  users.RegisterResponse:
+  internal_users.RegisterResponse:
     properties:
       mensaje:
         type: string
       user_id:
         type: integer
     type: object
-  users.UpdateRoleRequest:
+  internal_users.UpdateRoleRequest:
     properties:
       id_role:
         type: integer
     type: object
-  users.UpdateRoleResponse:
+  internal_users.UpdateRoleResponse:
     properties:
       id_role:
         type: integer
@@ -317,7 +326,7 @@ definitions:
       token:
         type: string
     type: object
-  users.User:
+  internal_users.User:
     properties:
       address:
         type: string
@@ -334,21 +343,21 @@ definitions:
       phone:
         type: string
     type: object
-  users.UserLoginRequest:
+  internal_users.UserLoginRequest:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  users.UserLoginResponse:
+  internal_users.UserLoginResponse:
     properties:
       message:
         type: string
       token:
         type: string
     type: object
-  users.UserUpdate:
+  internal_users.UserUpdate:
     properties:
       address:
         type: string
@@ -377,7 +386,7 @@ paths:
         "200":
           description: Lista de cabañas
           schema:
-            $ref: '#/definitions/cabins.CabinsListResponse'
+            $ref: '#/definitions/internal_cabins.CabinsListResponse'
         "500":
           description: Error al obtener las cabañas
           schema:
@@ -400,14 +409,14 @@ paths:
         name: cabin
         required: true
         schema:
-          $ref: '#/definitions/cabins.CreateCabinRequest'
+          $ref: '#/definitions/internal_cabins.CreateCabinRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Cabaña registrada exitosamente
           schema:
-            $ref: '#/definitions/cabins.CreateCabinResponse'
+            $ref: '#/definitions/internal_cabins.CreateCabinResponse'
         "400":
           description: Datos inválidos
           schema:
@@ -439,7 +448,7 @@ paths:
         "200":
           description: Cabaña eliminada exitosamente
           schema:
-            $ref: '#/definitions/cabins.DeleteCabinResponse'
+            $ref: '#/definitions/internal_cabins.DeleteCabinResponse'
         "400":
           description: Datos inválidos
           schema:
@@ -477,7 +486,7 @@ paths:
         "200":
           description: Detalle de la cabaña
           schema:
-            $ref: '#/definitions/cabins.CabinResponse'
+            $ref: '#/definitions/internal_cabins.CabinResponse'
         "400":
           description: ID de cabaña inválido
           schema:
@@ -511,7 +520,7 @@ paths:
         name: cabin
         required: true
         schema:
-          $ref: '#/definitions/cabins.UpdateCabinRequest'
+          $ref: '#/definitions/internal_cabins.UpdateCabinRequest'
       produces:
       - application/json
       responses:
@@ -559,7 +568,7 @@ paths:
         "200":
           description: Lista de imágenes
           schema:
-            $ref: '#/definitions/images.ImagesListResponse'
+            $ref: '#/definitions/internal_images.ImagesListResponse'
         "400":
           description: ID de cabaña inválido
           schema:
@@ -599,7 +608,7 @@ paths:
         "201":
           description: Imagen subida exitosamente
           schema:
-            $ref: '#/definitions/images.CreateImageResponse'
+            $ref: '#/definitions/internal_images.CreateImageResponse'
         "400":
           description: Datos o formato inválido
           schema:
@@ -639,7 +648,7 @@ paths:
         "200":
           description: Imagen principal
           schema:
-            $ref: '#/definitions/images.ImageResponse'
+            $ref: '#/definitions/internal_images.ImageResponse'
         "400":
           description: ID de cabaña inválido
           schema:
@@ -696,7 +705,7 @@ paths:
         "200":
           description: Resultados de la búsqueda
           schema:
-            $ref: '#/definitions/cabins.CabinCardsListResponse'
+            $ref: '#/definitions/internal_cabins.CabinCardsListResponse'
         "400":
           description: Parámetros inválidos
           schema:
@@ -724,7 +733,7 @@ paths:
         "200":
           description: Cabañas del usuario
           schema:
-            $ref: '#/definitions/cabins.CabinsListResponse'
+            $ref: '#/definitions/internal_cabins.CabinsListResponse'
         "400":
           description: ID de usuario inválido
           schema:
@@ -795,7 +804,7 @@ paths:
         "200":
           description: Imagen
           schema:
-            $ref: '#/definitions/images.ImageResponse'
+            $ref: '#/definitions/internal_images.ImageResponse'
         "400":
           description: ID de imagen inválido
           schema:
@@ -825,14 +834,14 @@ paths:
         name: credentials
         required: true
         schema:
-          $ref: '#/definitions/users.UserLoginRequest'
+          $ref: '#/definitions/internal_users.UserLoginRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Usuario autenticado exitosamente
           schema:
-            $ref: '#/definitions/users.UserLoginResponse'
+            $ref: '#/definitions/internal_users.UserLoginResponse'
         "400":
           description: Datos de entrada inválidos
           schema:
@@ -868,7 +877,7 @@ paths:
         "200":
           description: Lista de notificaciones del usuario
           schema:
-            $ref: '#/definitions/notifications.NotificationListResponse'
+            $ref: '#/definitions/internal_notifications.NotificationListResponse'
         "401":
           description: Usuario no autenticado
           schema:
@@ -903,7 +912,7 @@ paths:
         "200":
           description: Notificación marcada como leída
           schema:
-            $ref: '#/definitions/notifications.MarkReadResponse'
+            $ref: '#/definitions/internal_notifications.MarkReadResponse'
         "400":
           description: ID de notificación inválido
           schema:
@@ -937,7 +946,7 @@ paths:
         "200":
           description: Resultado de la actualización
           schema:
-            $ref: '#/definitions/notifications.MarkAllReadResponse'
+            $ref: '#/definitions/internal_notifications.MarkAllReadResponse'
         "401":
           description: Usuario no autenticado
           schema:
@@ -965,7 +974,7 @@ paths:
         "200":
           description: Cantidad de notificaciones no leídas
           schema:
-            $ref: '#/definitions/notifications.UnreadCountResponse'
+            $ref: '#/definitions/internal_notifications.UnreadCountResponse'
         "401":
           description: Usuario no autenticado
           schema:
@@ -995,14 +1004,14 @@ paths:
         name: reservation
         required: true
         schema:
-          $ref: '#/definitions/reservations.ReservationRequest'
+          $ref: '#/definitions/internal_reservations.ReservationRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Reservación registrada exitosamente
           schema:
-            $ref: '#/definitions/reservations.CreateReservationResponse'
+            $ref: '#/definitions/internal_reservations.CreateReservationResponse'
         "400":
           description: Datos inválidos
           schema:
@@ -1048,7 +1057,7 @@ paths:
         "200":
           description: Detalle de la reservación
           schema:
-            $ref: '#/definitions/reservations.ReservationDetail'
+            $ref: '#/definitions/internal_reservations.ReservationDetail'
         "400":
           description: ID de reservación inválido
           schema:
@@ -1075,8 +1084,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Actualiza la cabaña y las fechas de una reservación activa. Puede
-        editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
+      description: Actualiza la cabaña y las fechas de una reservación pendiente o
+        confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin.
+        Requiere token.
       parameters:
       - description: ID de reservación
         in: path
@@ -1088,14 +1098,14 @@ paths:
         name: reservation
         required: true
         schema:
-          $ref: '#/definitions/reservations.UpdateReservationRequest'
+          $ref: '#/definitions/internal_reservations.UpdateReservationRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Reservación actualizada exitosamente
           schema:
-            $ref: '#/definitions/reservations.UpdateReservationResponse'
+            $ref: '#/definitions/internal_reservations.UpdateReservationResponse'
         "400":
           description: Datos inválidos
           schema:
@@ -1127,9 +1137,9 @@ paths:
       - Reservaciones
   /reservations/{id}/cancel:
     patch:
-      description: Cancela una reservación activa. Puede cancelar quien reservó, el
-        dueño de la cabaña o un admin, siempre que falten al menos 3 días para el
-        inicio. Requiere token.
+      description: Cancela una reservación pendiente o confirmada. Puede cancelar
+        quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos
+        3 días para el inicio. Requiere token.
       parameters:
       - description: ID de reservación
         in: path
@@ -1142,7 +1152,7 @@ paths:
         "200":
           description: Reservación cancelada exitosamente
           schema:
-            $ref: '#/definitions/reservations.CancelReservationResponse'
+            $ref: '#/definitions/internal_reservations.CancelReservationResponse'
         "400":
           description: ID de reservación inválido
           schema:
@@ -1172,6 +1182,53 @@ paths:
       summary: Cancelar reservación
       tags:
       - Reservaciones
+  /reservations/{id}/payment:
+    post:
+      description: Registra el anticipo (30% del total, calculado en el servidor)
+        y pasa la reservación de 'pendiente' a 'confirmada'. Solo quien reservó o
+        un admin. Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Anticipo registrado y reservación confirmada
+          schema:
+            $ref: '#/definitions/internal_reservations.PayAnticipoResponse'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación o cabaña no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: La reservación no está pendiente de anticipo
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Pagar anticipo y confirmar reservación
+      tags:
+      - Reservaciones
   /reservations/cabin/{cabinId}:
     get:
       description: Retorna las reservaciones de la cabaña indicada, incluyendo quién
@@ -1189,7 +1246,7 @@ paths:
           description: Listado de reservaciones
           schema:
             items:
-              $ref: '#/definitions/reservations.ReservationCard'
+              $ref: '#/definitions/internal_reservations.ReservationCard'
             type: array
         "400":
           description: ID de cabaña inválido
@@ -1231,7 +1288,7 @@ paths:
           description: Listado de reservaciones
           schema:
             items:
-              $ref: '#/definitions/reservations.ReservationCard'
+              $ref: '#/definitions/internal_reservations.ReservationCard'
             type: array
         "400":
           description: ID de usuario inválido
@@ -1260,7 +1317,7 @@ paths:
           description: Lista de usuarios
           schema:
             items:
-              $ref: '#/definitions/users.User'
+              $ref: '#/definitions/internal_users.User'
             type: array
         "403":
           description: Sin permisos de administrador
@@ -1289,14 +1346,14 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/users.RegisterRequest'
+          $ref: '#/definitions/internal_users.RegisterRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Usuario registrado exitosamente
           schema:
-            $ref: '#/definitions/users.RegisterResponse'
+            $ref: '#/definitions/internal_users.RegisterResponse'
         "400":
           description: Datos de entrada inválidos
           schema:
@@ -1328,7 +1385,7 @@ paths:
         "200":
           description: Perfil del usuario
           schema:
-            $ref: '#/definitions/users.User'
+            $ref: '#/definitions/internal_users.User'
         "400":
           description: ID de usuario inválido
           schema:
@@ -1368,7 +1425,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/users.UserUpdate'
+          $ref: '#/definitions/internal_users.UserUpdate'
       produces:
       - application/json
       responses:
@@ -1424,14 +1481,14 @@ paths:
         name: role
         required: true
         schema:
-          $ref: '#/definitions/users.UpdateRoleRequest'
+          $ref: '#/definitions/internal_users.UpdateRoleRequest'
       produces:
       - application/json
       responses:
         "200":
           description: Rol actualizado
           schema:
-            $ref: '#/definitions/users.UpdateRoleResponse'
+            $ref: '#/definitions/internal_users.UpdateRoleResponse'
         "400":
           description: Datos inválidos o cambio no permitido
           schema:

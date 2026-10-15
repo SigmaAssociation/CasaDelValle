@@ -94,7 +94,7 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 
 // CancelReservation cancela una reservación.
 // @Summary Cancelar reservación
-// @Description Cancela una reservación activa. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
+// @Description Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
 // @Tags Reservaciones
 // @Produce json
 // @Security BearerAuth
@@ -157,6 +157,78 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, CancelReservationResponse{
 		Message:     "Reservación cancelada exitosamente",
 		Reservation: cancelled,
+	})
+}
+
+// PayAnticipo registra el pago del anticipo y confirma la reservación.
+// @Summary Pagar anticipo y confirmar reservación
+// @Description Registra el anticipo (30% del total, calculado en el servidor) y pasa la reservación de 'pendiente' a 'confirmada'. Solo quien reservó o un admin. Requiere token.
+// @Tags Reservaciones
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Success 200 {object} PayAnticipoResponse "Anticipo registrado y reservación confirmada"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación o cabaña no encontrada"
+// @Failure 409 {object} map[string]string "La reservación no está pendiente de anticipo"
+// @Router /reservations/{id}/payment [post]
+func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de reservación inválido")
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "Usuario no autenticado")
+		return
+	}
+
+	reservation, err := c.service.GetReservationByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrReservationNotFound) {
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la reservación")
+		return
+	}
+
+	if userID != reservation.UserID && !middleware.IsAdmin(r) {
+		writeError(w, http.StatusForbidden, "Solo quien reservó puede pagar el anticipo")
+		return
+	}
+
+	updated, amount, err := c.service.PayAnticipo(r.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrReservationNotPending):
+			writeError(w, http.StatusConflict, "La reservación no está pendiente de anticipo")
+		case errors.Is(err, ErrReservationNotFound):
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+		case errors.Is(err, ErrCabinNotFound):
+			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+		default:
+			writeError(w, http.StatusInternalServerError, "Error al registrar el anticipo")
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, PayAnticipoResponse{		Message:     "Anticipo registrado. La reservación fue confirmada",
+		Amount:      amount,
+		Reservation: updated,
 	})
 }
 
@@ -299,7 +371,7 @@ func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Reque
 
 // UpdateReservation actualiza una reservación.
 // @Summary Actualizar reservación
-// @Description Actualiza la cabaña y las fechas de una reservación activa. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
+// @Description Actualiza la cabaña y las fechas de una reservación pendiente o confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
 // @Tags Reservaciones
 // @Accept json
 // @Produce json

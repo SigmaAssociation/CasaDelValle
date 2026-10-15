@@ -52,6 +52,7 @@ type ErrorResponse struct {
 const (
 	TipoBienvenida         = "bienvenida"
 	TipoReservaCreada      = "reserva_creada"
+	TipoReservaConfirmada  = "reserva_confirmada"
 	TipoReservaCancelada   = "reserva_cancelada"
 	TipoReservaActualizada = "reserva_actualizada"
 	TipoReservaFinalizada  = "reserva_finalizada"
@@ -80,6 +81,7 @@ var (
 	validTipos = map[string]bool{
 		TipoBienvenida:         true,
 		TipoReservaCreada:      true,
+		TipoReservaConfirmada:  true,
 		TipoReservaCancelada:   true,
 		TipoReservaActualizada: true,
 		TipoReservaFinalizada:  true,

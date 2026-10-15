@@ -6,6 +6,7 @@ import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
+import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
@@ -94,6 +95,13 @@ export class CabinDetailPage implements OnInit {
   }
 
   onReservationCancelled(res: CancelReservationResponse): void {
+    this.cabinReservations = this.cabinReservations.map((r) =>
+      r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
+    );
+    this.cd.detectChanges();
+  }
+
+  onReservationPaid(res: PayAnticipoResponse): void {
     this.cabinReservations = this.cabinReservations.map((r) =>
       r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
     );

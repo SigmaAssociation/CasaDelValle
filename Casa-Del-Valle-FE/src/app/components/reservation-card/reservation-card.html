@@ -16,18 +16,32 @@
         </p>
       </div>
 
-      @if (reservation.status === 'activa') {
-        <span class="text-xs px-3 py-1 rounded-md bg-green/10 text-green whitespace-nowrap">
-          Próxima
-        </span>
-      } @else if (reservation.status === 'finalizada') {
-        <span class="text-xs px-3 py-1 rounded-md bg-brown/10 text-brown whitespace-nowrap">
-          Finalizada
-        </span>
-      } @else {
-        <span class="text-xs px-3 py-1 rounded-md bg-black/10 text-black/70 whitespace-nowrap">
-          Cancelada
-        </span>
+      @switch (reservation.status) {
+        @case ('pendiente') {
+          <span class="text-xs px-3 py-1 rounded-md bg-orange/10 text-orange whitespace-nowrap">
+            Pendiente
+          </span>
+        }
+        @case ('confirmada') {
+          <span class="text-xs px-3 py-1 rounded-md bg-green/10 text-green whitespace-nowrap">
+            Confirmada
+          </span>
+        }
+        @case ('en_curso') {
+          <span class="text-xs px-3 py-1 rounded-md bg-green text-cream whitespace-nowrap">
+            En curso
+          </span>
+        }
+        @case ('finalizada') {
+          <span class="text-xs px-3 py-1 rounded-md bg-brown/10 text-brown whitespace-nowrap">
+            Finalizada
+          </span>
+        }
+        @default {
+          <span class="text-xs px-3 py-1 rounded-md bg-black/10 text-black/70 whitespace-nowrap">
+            Cancelada
+          </span>
+        }
       }
     </div>
 
@@ -49,7 +63,15 @@
           @if (reservation.cancelledAt) {
             <p class="text-xs text-brown">Cancelada el {{ formatDate(reservation.cancelledAt) }}</p>
           }
-        } @else if (reservation.status === 'activa') {
+        } @else if (isPending) {
+          @if (canPay) {
+            <p class="text-xs text-brown">
+              Anticipo (30%): {{ formatPrice(anticipoAmount) }} para confirmar
+            </p>
+          } @else {
+            <p class="text-xs text-brown">Esperando el anticipo de quien reservó</p>
+          }
+        } @else if (isConfirmed) {
           @if (canCancel) {
             <p class="text-xs text-brown">Cancelación disponible hasta el {{ formatDeadline() }}</p>
           } @else {
@@ -58,7 +80,16 @@
         }
       </div>
 
-      @if (reservation.status === 'activa') {
+      @if (canPay) {
+        <button
+          type="button"
+          (click)="openPayModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
+        >
+          Pagar anticipo
+        </button>
+      }
+      @if (isPending || isConfirmed) {
         <button
           type="button"
           (click)="openModal()"
@@ -85,5 +116,14 @@
     [loading]="isCancelling()"
     (confirm)="confirmCancel()"
     (dismiss)="closeModal()"
+  />
+}
+
+@if (showPayModal()) {
+  <app-pay-anticipo-modal
+    [reservation]="reservation"
+    [loading]="isPaying()"
+    (confirm)="confirmPay()"
+    (dismiss)="closePayModal()"
   />
 }
