@@ -81,6 +81,9 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_
 
 # 5. Registro de pagos/abonos: valida montos/métodos y habilita "pago_registrado".
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_pagos.sql
+
+# 6. Registra la informacion del saldo de las reservaciones".
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservation_balance.sql
 ```
 
 Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
