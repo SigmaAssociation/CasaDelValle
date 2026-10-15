@@ -69,7 +69,12 @@
       </div>
     } @else {
       @for (r of visible(); track r.id) {
-        <app-reservation-card [reservation]="r" (cancelled)="onCancelled($event)" />
+        <app-reservation-card
+          [reservation]="r"
+          (cancelled)="onCancelled($event)"
+          (paid)="onPaid($event)"
+          (paymentRegistered)="onPaymentRegistered($event)"
+        />
       } @empty {
         <p class="py-8 text-center text-brown/60">{{ emptyMessage() }}</p>
       }

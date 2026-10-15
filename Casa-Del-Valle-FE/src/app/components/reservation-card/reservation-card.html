@@ -86,6 +86,15 @@
         }
       </div>
 
+      @if (canViewPayments) {
+        <button
+          type="button"
+          (click)="openPaymentsModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
+        >
+          Pagos
+        </button>
+      }
       @if (canPay) {
         <button
           type="button"
@@ -93,6 +102,15 @@
           class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
         >
           Pagar anticipo
+        </button>
+      }
+      @if (canAddPayment) {
+        <button
+          type="button"
+          (click)="openPaymentsModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
+        >
+          Agregar pago
         </button>
       }
       @if (isPending || isConfirmed) {
@@ -109,6 +127,7 @@
         </button>
       }
       @if (showCheckin && isConfirmed) {
+        @if (isWithinStay) {
         <div class="flex flex-col gap-2 w-full sm:w-auto">
           @if (remainingBalance > 0) {
             <p class="text-xs text-brown">
@@ -133,6 +152,11 @@
             {{ isCheckingIn() ? 'Registrando…' : 'Registrar check-in' }}
           </button>
         </div>
+        } @else {
+          <p class="text-xs text-brown">
+            El check-in estará disponible del {{ formatDate(reservation.startDate) }} al {{ formatDate(reservation.endDate) }}.
+          </p>
+        }
       }
     </div>
 
@@ -157,5 +181,13 @@
     [loading]="isPaying()"
     (confirm)="confirmPay($event)"
     (dismiss)="closePayModal()"
+  />
+}
+
+@if (showPaymentsModal()) {
+  <app-payments-modal
+    [reservation]="reservation"
+    (registered)="onPaymentRegistered($event)"
+    (dismiss)="closePaymentsModal()"
   />
 }

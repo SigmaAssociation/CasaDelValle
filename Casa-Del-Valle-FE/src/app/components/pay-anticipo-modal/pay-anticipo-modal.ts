@@ -20,13 +20,13 @@ export class PayAnticipoModal implements OnInit {
 
   readonly anticipoPercent = 30;
   readonly methods = [
-    { value: 'CARD_SIMULATED', label: 'Tarjeta (simulada)' },
-    { value: 'TRANSFER_SIMULATED', label: 'Transferencia (simulada)' },
-    { value: 'CASH', label: 'Efectivo' },
+    { value: 'tarjeta', label: 'Tarjeta (simulada)' },
+    { value: 'transferencia', label: 'Transferencia (simulada)' },
+    { value: 'efectivo', label: 'Efectivo' },
   ];
 
   amount = 0;
-  method = 'CARD_SIMULATED';
+  method = 'tarjeta';
   formError: string | null = null;
 
   @HostListener('document:keydown.escape')

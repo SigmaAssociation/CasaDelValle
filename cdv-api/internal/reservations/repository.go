@@ -339,7 +339,7 @@ func (r *Repository) CheckinWithCashPayment(ctx context.Context, id int, payerID
 
 	insert := `
 		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
-		VALUES ($1, $2, 'pago', 'CASH', $3)
+		VALUES ($1, $2, 'pago', 'efectivo', $3)
 	`
 	if _, err := tx.Exec(ctx, insert, payerID, cashAmount, id); err != nil {
 		return err

@@ -131,8 +131,11 @@ CREATE TABLE IF NOT EXISTS pagos (
     id_reservacion INT NOT NULL,
 
     CONSTRAINT fk_pago_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
+
     CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
-    CONSTRAINT chk_pago_method CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH')),
+    -- tipo_pago distingue el anticipo (confirma la reserva) de los abonos;
+    -- method guarda el canal simulado del pago.
+    CONSTRAINT chk_pago_method CHECK (method IN ('tarjeta', 'transferencia', 'efectivo')),
     CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'pago')),
     CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0)
 );
@@ -178,6 +181,7 @@ CREATE TABLE IF NOT EXISTS notificaciones (
             'reserva_cancelada',
             'reserva_actualizada',
             'reserva_finalizada',
+            'pago_registrado',
             'cabana_creada',
             'cabana_actualizada',
             'cabana_eliminada',

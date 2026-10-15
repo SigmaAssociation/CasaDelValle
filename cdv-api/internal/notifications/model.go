@@ -57,6 +57,7 @@ const (
 	TipoReservaActualizada = "reserva_actualizada"
 	TipoReservaFinalizada  = "reserva_finalizada"
 	TipoReservaCheckin     = "reserva_checkin"
+	TipoPagoRegistrado     = "pago_registrado"
 	TipoCabanaCreada       = "cabana_creada"
 	TipoCabanaActualizada  = "cabana_actualizada"
 	TipoCabanaEliminada    = "cabana_eliminada"
@@ -87,6 +88,7 @@ var (
 		TipoReservaActualizada: true,
 		TipoReservaFinalizada:  true,
 		TipoReservaCheckin:     true,
+		TipoPagoRegistrado:     true,
 		TipoCabanaCreada:       true,
 		TipoCabanaActualizada:  true,
 		TipoCabanaEliminada:    true,

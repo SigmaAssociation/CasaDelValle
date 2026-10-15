@@ -7,12 +7,14 @@ import { AuthService } from '../../services/auth.service';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
+import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CancelReservationModal } from '../cancel-reservation-modal/cancel-reservation-modal';
 import { PayAnticipoModal } from '../pay-anticipo-modal/pay-anticipo-modal';
+import { PaymentsModal } from '../payments-modal/payments-modal';
 
 @Component({
   selector: 'app-reservation-card',
-  imports: [CancelReservationModal, PayAnticipoModal, RouterLink, FormsModule],
+  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RouterLink, FormsModule],
   templateUrl: './reservation-card.html',
 })
 export class ReservationCard {
@@ -25,12 +27,14 @@ export class ReservationCard {
   @Output() cancelled = new EventEmitter<CancelReservationResponse>();
   @Output() checkedIn = new EventEmitter<CheckinReservationResponse>();
   @Output() paid = new EventEmitter<PayAnticipoResponse>();
+  @Output() paymentRegistered = new EventEmitter<CreatePaymentResponse>();
 
   showModal = signal(false);
   isCancelling = signal(false);
   isCheckingIn = signal(false);
   showPayModal = signal(false);
   isPaying = signal(false);
+  showPaymentsModal = signal(false);
   errorMessage = signal<string | null>(null);
 
   openModal(): void {
@@ -91,12 +95,40 @@ export class ReservationCard {
     });
   }
 
+  openPaymentsModal(): void {
+    if (!this.canViewPayments) return;
+    this.showPaymentsModal.set(true);
+  }
+
+  closePaymentsModal(): void {
+    this.showPaymentsModal.set(false);
+  }
+
+  onPaymentRegistered(res: CreatePaymentResponse): void {
+    this.paymentRegistered.emit(res);
+  }
+
   get isCancelled(): boolean {
     return this.reservation.status === 'cancelada';
   }
 
   get canCheckin(): boolean {
-    return this.showCheckin && this.isConfirmed && !this.isCheckingIn();
+    return this.showCheckin && this.isConfirmed && this.isWithinStay && !this.isCheckingIn();
+  }
+
+  // El check-in solo se ofrece dentro del periodo de la reserva: ni días
+  // antes del inicio ni días después del fin.
+  get isWithinStay(): boolean {
+    const start = this.parse(this.reservation.startDate);
+    const end = this.parse(this.reservation.endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return false;
+    }
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today >= start && today <= end;
   }
 
   // Saldo pendiente según lo reportado por el backend (0 si no viene).
@@ -140,6 +172,11 @@ export class ReservationCard {
     return this.reservation.status === 'pendiente';
   }
 
+  // Se puede consultar el historial de pagos salvo en reservaciones canceladas.
+  get canViewPayments(): boolean {
+    return !this.isCancelled;
+  }
+
   get isConfirmed(): boolean {
     return this.reservation.status === 'confirmada';
   }
@@ -160,6 +197,12 @@ export class ReservationCard {
 
   get canPay(): boolean {
     return this.isPending && this.isOwnReservation;
+  }
+
+  // Agregar pago (abono): reservación confirmada o en curso con saldo
+  // pendiente. Lo permite el backend a quien reservó, al anfitrión o admin.
+  get canAddPayment(): boolean {
+    return (this.isConfirmed || this.isInProgress) && this.remainingBalance > 0;
   }
 
   get anticipoAmount(): number {

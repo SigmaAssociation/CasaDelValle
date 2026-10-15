@@ -76,7 +76,8 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notificat
 # 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
 
-# 4. Migra estados de reservaciones y pagos (pendiente/confirmada/en_curso + anticipo 30%).
+# 4. Migra estados de reservaciones, pagos/abonos y tipos de notificación
+# (pendiente/confirmada/en_curso + anticipo 30% + pago_registrado/reserva_checkin).
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_estados_pagos.sql
 ```
 

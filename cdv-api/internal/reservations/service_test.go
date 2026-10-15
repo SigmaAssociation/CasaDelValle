@@ -711,7 +711,7 @@ func TestPayAnticipoAcceptsCustomAmountAndMethod(t *testing.T) {
 		t.Fatalf("PayAnticipo amount = %v, want 300", amount)
 	}
 	if repo.payCalledWith == nil || repo.payCalledWith.method != PaymentMethodCard {
-		t.Fatalf("expected CARD_SIMULATED to reach the repository, got %+v", repo.payCalledWith)
+		t.Fatalf("expected tarjeta to reach the repository, got %+v", repo.payCalledWith)
 	}
 
 	// Por debajo del 30% se rechaza.

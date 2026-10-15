@@ -131,9 +131,9 @@ type CheckinReservationResponse struct {
 
 // Métodos de pago simulados aceptados por la API (columna pagos.method).
 const (
-	PaymentMethodCard     = "CARD_SIMULATED"
-	PaymentMethodTransfer = "TRANSFER_SIMULATED"
-	PaymentMethodCash     = "CASH"
+	PaymentMethodCard     = "tarjeta"
+	PaymentMethodTransfer = "transferencia"
+	PaymentMethodCash     = "efectivo"
 )
 
 func IsValidPaymentMethod(method string) bool {
