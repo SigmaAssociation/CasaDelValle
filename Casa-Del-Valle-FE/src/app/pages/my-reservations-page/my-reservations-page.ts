@@ -3,6 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
+import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { ReservationService } from '../../services/reservation.service';
 import { ReservationCard } from '../../components/reservation-card/reservation-card';
 
@@ -86,6 +87,10 @@ export class MyReservationsPage implements OnInit {
     this.reservations.update((list) =>
       list.map((r) => (r.id === res.reservation.id ? { ...r, ...res.reservation } : r))
     );
+    this.cancelMessage.set(res.message);
+  }
+
+  onPaymentRegistered(res: CreatePaymentResponse): void {
     this.cancelMessage.set(res.message);
   }
 }

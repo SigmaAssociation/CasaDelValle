@@ -5,12 +5,14 @@ import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
+import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CancelReservationModal } from '../cancel-reservation-modal/cancel-reservation-modal';
 import { PayAnticipoModal } from '../pay-anticipo-modal/pay-anticipo-modal';
+import { PaymentsModal } from '../payments-modal/payments-modal';
 
 @Component({
   selector: 'app-reservation-card',
-  imports: [CancelReservationModal, PayAnticipoModal, RouterLink],
+  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RouterLink],
   templateUrl: './reservation-card.html',
 })
 export class ReservationCard {
@@ -20,11 +22,13 @@ export class ReservationCard {
   @Input({ required: true }) reservation!: Reservation;
   @Output() cancelled = new EventEmitter<CancelReservationResponse>();
   @Output() paid = new EventEmitter<PayAnticipoResponse>();
+  @Output() paymentRegistered = new EventEmitter<CreatePaymentResponse>();
 
   showModal = signal(false);
   isCancelling = signal(false);
   showPayModal = signal(false);
   isPaying = signal(false);
+  showPaymentsModal = signal(false);
   errorMessage = signal<string | null>(null);
 
   openModal(): void {
@@ -85,12 +89,30 @@ export class ReservationCard {
     });
   }
 
+  openPaymentsModal(): void {
+    if (!this.canViewPayments) return;
+    this.showPaymentsModal.set(true);
+  }
+
+  closePaymentsModal(): void {
+    this.showPaymentsModal.set(false);
+  }
+
+  onPaymentRegistered(res: CreatePaymentResponse): void {
+    this.paymentRegistered.emit(res);
+  }
+
   get isCancelled(): boolean {
     return this.reservation.status === 'cancelada';
   }
 
   get isPending(): boolean {
     return this.reservation.status === 'pendiente';
+  }
+
+  // Se puede consultar el historial de pagos salvo en reservaciones canceladas.
+  get canViewPayments(): boolean {
+    return !this.isCancelled;
   }
 
   get isConfirmed(): boolean {
