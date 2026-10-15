@@ -42,21 +42,40 @@
     <div
       class="mt-auto pt-3 border-t border-brown/15 flex flex-wrap items-center justify-between gap-3"
     >
-      <div>
-        <p class="text-black font-medium">{{ formatPrice(reservation.totalPrice) }}</p>
+      
+<div>
+  <p class="text-black font-medium">
+    {{ formatPrice(reservation.totalPrice) }}
+  </p>
 
-        @if (isCancelled) {
-          @if (reservation.cancelledAt) {
-            <p class="text-xs text-brown">Cancelada el {{ formatDate(reservation.cancelledAt) }}</p>
-          }
-        } @else if (reservation.status === 'activa') {
-          @if (canCancel) {
-            <p class="text-xs text-brown">Cancelación disponible hasta el {{ formatDeadline() }}</p>
-          } @else {
-            <p class="text-xs text-orange">Solo se puede cancelar con 3 días de anticipación</p>
-          }
-        }
-      </div>
+  @if (!isCancelled) {
+    <a
+      [routerLink]="['/reservations', reservation.id, 'balance']"
+      class="inline-block mt-2 text-sm text-orange hover:underline"
+    >
+      Consultar saldo →
+    </a>
+  }
+
+  @if (isCancelled) {
+    @if (reservation.cancelledAt) {
+      <p class="text-xs text-brown">
+        Cancelada el {{ formatDate(reservation.cancelledAt) }}
+      </p>
+    }
+  } @else if (reservation.status === 'activa') {
+    @if (canCancel) {
+      <p class="text-xs text-brown">
+        Cancelación disponible hasta el {{ formatDeadline() }}
+      </p>
+    } @else {
+      <p class="text-xs text-orange">
+        Solo se puede cancelar con 3 días de anticipación
+      </p>
+    }
+  }
+</div>
+
 
       @if (reservation.status === 'activa') {
         <button

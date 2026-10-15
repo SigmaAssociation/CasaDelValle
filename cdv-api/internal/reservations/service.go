@@ -36,6 +36,7 @@ type ReservationRepository interface {
 	GetCabinName(ctx context.Context, cabinID int) (string, error)
 	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
 	FinalizePastReservations(ctx context.Context) ([]int, error)
+    GetReservationLedger(ctx context.Context, reservationID int, cabinID uint) (*ReservationLedger, error)
 }
 
 func NewService(repository ReservationRepository, notifier Notifier) *Service {
@@ -450,3 +451,8 @@ func (s *Service) notifyReservationFinished(ctx context.Context, reservation *Re
 		fmt.Sprintf("Finalizó la reserva #%d en %s %s.", reservation.ID, cabinName, period),
 		notifications.EntidadReservacion, reservation.ID)
 }
+
+
+
+
+

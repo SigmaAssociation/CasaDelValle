@@ -7,6 +7,7 @@ import { ReservationDetail } from "../models/reservation-detail";
 import { CancelReservationResponse } from "../models/cancelReservationResponse";
 import { ReservationRequest } from "../models/create-reservation";
 import { CreateReservationResponse } from "../models/create-reservation-response";
+import { ReservationBalance } from "../models/reservation-balance";
 
 @Injectable({
     providedIn: 'root',
@@ -32,6 +33,12 @@ export class ReservationService {
     public getById(id: number): Observable<ReservationDetail> {
         return this.httpClient.get<ReservationDetail>(
             `${this.restConstants.getApiURL()}reservations/${id}`
+        );
+    }
+
+    public getBalance(id: number): Observable<ReservationBalance> {
+        return this.httpClient.get<ReservationBalance>(
+            `${this.restConstants.getApiURL()}reservations/balance/${id}`
         );
     }
 
