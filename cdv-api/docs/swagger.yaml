@@ -244,6 +244,67 @@ definitions:
       total:
         type: number
     type: object
+  reportreservations.CabanaReporte:
+    properties:
+      anfitrion:
+        $ref: '#/definitions/reportreservations.UsuarioResumen'
+      capacidad:
+        type: integer
+      direccion:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+      precio:
+        type: number
+      reservaciones:
+        items:
+          $ref: '#/definitions/reportreservations.ReservacionResumen'
+        type: array
+      total_reservaciones:
+        type: integer
+    type: object
+  reportreservations.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  reportreservations.ReporteReservaciones:
+    properties:
+      cabanas:
+        items:
+          $ref: '#/definitions/reportreservations.CabanaReporte'
+        type: array
+      mensaje:
+        type: string
+      total_cabanas:
+        type: integer
+      total_reservaciones:
+        type: integer
+    type: object
+  reportreservations.ReservacionResumen:
+    properties:
+      estado:
+        type: string
+      fecha_creacion:
+        type: string
+      fecha_fin:
+        type: string
+      fecha_inicio:
+        type: string
+      huesped:
+        $ref: '#/definitions/reportreservations.UsuarioResumen'
+      id:
+        type: integer
+    type: object
+  reportreservations.UsuarioResumen:
+    properties:
+      id:
+        type: integer
+      nombre:
+        type: string
+    type: object
   reservations.CancelReservationResponse:
     properties:
       message:
@@ -1048,6 +1109,44 @@ paths:
       summary: Contar notificaciones no leídas
       tags:
       - Notificaciones
+  /reports/reservations:
+    get:
+      description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),
+        con la información de cada reservación. Filtros opcionales por anfitrión y
+        cabaña. Solo administradores. Requiere token.
+      parameters:
+      - description: Filtro por ID de anfitrión
+        in: query
+        name: host_id
+        type: integer
+      - description: Filtro por ID de cabaña
+        in: query
+        name: cabin_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reporte de reservaciones
+          schema:
+            $ref: '#/definitions/reportreservations.ReporteReservaciones'
+        "400":
+          description: Parámetros inválidos
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+        "403":
+          description: Sin permisos
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+        "500":
+          description: Error al generar el reporte
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reporte de reservaciones por cabaña
+      tags:
+      - Reportes
   /reservations:
     post:
       consumes:
