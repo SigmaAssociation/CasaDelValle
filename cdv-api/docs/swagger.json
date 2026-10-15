@@ -1246,6 +1246,67 @@
                 }
             }
         },
+        "/reservations/balance/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Consultar saldo de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saldo de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.ReservationBalance"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/cabin/{cabinId}": {
             "get": {
                 "security": [
@@ -1496,67 +1557,6 @@
                     },
                     "409": {
                         "description": "Conflicto de fechas o reservación no editable",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/{id}/balance": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Consultar saldo de una reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Saldo de la reservación",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.ReservationBalance"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

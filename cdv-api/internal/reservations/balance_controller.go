@@ -19,7 +19,7 @@ import (
 // @Failure 400 {object} map[string]string "ID de reservación inválido"
 // @Failure 403 {object} map[string]string "Sin permisos"
 // @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Router /reservations/{id}/balance [get]
+// @Router /reservations/balance/{id} [get]
 func (c *Controller) GetReservationBalance(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")

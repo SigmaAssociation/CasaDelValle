@@ -89,9 +89,12 @@ export const routes: Routes = [
     {
         path: 'reporte-reservaciones',
         component: ReporteListaReservacionesComponent,
-        canActivate:[authGuard]
+        canActivate:[authGuard],
+    },
+    {
         path: 'reservations/:id/balance',
-        component: ReservationBalancePage
+        component: ReservationBalancePage,
+        canActivate: [authGuard],
     },
     {
         path: '**',

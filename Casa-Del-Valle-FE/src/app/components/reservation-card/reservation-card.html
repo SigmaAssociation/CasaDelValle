@@ -131,6 +131,12 @@
         >
           Pagos
         </button>
+        <a
+          [routerLink]="['/reservations', reservation.id, 'balance']"
+          class="px-4 py-2 rounded-md text-sm font-medium border border-brown/30 text-brown"
+        >
+          Ver saldo
+        </a>
       }
       @if (canPay) {
         <button

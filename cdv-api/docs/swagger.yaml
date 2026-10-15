@@ -1498,47 +1498,6 @@ paths:
       summary: Actualizar reservación
       tags:
       - Reservaciones
-  /reservations/{id}/balance:
-    get:
-      description: Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente.
-        Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere
-        token.
-      parameters:
-      - description: ID de reservación
-        in: path
-        name: id
-        required: true
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Saldo de la reservación
-          schema:
-            $ref: '#/definitions/reservations.ReservationBalance'
-        "400":
-          description: ID de reservación inválido
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "403":
-          description: Sin permisos
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Reservación no encontrada
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Consultar saldo de una reservación
-      tags:
-      - Reservaciones
   /reservations/{id}/cancel:
     patch:
       description: Cancela una reservación pendiente o confirmada. Puede cancelar
@@ -1694,6 +1653,47 @@ paths:
       security:
       - BearerAuth: []
       summary: Pagar anticipo y confirmar reservación
+      tags:
+      - Reservaciones
+  /reservations/balance/{id}:
+    get:
+      description: Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente.
+        Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere
+        token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Saldo de la reservación
+          schema:
+            $ref: '#/definitions/reservations.ReservationBalance'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Consultar saldo de una reservación
       tags:
       - Reservaciones
   /reservations/cabin/{cabinId}:
