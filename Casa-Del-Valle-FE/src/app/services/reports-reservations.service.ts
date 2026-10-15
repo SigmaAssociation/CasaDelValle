@@ -25,6 +25,22 @@ export class ReportReservationsService {
             params = params.set('cabin_id', filter.cabin_id);
         }
 
+        if (filter.guest_id != null) {
+            params = params.set('guest_id', filter.guest_id);
+        }
+
+        if (filter.status) {
+            params = params.set('status', filter.status);
+        }
+
+        if (filter.created_from) {
+            params = params.set('created_from', filter.created_from);
+        }
+
+        if (filter.created_to) {
+            params = params.set('created_to', filter.created_to);
+        }
+
         return this.httpClient.get<ReservationsReportResponse>(
             `${this.restConstants.getApiURL()}reports/reservations`, { params }
         );

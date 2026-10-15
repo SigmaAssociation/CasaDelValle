@@ -2,45 +2,45 @@ package reportreservations
 
 import "time"
 
-
-type FiltroReporte struct {
-	IDAnfitrion *int
-	IDCabana    *int
+type ReportFilter struct {
+	HostID      *int
+	CabinID     *int
+	GuestID     *int
+	Status      string
+	CreatedFrom *time.Time
+	CreatedTo   *time.Time
 }
 
-
-type UsuarioResumen struct {
-	ID     int    `json:"id"`
-	Nombre string `json:"nombre"`
+type UserSummary struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
-type ReservacionResumen struct {
-	ID            int            `json:"id"`
-	FechaInicio   time.Time      `json:"fecha_inicio"`
-	FechaFin      time.Time      `json:"fecha_fin"`
-	Estado        string         `json:"estado"`
-	FechaCreacion time.Time      `json:"fecha_creacion"`
-	Huesped       UsuarioResumen `json:"huesped"`
+type ReservationSummary struct {
+	ID        int         `json:"id"`
+	StartDate time.Time   `json:"start_date"`
+	EndDate   time.Time   `json:"end_date"`
+	Status    string      `json:"status"`
+	CreatedAt time.Time   `json:"created_at"`
+	Guest     UserSummary `json:"guest"`
 }
 
-
-type CabanaReporte struct {
-	ID                 int                  `json:"id"`
-	Nombre             string               `json:"nombre"`
-	Direccion          string               `json:"direccion"`
-	Precio             float64              `json:"precio"`
-	Capacidad          int                  `json:"capacidad"`
-	Anfitrion          UsuarioResumen       `json:"anfitrion"`
-	TotalReservaciones int                  `json:"total_reservaciones"`
-	Reservaciones      []ReservacionResumen `json:"reservaciones"`
+type CabinReport struct {
+	ID                int                  `json:"id"`
+	Name              string               `json:"name"`
+	Address           string               `json:"address"`
+	Price             float64              `json:"price"`
+	Capacity          int                  `json:"capacity"`
+	Host              UserSummary          `json:"host"`
+	TotalReservations int                  `json:"total_reservations"`
+	Reservations      []ReservationSummary `json:"reservations"`
 }
 
-
-type ReporteReservaciones struct {
-	Cabanas            []CabanaReporte `json:"cabanas"`
-	TotalCabanas       int             `json:"total_cabanas"`
-	TotalReservaciones int             `json:"total_reservaciones"`
-	Mensaje            string          `json:"mensaje,omitempty"`
+type ReservationsReport struct {
+	Cabins            []CabinReport `json:"cabins"`
+	TotalCabins       int           `json:"total_cabins"`
+	TotalReservations int           `json:"total_reservations"`
+	Message           string        `json:"message,omitempty"`
 }
 
 type ErrorResponse struct {
