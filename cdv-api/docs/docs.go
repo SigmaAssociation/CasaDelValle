@@ -954,6 +954,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/reports/reservations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente), con la información de cada reservación. Filtros opcionales por anfitrión y cabaña. Solo administradores. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reportes"
+                ],
+                "summary": "Reporte de reservaciones por cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de anfitrión",
+                        "name": "host_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de cabaña",
+                        "name": "cabin_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de reservaciones",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ReporteReservaciones"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error al generar el reporte",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reservations": {
             "post": {
                 "security": [
@@ -2335,6 +2392,100 @@ const docTemplate = `{
                 },
                 "total": {
                     "type": "number"
+                }
+            }
+        },
+        "reportreservations.CabanaReporte": {
+            "type": "object",
+            "properties": {
+                "anfitrion": {
+                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
+                },
+                "capacidad": {
+                    "type": "integer"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "reservaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.ReservacionResumen"
+                    }
+                },
+                "total_reservaciones": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportreservations.ReporteReservaciones": {
+            "type": "object",
+            "properties": {
+                "cabanas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.CabanaReporte"
+                    }
+                },
+                "mensaje": {
+                    "type": "string"
+                },
+                "total_cabanas": {
+                    "type": "integer"
+                },
+                "total_reservaciones": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.ReservacionResumen": {
+            "type": "object",
+            "properties": {
+                "estado": {
+                    "type": "string"
+                },
+                "fecha_creacion": {
+                    "type": "string"
+                },
+                "fecha_fin": {
+                    "type": "string"
+                },
+                "fecha_inicio": {
+                    "type": "string"
+                },
+                "huesped": {
+                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.UsuarioResumen": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
                 }
             }
         },
