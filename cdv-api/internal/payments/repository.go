@@ -55,10 +55,10 @@ func (r *Repository) GetPaidAmount(ctx context.Context, reservationID int) (floa
 }
 
 // ListByReservation devuelve el historial de pagos de una reservación, del más
-// antiguo al más reciente.
+// antiguo al más reciente. El medio de pago se traduce al valor que expone la API.
 func (r *Repository) ListByReservation(ctx context.Context, reservationID int) ([]Payment, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, id_reservacion, id_usuario, cantidad, method, fecha
+		SELECT id, id_reservacion, id_usuario, cantidad, tipo_pago, method, fecha
 		FROM pagos
 		WHERE id_reservacion = $1
 		ORDER BY fecha ASC, id ASC
@@ -71,9 +71,11 @@ func (r *Repository) ListByReservation(ctx context.Context, reservationID int) (
 	payments := []Payment{}
 	for rows.Next() {
 		var p Payment
-		if err := rows.Scan(&p.ID, &p.ReservationID, &p.UserID, &p.Amount, &p.Method, &p.Date); err != nil {
+		var tipoPago, methodCode string
+		if err := rows.Scan(&p.ID, &p.ReservationID, &p.UserID, &p.Amount, &tipoPago, &methodCode, &p.Date); err != nil {
 			return nil, err
 		}
+		p.Method = apiMethod(tipoPago, methodCode)
 		payments = append(payments, p)
 	}
 	if err := rows.Err(); err != nil {
@@ -82,8 +84,9 @@ func (r *Repository) ListByReservation(ctx context.Context, reservationID int) (
 	return payments, nil
 }
 
-// Create inserta el abono (tipo_pago 'pago' con su canal simulado) y
-// devuelve el registro creado (con la fecha asignada por la base de datos).
+// Create inserta el abono (tipo_pago 'pago' con su canal simulado en
+// español) y devuelve el registro creado (con la fecha asignada por la
+// base de datos).
 func (r *Repository) Create(ctx context.Context, reservationID int, payerID uint, amount float64, method string) (*Payment, error) {
 	payment := &Payment{
 		ReservationID: reservationID,

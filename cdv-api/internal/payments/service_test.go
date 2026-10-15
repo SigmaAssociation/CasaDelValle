@@ -250,3 +250,26 @@ func TestCreatePaymentRejectsInvalidReservationID(t *testing.T) {
 		t.Fatalf("err = %v, want ErrReservationNotFound", err)
 	}
 }
+
+func TestPaymentMethodTranslation(t *testing.T) {
+	cases := []struct {
+		api string
+		db  string
+	}{
+		{MethodCard, dbMethodCard},
+		{MethodTransfer, dbMethodTransfer},
+		{MethodCash, dbMethodCash},
+	}
+	for _, c := range cases {
+		got, ok := dbMethodCode(c.api)
+		if !ok || got != c.db {
+			t.Fatalf("dbMethodCode(%q) = %q, %v; want %q", c.api, got, ok, c.db)
+		}
+		if back := apiMethod("pago", got); back != c.api {
+			t.Fatalf("apiMethod(pago, %q) = %q; want %q", got, back, c.api)
+		}
+	}
+	if apiMethod(MethodAnticipo, dbMethodCash) != MethodAnticipo {
+		t.Fatal("los pagos de tipo anticipo deben exponerse como 'anticipo'")
+	}
+}

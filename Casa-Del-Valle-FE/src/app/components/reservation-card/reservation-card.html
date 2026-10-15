@@ -1,3 +1,4 @@
+
 <article
   class="bg-white rounded-xl border border-brown/15 shadow-sm overflow-hidden flex flex-col sm:flex-row font-sans"
   [class.opacity-70]="isCancelled"
@@ -11,45 +12,62 @@
         >
           {{ reservation.cabinName }}
         </a>
+
         <p class="text-sm text-brown">
-          {{ formatDate(reservation.startDate) }} – {{ formatDate(reservation.endDate) }}
+          {{ formatDate(reservation.startDate) }} –
+          {{ formatDate(reservation.endDate) }}
         </p>
       </div>
 
       @switch (reservation.status) {
         @case ('pendiente') {
-          <span class="text-xs px-3 py-1 rounded-md bg-orange/10 text-orange whitespace-nowrap">
+          <span
+            class="text-xs px-3 py-1 rounded-md bg-orange/10 text-orange whitespace-nowrap"
+          >
             Pendiente
           </span>
         }
         @case ('confirmada') {
-          <span class="text-xs px-3 py-1 rounded-md bg-green/10 text-green whitespace-nowrap">
+          <span
+            class="text-xs px-3 py-1 rounded-md bg-green/10 text-green whitespace-nowrap"
+          >
             Confirmada
           </span>
         }
         @case ('en_curso') {
-          <span class="text-xs px-3 py-1 rounded-md bg-green text-cream whitespace-nowrap">
+          <span
+            class="text-xs px-3 py-1 rounded-md bg-green text-cream whitespace-nowrap"
+          >
             En curso
           </span>
         }
         @case ('finalizada') {
-          <span class="text-xs px-3 py-1 rounded-md bg-brown/10 text-brown whitespace-nowrap">
+          <span
+            class="text-xs px-3 py-1 rounded-md bg-brown/10 text-brown whitespace-nowrap"
+          >
             Finalizada
           </span>
         }
         @default {
-          <span class="text-xs px-3 py-1 rounded-md bg-black/10 text-black/70 whitespace-nowrap">
+          <span
+            class="text-xs px-3 py-1 rounded-md bg-black/10 text-black/70 whitespace-nowrap"
+          >
             Cancelada
           </span>
         }
       }
     </div>
 
-    <p class="text-sm text-brown">{{ nights }} {{ nights === 1 ? 'noche' : 'noches' }}</p>
+    <p class="text-sm text-brown">
+      {{ nights }} {{ nights === 1 ? 'noche' : 'noches' }}
+    </p>
 
     @if (reservation.guestName) {
       <p class="text-sm text-brown">
-        Huésped: <span class="font-medium text-black">{{ reservation.guestName }}</span>
+        Huésped:
+        <span class="font-medium text-black">
+          {{ reservation.guestName }}
+        </span>
       </p>
     }
 
@@ -57,7 +75,18 @@
       class="mt-auto pt-3 border-t border-brown/15 flex flex-wrap items-center justify-between gap-3"
     >
       <div>
-        <p class="text-black font-medium">{{ formatPrice(reservation.totalPrice) }}</p>
+        <p class="text-black font-medium">
+          {{ formatPrice(reservation.totalPrice) }}
+        </p>
+
+        @if (!isCancelled) {
+          <a
+            [routerLink]="['/reservations', reservation.id, 'balance']"
+            class="inline-block mt-2 text-sm text-orange hover:underline"
+          >
+            Consultar saldo →
+          </a>
+        }
 
         @if (reservation.paidTotal != null && reservation.paidTotal > 0) {
           <p class="text-xs text-green">
@@ -67,7 +96,9 @@
 
         @if (isCancelled) {
           @if (reservation.cancelledAt) {
-            <p class="text-xs text-brown">Cancelada el {{ formatDate(reservation.cancelledAt) }}</p>
+            <p class="text-xs text-brown">
+              Cancelada el {{ formatDate(reservation.cancelledAt) }}
+            </p>
           }
         } @else if (isPending) {
           @if (canPay) {
@@ -75,13 +106,19 @@
               Anticipo (30%): {{ formatPrice(anticipoAmount) }} para confirmar
             </p>
           } @else {
-            <p class="text-xs text-brown">Esperando el anticipo de quien reservó</p>
+            <p class="text-xs text-brown">
+              Esperando el anticipo de quien reservó
+            </p>
           }
         } @else if (isConfirmed) {
           @if (canCancel) {
-            <p class="text-xs text-brown">Cancelación disponible hasta el {{ formatDeadline() }}</p>
+            <p class="text-xs text-brown">
+              Cancelación disponible hasta el {{ formatDeadline() }}
+            </p>
           } @else {
-            <p class="text-xs text-orange">Solo se puede cancelar con 3 días de anticipación</p>
+            <p class="text-xs text-orange">
+              Solo se puede cancelar con 3 días de anticipación
+            </p>
           }
         }
       </div>
@@ -120,7 +157,9 @@
           [attr.aria-disabled]="!canCancel"
           class="px-4 py-2 rounded-md text-sm font-medium"
           [class]="
-            canCancel ? 'bg-orange text-white' : 'bg-brown/10 text-brown/40 cursor-not-allowed'
+            canCancel
+              ? 'bg-orange text-white'
+              : 'bg-brown/10 text-brown/40 cursor-not-allowed'
           "
         >
           Cancelar reservación
@@ -161,7 +200,9 @@
     </div>
 
     @if (errorMessage(); as error) {
-      <p role="alert" class="text-sm text-orange">{{ error }}</p>
+      <p role="alert" class="text-sm text-orange">
+        {{ error }}
+      </p>
     }
   </div>
 </article>

@@ -244,6 +244,67 @@ definitions:
       total:
         type: number
     type: object
+  reportreservations.CabanaReporte:
+    properties:
+      anfitrion:
+        $ref: '#/definitions/reportreservations.UsuarioResumen'
+      capacidad:
+        type: integer
+      direccion:
+        type: string
+      id:
+        type: integer
+      nombre:
+        type: string
+      precio:
+        type: number
+      reservaciones:
+        items:
+          $ref: '#/definitions/reportreservations.ReservacionResumen'
+        type: array
+      total_reservaciones:
+        type: integer
+    type: object
+  reportreservations.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  reportreservations.ReporteReservaciones:
+    properties:
+      cabanas:
+        items:
+          $ref: '#/definitions/reportreservations.CabanaReporte'
+        type: array
+      mensaje:
+        type: string
+      total_cabanas:
+        type: integer
+      total_reservaciones:
+        type: integer
+    type: object
+  reportreservations.ReservacionResumen:
+    properties:
+      estado:
+        type: string
+      fecha_creacion:
+        type: string
+      fecha_fin:
+        type: string
+      fecha_inicio:
+        type: string
+      huesped:
+        $ref: '#/definitions/reportreservations.UsuarioResumen'
+      id:
+        type: integer
+    type: object
+  reportreservations.UsuarioResumen:
+    properties:
+      id:
+        type: integer
+      nombre:
+        type: string
+    type: object
   reservations.CancelReservationResponse:
     properties:
       message:
@@ -270,6 +331,17 @@ definitions:
       reservation_id:
         type: integer
     type: object
+  reservations.ExtraCharge:
+    properties:
+      amount:
+        type: number
+      concept:
+        type: string
+      createdAt:
+        type: string
+      id:
+        type: integer
+    type: object
   reservations.PayAnticipoRequest:
     properties:
       amount:
@@ -285,6 +357,69 @@ definitions:
         type: string
       reservation:
         $ref: '#/definitions/reservations.ReservationDetail'
+    type: object
+  reservations.Payment:
+    properties:
+      amount:
+        type: number
+      id:
+        type: integer
+      paidAt:
+        type: string
+      type:
+        type: string
+    type: object
+  reservations.Refund:
+    properties:
+      amount:
+        type: number
+      id:
+        type: integer
+      paymentId:
+        type: integer
+      reason:
+        type: string
+      refundedAt:
+        type: string
+    type: object
+  reservations.ReservationBalance:
+    properties:
+      baseTotal:
+        type: number
+      extraCharges:
+        items:
+          $ref: '#/definitions/reservations.ExtraCharge'
+        type: array
+      extraChargesTotal:
+        type: number
+      grandTotal:
+        type: number
+      netPaid:
+        type: number
+      nightlyRate:
+        type: number
+      nights:
+        type: integer
+      paymentStatus:
+        type: string
+      payments:
+        items:
+          $ref: '#/definitions/reservations.Payment'
+        type: array
+      paymentsTotal:
+        type: number
+      pendingBalance:
+        type: number
+      refunds:
+        items:
+          $ref: '#/definitions/reservations.Refund'
+        type: array
+      refundsTotal:
+        type: number
+      reservationId:
+        type: integer
+      status:
+        type: string
     type: object
   reservations.ReservationCard:
     properties:
@@ -1182,6 +1317,44 @@ paths:
       summary: Registrar pago de una reservación
       tags:
       - Pagos
+  /reports/reservations:
+    get:
+      description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),
+        con la información de cada reservación. Filtros opcionales por anfitrión y
+        cabaña. Solo administradores. Requiere token.
+      parameters:
+      - description: Filtro por ID de anfitrión
+        in: query
+        name: host_id
+        type: integer
+      - description: Filtro por ID de cabaña
+        in: query
+        name: cabin_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reporte de reservaciones
+          schema:
+            $ref: '#/definitions/reportreservations.ReporteReservaciones'
+        "400":
+          description: Parámetros inválidos
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+        "403":
+          description: Sin permisos
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+        "500":
+          description: Error al generar el reporte
+          schema:
+            $ref: '#/definitions/reportreservations.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reporte de reservaciones por cabaña
+      tags:
+      - Reportes
   /reservations:
     post:
       consumes:
@@ -1323,6 +1496,47 @@ paths:
       security:
       - BearerAuth: []
       summary: Actualizar reservación
+      tags:
+      - Reservaciones
+  /reservations/{id}/balance:
+    get:
+      description: Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente.
+        Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere
+        token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Saldo de la reservación
+          schema:
+            $ref: '#/definitions/reservations.ReservationBalance'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Consultar saldo de una reservación
       tags:
       - Reservaciones
   /reservations/{id}/cancel:

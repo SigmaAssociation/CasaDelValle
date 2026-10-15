@@ -35,6 +35,48 @@ var payableMethods = map[string]bool{
 	MethodCash:     true,
 }
 
+// Códigos del medio de pago que se guardan en la columna `method` de la tabla
+// `pagos` (diseño de la base de datos: tipo_pago distingue anticipo/pago y
+// method el medio). La API expone valores amigables ("tarjeta",
+// "transferencia", "efectivo"); la base guarda estos códigos.
+const (
+	dbMethodCard     = "CARD_SIMULATED"
+	dbMethodTransfer = "TRANSFER_SIMULATED"
+	dbMethodCash     = "CASH"
+)
+
+// dbMethodCode traduce el método de la API al código que se guarda en la base.
+func dbMethodCode(method string) (string, bool) {
+	switch method {
+	case MethodCard:
+		return dbMethodCard, true
+	case MethodTransfer:
+		return dbMethodTransfer, true
+	case MethodCash:
+		return dbMethodCash, true
+	default:
+		return "", false
+	}
+}
+
+// apiMethod traduce un registro de la base al método que expone la API. Los
+// pagos de tipo "anticipo" se muestran como tales; el resto según su código.
+func apiMethod(tipoPago, methodCode string) string {
+	if tipoPago == MethodAnticipo {
+		return MethodAnticipo
+	}
+	switch methodCode {
+	case dbMethodCard:
+		return MethodCard
+	case dbMethodTransfer:
+		return MethodTransfer
+	case dbMethodCash:
+		return MethodCash
+	default:
+		return methodCode
+	}
+}
+
 // Estados de la reservación donde se admite registrar un pago.
 const (
 	statusConfirmed  = "confirmada"

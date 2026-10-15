@@ -1120,6 +1120,63 @@ const docTemplate = `{
                 }
             }
         },
+        "/reports/reservations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente), con la información de cada reservación. Filtros opcionales por anfitrión y cabaña. Solo administradores. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reportes"
+                ],
+                "summary": "Reporte de reservaciones por cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de anfitrión",
+                        "name": "host_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de cabaña",
+                        "name": "cabin_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de reservaciones",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ReporteReservaciones"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error al generar el reporte",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reservations": {
             "post": {
                 "security": [
@@ -1445,6 +1502,67 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflicto de fechas o reservación no editable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/{id}/balance": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Consultar saldo de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saldo de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.ReservationBalance"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2376,6 +2494,100 @@ const docTemplate = `{
                 }
             }
         },
+        "reportreservations.CabanaReporte": {
+            "type": "object",
+            "properties": {
+                "anfitrion": {
+                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
+                },
+                "capacidad": {
+                    "type": "integer"
+                },
+                "direccion": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                },
+                "precio": {
+                    "type": "number"
+                },
+                "reservaciones": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.ReservacionResumen"
+                    }
+                },
+                "total_reservaciones": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportreservations.ReporteReservaciones": {
+            "type": "object",
+            "properties": {
+                "cabanas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.CabanaReporte"
+                    }
+                },
+                "mensaje": {
+                    "type": "string"
+                },
+                "total_cabanas": {
+                    "type": "integer"
+                },
+                "total_reservaciones": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.ReservacionResumen": {
+            "type": "object",
+            "properties": {
+                "estado": {
+                    "type": "string"
+                },
+                "fecha_creacion": {
+                    "type": "string"
+                },
+                "fecha_fin": {
+                    "type": "string"
+                },
+                "fecha_inicio": {
+                    "type": "string"
+                },
+                "huesped": {
+                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.UsuarioResumen": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "nombre": {
+                    "type": "string"
+                }
+            }
+        },
         "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {
@@ -2417,6 +2629,23 @@ const docTemplate = `{
                 }
             }
         },
+        "reservations.ExtraCharge": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "concept": {
+                    "type": "string"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                }
+            }
+        },
         "reservations.PayAnticipoRequest": {
             "type": "object",
             "properties": {
@@ -2439,6 +2668,102 @@ const docTemplate = `{
                 },
                 "reservation": {
                     "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.Payment": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "paidAt": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.Refund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "paymentId": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "refundedAt": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.ReservationBalance": {
+            "type": "object",
+            "properties": {
+                "baseTotal": {
+                    "type": "number"
+                },
+                "extraCharges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.ExtraCharge"
+                    }
+                },
+                "extraChargesTotal": {
+                    "type": "number"
+                },
+                "grandTotal": {
+                    "type": "number"
+                },
+                "netPaid": {
+                    "type": "number"
+                },
+                "nightlyRate": {
+                    "type": "number"
+                },
+                "nights": {
+                    "type": "integer"
+                },
+                "paymentStatus": {
+                    "type": "string"
+                },
+                "payments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.Payment"
+                    }
+                },
+                "paymentsTotal": {
+                    "type": "number"
+                },
+                "pendingBalance": {
+                    "type": "number"
+                },
+                "refunds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.Refund"
+                    }
+                },
+                "refundsTotal": {
+                    "type": "number"
+                },
+                "reservationId": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },

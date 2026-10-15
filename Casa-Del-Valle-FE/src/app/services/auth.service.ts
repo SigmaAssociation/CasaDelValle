@@ -60,6 +60,9 @@ export class AuthService {
         return role === 1 || role === 3;
     }
 
+    public isAdmin(): boolean {
+        return this.user()?.role === 1;
+    }
     private persistSession(response: LoginResponse): void {
         if (!response.token) {
             return;
