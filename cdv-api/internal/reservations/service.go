@@ -36,6 +36,7 @@ type ReservationRepository interface {
 	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
 	GetCabinName(ctx context.Context, cabinID int) (string, error)
 	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
+	GetReservationLedger(ctx context.Context, reservationID int, cabinID uint) (*ReservationLedger, error)
 	GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error)
 	PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error
 	AdvanceReservationStates(ctx context.Context) ([]int, error)
