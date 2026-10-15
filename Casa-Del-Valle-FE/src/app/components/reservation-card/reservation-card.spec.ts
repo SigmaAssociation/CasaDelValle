@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { ReservationCard } from './reservation-card';
 import { ReservationService } from '../../services/reservation.service';
+import { AuthService } from '../../services/auth.service';
 
 const reservation = {
   id: 1,
@@ -11,7 +12,8 @@ const reservation = {
   startDate: '2026-10-10',
   endDate: '2026-10-15',
   totalPrice: 1500,
-  status: 'activa',
+  guestId: 1,
+  status: 'pendiente',
   createdAt: '2026-10-01T00:00:00Z',
   cancelledAt: null,
 };
@@ -29,6 +31,13 @@ describe('ReservationCard', () => {
           provide: ReservationService,
           useValue: {
             cancel: () => of({ message: 'ok', reservation }),
+            payAnticipo: () => of({ message: 'ok', amount: 450, reservation }),
+          },
+        },
+        {
+          provide: AuthService,
+          useValue: {
+            getCurrentUserId: () => 1,
           },
         },
       ],

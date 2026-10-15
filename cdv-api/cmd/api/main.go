@@ -77,17 +77,18 @@ func main() {
 	// -------------------------
 	// Jobs en segundo plano
 	// -------------------------
-	// Finaliza las reservaciones cuya fecha de fin ya pasó y notifica al
-	// huésped, al anfitrión y a los administradores. Se ejecuta al arrancar y
-	// luego cada 6 horas; los errores nunca detienen la API.
+	// Avanza las reservaciones en su ciclo de vida (en_curso al iniciar la
+	// estancia, finalizada al terminar) y notifica al huésped, al anfitrión y
+	// a los administradores. Se ejecuta al arrancar y luego cada 6 horas; los
+	// errores nunca detienen la API.
 	go func() {
 		const finalizeInterval = 6 * time.Hour
 
 		finalize := func() {
 			jobCtx := context.Background()
-			count, err := reservationService.FinalizePastReservations(jobCtx)
+			count, err := reservationService.AdvanceReservationStates(jobCtx)
 			if err != nil {
-				log.Printf("reservations: error al finalizar reservaciones vencidas: %v", err)
+				log.Printf("reservations: error al avanzar los estados de las reservaciones: %v", err)
 				return
 			}
 			if count > 0 {
@@ -134,6 +135,7 @@ func main() {
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
+	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)

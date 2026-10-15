@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strings"
 	"time"
@@ -35,7 +36,9 @@ type ReservationRepository interface {
 	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
 	GetCabinName(ctx context.Context, cabinID int) (string, error)
 	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
-	FinalizePastReservations(ctx context.Context) ([]int, error)
+	GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error)
+	PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error
+	AdvanceReservationStates(ctx context.Context) ([]int, error)
 }
 
 func NewService(repository ReservationRepository, notifier Notifier) *Service {
@@ -199,7 +202,7 @@ func (s *Service) notifyReservationCreated(ctx context.Context, reservationID in
 	period := fmt.Sprintf("del %s al %s", req.StartDate, req.EndDate)
 
 	s.notify(ctx, detail.UserID, notifications.TipoReservaCreada,
-		fmt.Sprintf("Tu reserva en %s %s fue registrada exitosamente.", cabinName, period),
+		fmt.Sprintf("Tu reserva en %s %s fue registrada. Paga el anticipo para confirmarla.", cabinName, period),
 		notifications.EntidadReservacion, detail.ID)
 
 	if detail.HostID != detail.UserID {
@@ -233,7 +236,7 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 		return nil, err
 	}
 
-	if reservation.Status != StatusActive {
+	if reservation.Status != StatusPending && reservation.Status != StatusConfirmed {
 		return nil, ErrReservationNotCancellable
 	}
 
@@ -284,6 +287,76 @@ func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *R
 
 	s.notifyAdmins(ctx, notifications.TipoReservaCancelada,
 		fmt.Sprintf("Se canceló la reserva #%d en %s %s.", reservation.ID, cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+}
+
+// PayAnticipo registra el pago del anticipo (30% del total) y confirma la
+// reservación pendiente. Devuelve el detalle actualizado y el monto pagado.
+func (s *Service) PayAnticipo(ctx context.Context, id int) (*ReservationDetail, float64, error) {
+	if id <= 0 {
+		return nil, 0, errors.New("ID de reservación inválido")
+	}
+
+	reservation, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	if reservation.Status != StatusPending {
+		return nil, 0, ErrReservationNotPending
+	}
+
+	rate, err := s.repository.GetCabinNightlyRate(ctx, reservation.CabinID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	nights, err := calculateReservationNights(reservation.StartDate, reservation.EndDate)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	amount := math.Round(float64(nights)*rate*AnticipoPercent*100) / 100
+
+	// El pagador de registro es quien reservó; la autorización (propietario o
+	// administrador) ya se validó en el controller.
+	if err := s.repository.PayAnticipo(ctx, id, reservation.UserID, amount); err != nil {
+		return nil, 0, err
+	}
+
+	s.notifyReservationConfirmed(ctx, reservation)
+
+	updated, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		// El pago ya quedó registrado; no fallar solo por la relectura.
+		return reservation, amount, nil
+	}
+
+	return updated, amount, nil
+}
+
+// notifyReservationConfirmed avisa al huésped, al anfitrión y a los
+// administradores de que el anticipo confirmó la reservación.
+func (s *Service) notifyReservationConfirmed(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaConfirmada,
+		fmt.Sprintf("Tu reserva en %s %s fue confirmada con el pago del anticipo.", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaConfirmada,
+			fmt.Sprintf("La reserva de tu cabaña %s %s fue confirmada con el pago del anticipo.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaConfirmada,
+		fmt.Sprintf("Se confirmó con anticipo la reserva #%d en %s %s.", reservation.ID, cabinName, period),
 		notifications.EntidadReservacion, reservation.ID)
 }
 
@@ -347,7 +420,7 @@ func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReser
 	if err != nil {
 		return nil, err
 	}
-	if existing.Status != StatusActive {
+	if existing.Status != StatusPending && existing.Status != StatusConfirmed {
 		return nil, ErrReservationNotEditable
 	}
 
@@ -406,11 +479,12 @@ func (s *Service) notifyReservationUpdated(ctx context.Context, reservation *Res
 		notifications.EntidadReservacion, reservation.ID)
 }
 
-// FinalizePastReservations cierra las reservaciones cuya fecha de fin ya pasó
-// y avisa al huésped y al anfitrión. Está pensada para ejecutarse de forma
-// periódica desde un job en segundo plano; devuelve cuántas finalizó.
-func (s *Service) FinalizePastReservations(ctx context.Context) (int, error) {
-	ids, err := s.repository.FinalizePastReservations(ctx)
+// AdvanceReservationStates aplica las transiciones automáticas del ciclo de
+// vida (en_curso al iniciar la estancia, finalizada al terminar) y avisa del
+// cierre. Está pensada para ejecutarse periódicamente desde un job en
+// segundo plano; devuelve cuántas finalizó.
+func (s *Service) AdvanceReservationStates(ctx context.Context) (int, error) {
+	ids, err := s.repository.AdvanceReservationStates(ctx)
 	if err != nil {
 		return 0, err
 	}
