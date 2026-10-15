@@ -34,7 +34,7 @@ describe('PaymentService', () => {
     let result: ReservationPayments | undefined;
     service.getByReservation(5).subscribe((res) => (result = res));
 
-    const req = httpMock.expectOne('/cdv-api/reservations/5/payments');
+    const req = httpMock.expectOne('/cdv-api/payments/reservation/5');
     expect(req.request.method).toBe('GET');
     req.flush(body);
 
@@ -46,7 +46,7 @@ describe('PaymentService', () => {
 
     service.create(5, payload).subscribe();
 
-    const req = httpMock.expectOne('/cdv-api/reservations/5/payments');
+    const req = httpMock.expectOne('/cdv-api/payments/reservation/5');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual(payload);
     req.flush({});

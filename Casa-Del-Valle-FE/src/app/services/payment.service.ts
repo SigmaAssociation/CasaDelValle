@@ -16,13 +16,13 @@ export class PaymentService {
 
     public getByReservation(reservationId: number): Observable<ReservationPayments> {
         return this.httpClient.get<ReservationPayments>(
-            `${this.restConstants.getApiURL()}reservations/${reservationId}/payments`
+            `${this.restConstants.getApiURL()}payments/reservation/${reservationId}`
         );
     }
 
     public create(reservationId: number, payment: CreatePayment): Observable<CreatePaymentResponse> {
         return this.httpClient.post<CreatePaymentResponse>(
-            `${this.restConstants.getApiURL()}reservations/${reservationId}/payments`,
+            `${this.restConstants.getApiURL()}payments/reservation/${reservationId}`,
             payment
         );
     }

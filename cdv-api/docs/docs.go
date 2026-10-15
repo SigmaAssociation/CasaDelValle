@@ -2191,8 +2191,6 @@ const docTemplate = `{
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "payments.CreatePaymentRequest": {
             "type": "object",
             "properties": {
@@ -2279,7 +2277,6 @@ const docTemplate = `{
                 }
             }
         },
->>>>>>> feature/pagos
         "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {

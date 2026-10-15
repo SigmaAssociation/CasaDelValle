@@ -2185,8 +2185,6 @@
                 }
             }
         },
-<<<<<<< HEAD
-=======
         "payments.CreatePaymentRequest": {
             "type": "object",
             "properties": {
@@ -2273,7 +2271,6 @@
                 }
             }
         },
->>>>>>> feature/pagos
         "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {

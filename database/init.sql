@@ -131,18 +131,10 @@ CREATE TABLE IF NOT EXISTS pagos (
     id_reservacion INT NOT NULL,
 
     CONSTRAINT fk_pago_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
-<<<<<<< HEAD
     CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
     CONSTRAINT chk_pago_method CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH')),
     CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'pago')),
     CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0)
-=======
-
-    CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
-
-    CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0),
-    CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'tarjeta', 'transferencia', 'efectivo'))
->>>>>>> feature/pagos
 );
 
 CREATE INDEX IF NOT EXISTS idx_pagos_reservacion

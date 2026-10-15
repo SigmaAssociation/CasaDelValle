@@ -55,10 +55,10 @@ func (r *Repository) GetPaidAmount(ctx context.Context, reservationID int) (floa
 }
 
 // ListByReservation devuelve el historial de pagos de una reservación, del más
-// antiguo al más reciente.
+// antiguo al más reciente. El medio de pago se traduce al valor que expone la API.
 func (r *Repository) ListByReservation(ctx context.Context, reservationID int) ([]Payment, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, id_reservacion, id_usuario, cantidad, tipo_pago, fecha
+		SELECT id, id_reservacion, id_usuario, cantidad, tipo_pago, method, fecha
 		FROM pagos
 		WHERE id_reservacion = $1
 		ORDER BY fecha ASC, id ASC
@@ -71,9 +71,11 @@ func (r *Repository) ListByReservation(ctx context.Context, reservationID int) (
 	payments := []Payment{}
 	for rows.Next() {
 		var p Payment
-		if err := rows.Scan(&p.ID, &p.ReservationID, &p.UserID, &p.Amount, &p.Method, &p.Date); err != nil {
+		var tipoPago, methodCode string
+		if err := rows.Scan(&p.ID, &p.ReservationID, &p.UserID, &p.Amount, &tipoPago, &methodCode, &p.Date); err != nil {
 			return nil, err
 		}
+		p.Method = apiMethod(tipoPago, methodCode)
 		payments = append(payments, p)
 	}
 	if err := rows.Err(); err != nil {
@@ -83,8 +85,14 @@ func (r *Repository) ListByReservation(ctx context.Context, reservationID int) (
 }
 
 // Create inserta el pago y devuelve el registro creado (con la fecha asignada
-// por la base de datos).
+// por la base de datos). El pago manual se guarda como tipo_pago 'pago' con el
+// código de medio correspondiente en la columna method.
 func (r *Repository) Create(ctx context.Context, reservationID int, payerID uint, amount float64, method string) (*Payment, error) {
+	dbMethod, ok := dbMethodCode(method)
+	if !ok {
+		dbMethod = dbMethodCash
+	}
+
 	payment := &Payment{
 		ReservationID: reservationID,
 		UserID:        payerID,
@@ -93,10 +101,10 @@ func (r *Repository) Create(ctx context.Context, reservationID int, payerID uint
 	}
 
 	err := r.pool.QueryRow(ctx, `
-		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, id_reservacion)
-		VALUES ($1, $2, $3, $4)
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
+		VALUES ($1, $2, 'pago', $3, $4)
 		RETURNING id, fecha
-	`, payerID, amount, method, reservationID).Scan(&payment.ID, &payment.Date)
+	`, payerID, amount, dbMethod, reservationID).Scan(&payment.ID, &payment.Date)
 	if err != nil {
 		return nil, err
 	}

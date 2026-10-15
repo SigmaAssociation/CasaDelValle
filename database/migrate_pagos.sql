@@ -1,14 +1,18 @@
--- Migración: registrar pagos/abonos de una reserva.
+-- Migracion: registrar pagos/abonos de una reserva.
 -- Idempotente: puede ejecutarse varias veces sin efectos secundarios.
 --
--- 1) Validaciones de la tabla pagos: monto positivo y método simulado válido.
+-- 1) Validaciones de la tabla pagos.
+--    Diseno: tipo_pago distingue anticipo/pago; method guarda el medio de pago.
 ALTER TABLE pagos DROP CONSTRAINT IF EXISTS chk_pago_cantidad;
 ALTER TABLE pagos ADD CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0);
 
 ALTER TABLE pagos DROP CONSTRAINT IF EXISTS chk_pago_tipo;
-ALTER TABLE pagos ADD CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'tarjeta', 'transferencia', 'efectivo'));
+ALTER TABLE pagos ADD CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'pago'));
 
--- 2) Nuevo tipo de notificación "pago_registrado".
+ALTER TABLE pagos DROP CONSTRAINT IF EXISTS chk_pago_method;
+ALTER TABLE pagos ADD CONSTRAINT chk_pago_method CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH'));
+
+-- 2) Nuevo tipo de notificacion "pago_registrado".
 ALTER TABLE notificaciones DROP CONSTRAINT IF EXISTS chk_notificacion_tipo;
 ALTER TABLE notificaciones ADD CONSTRAINT chk_notificacion_tipo CHECK (tipo IN (
     'bienvenida',
