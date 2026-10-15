@@ -78,6 +78,9 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notificat
 
 # 4. Migra estados de reservaciones y pagos (pendiente/confirmada/en_curso + anticipo 30%).
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_estados_pagos.sql
+
+# 5. Registro de pagos/abonos: valida montos/métodos y habilita "pago_registrado".
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_pagos.sql
 ```
 
 Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
