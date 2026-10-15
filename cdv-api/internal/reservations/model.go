@@ -30,12 +30,25 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
+// Estados del ciclo de vida de una reservación. Nace pendiente; el pago del
+// anticipo la confirma; el job en segundo plano la pasa a en_curso al iniciar
+// la estancia y a finalizada al terminar. Cancelada es un estado terminal.
 const (
 	StatusUpcoming      = "proxima"
 	StatusInProgress    = "en_curso"
 	StatusCancelled     = "cancelada"
 	StatusFinished      = "finalizada"
+	StatusPending    = "pendiente"
+	StatusConfirmed  = "confirmada"
+	StatusInProgress = "en_curso"
+	StatusFinished   = "finalizada"
+	StatusCancelled  = "cancelada"
+
 	MinCancellationDays = 3
+
+	// AnticipoPercent es la fracción del total de la reserva que debe
+	// pagarse como anticipo para confirmarla.
+	AnticipoPercent = 0.30
 )
 
 func IsActiveStatus(status string) bool {
@@ -46,6 +59,7 @@ var (
 	ErrReservationNotFound       = errors.New("reservation not found")
 	ErrReservationNotCancellable = errors.New("reservation not cancellable")
 	ErrReservationNotEditable    = errors.New("reservation not editable")
+	ErrReservationNotPending     = errors.New("reservation not pending")
 	ErrCancellationTooLate       = errors.New("cancellation too late")
 	ErrCabinNotFound             = errors.New("cabin not found")
 )
@@ -69,6 +83,14 @@ type ReservationDetail struct {
 
 type CancelReservationResponse struct {
 	Message     string             `json:"message"`
+	Reservation *ReservationDetail `json:"reservation"`
+}
+
+// PayAnticipoResponse devuelve el monto del anticipo registrado y la
+// reservación ya confirmada.
+type PayAnticipoResponse struct {
+	Message     string             `json:"message"`
+	Amount      float64            `json:"amount"`
 	Reservation *ReservationDetail `json:"reservation"`
 }
 

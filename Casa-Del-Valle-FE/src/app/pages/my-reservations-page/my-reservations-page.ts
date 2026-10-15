@@ -2,6 +2,7 @@ import { Component, OnInit, computed, signal } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
+import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { ReservationService } from '../../services/reservation.service';
 import { ReservationCard } from '../../components/reservation-card/reservation-card';
 
@@ -27,7 +28,7 @@ export class MyReservationsPage implements OnInit {
 
     switch (this.tab()) {
       case 'upcoming':
-        return list.filter((r) => r.status === 'activa');
+        return list.filter((r) => ['pendiente', 'confirmada', 'en_curso'].includes(r.status));
       case 'finished':
         return list.filter((r) => r.status === 'finalizada');
       case 'cancelled':
@@ -38,7 +39,7 @@ export class MyReservationsPage implements OnInit {
   emptyMessage = computed(() => {
     switch (this.tab()) {
       case 'upcoming':
-        return 'No tienes reservaciones próximas.';
+        return 'No tienes reservaciones activas.';
       case 'finished':
         return 'No tienes reservaciones finalizadas.';
       case 'cancelled':
@@ -75,6 +76,13 @@ export class MyReservationsPage implements OnInit {
   }
 
   onCancelled(res: CancelReservationResponse): void {
+    this.reservations.update((list) =>
+      list.map((r) => (r.id === res.reservation.id ? { ...r, ...res.reservation } : r))
+    );
+    this.cancelMessage.set(res.message);
+  }
+
+  onPaid(res: PayAnticipoResponse): void {
     this.reservations.update((list) =>
       list.map((r) => (r.id === res.reservation.id ? { ...r, ...res.reservation } : r))
     );

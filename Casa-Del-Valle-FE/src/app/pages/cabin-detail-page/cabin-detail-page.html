@@ -216,6 +216,7 @@
               <app-reservation-card
                 [reservation]="reservation"
                 (cancelled)="onReservationCancelled($event)"
+                (paid)="onReservationPaid($event)"
               />
             }
           </div>

@@ -5,6 +5,7 @@ import { Observable } from "rxjs";
 import { Reservation } from "../models/reservation";
 import { ReservationDetail } from "../models/reservation-detail";
 import { CancelReservationResponse } from "../models/cancelReservationResponse";
+import { PayAnticipoResponse } from "../models/pay-anticipo-response";
 import { ReservationRequest } from "../models/create-reservation";
 import { CreateReservationResponse } from "../models/create-reservation-response";
 
@@ -45,6 +46,13 @@ export class ReservationService {
     public cancel(id: number): Observable<CancelReservationResponse> {
         return this.httpClient.patch<CancelReservationResponse>(
             `${this.restConstants.getApiURL()}reservations/${id}/cancel`,
+            {}
+        );
+    }
+
+    public payAnticipo(id: number): Observable<PayAnticipoResponse> {
+        return this.httpClient.post<PayAnticipoResponse>(
+            `${this.restConstants.getApiURL()}reservations/${id}/payment`,
             {}
         );
     }

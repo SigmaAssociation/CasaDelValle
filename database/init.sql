@@ -100,6 +100,7 @@ CREATE TABLE IF NOT EXISTS reservaciones (
     id_cabana INT NOT NULL, 
     id_usuario INT NOT NULL,
     estado VARCHAR(20) NOT NULL DEFAULT 'proxima',
+    estado VARCHAR(20) NOT NULL DEFAULT 'pendiente',
     fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_cancelacion TIMESTAMPTZ,
     fecha_checkin TIMESTAMPTZ,
@@ -116,6 +117,7 @@ CREATE TABLE IF NOT EXISTS reservaciones (
         fecha_checkout IS NULL
         OR (fecha_checkin IS NOT NULL AND fecha_checkout >= fecha_checkin)
     )
+    CONSTRAINT chk_estado CHECK (estado IN ('pendiente', 'confirmada', 'en_curso', 'finalizada', 'cancelada'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_reservaciones_estado_fechas
@@ -174,6 +176,7 @@ CREATE TABLE IF NOT EXISTS notificaciones (
         CHECK (tipo IN (
             'bienvenida',
             'reserva_creada',
+            'reserva_confirmada',
             'reserva_cancelada',
             'reserva_actualizada',
             'reserva_finalizada',
