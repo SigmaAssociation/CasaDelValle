@@ -195,6 +195,13 @@ definitions:
       reservation:
         $ref: '#/definitions/reservations.ReservationDetail'
     type: object
+  reservations.CheckinReservationResponse:
+    properties:
+      message:
+        type: string
+      reservation:
+        $ref: '#/definitions/reservations.ReservationDetail'
+    type: object
   reservations.CreateReservationResponse:
     properties:
       message:
@@ -1172,6 +1179,56 @@ paths:
       summary: Cancelar reservación
       tags:
       - Reservaciones
+  /reservations/{id}/checkin:
+    patch:
+      description: |-
+        Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.
+        Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      - application/json
+      responses:
+        "200":
+          description: Check-in registrado
+          schema:
+            $ref: '#/definitions/reservations.CheckinReservationResponse'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: No cumple requisitos (estado, fechas o pago)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      - BearerAuth: []
+      summary: Registrar check-in
+      tags:
+      - Reservaciones
+      - Reservaciones
   /reservations/cabin/{cabinId}:
     get:
       description: Retorna las reservaciones de la cabaña indicada, incluyendo quién
@@ -1216,8 +1273,9 @@ paths:
       - Reservaciones
   /reservations/user/{userId}:
     get:
-      description: Retorna las reservaciones del usuario indicado. Puede verlas el
-        mismo usuario o un admin. Requiere token.
+      description: |-
+        Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.
+        Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.
       parameters:
       - description: ID de usuario
         in: path
@@ -1226,15 +1284,14 @@ paths:
         type: integer
       produces:
       - application/json
+      - application/json
       responses:
         "200":
-          description: Listado de reservaciones
+          description: Check-in registrado
           schema:
-            items:
-              $ref: '#/definitions/reservations.ReservationCard'
-            type: array
+            $ref: '#/definitions/reservations.CheckinReservationResponse'
         "400":
-          description: ID de usuario inválido
+          description: ID de reservación inválido
           schema:
             additionalProperties:
               type: string
@@ -1245,10 +1302,24 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: No cumple requisitos (estado, fechas o pago)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
       security:
       - BearerAuth: []
-      summary: Listar reservaciones por usuario
+      - BearerAuth: []
+      summary: Registrar check-in
       tags:
+      - Reservaciones
       - Reservaciones
   /users:
     get:

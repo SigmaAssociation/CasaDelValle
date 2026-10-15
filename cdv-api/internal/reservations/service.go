@@ -35,6 +35,8 @@ type ReservationRepository interface {
 	UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error
 	GetCabinName(ctx context.Context, cabinID int) (string, error)
 	GetCabinHostID(ctx context.Context, cabinID uint) (uint, error)
+	GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error)
+	RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error
 	FinalizePastReservations(ctx context.Context) ([]int, error)
 }
 
@@ -260,6 +262,85 @@ func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDe
 	s.notifyReservationCancelled(ctx, reservation)
 
 	return s.repository.GetReservationByID(ctx, id)
+}
+
+// Checkin registra el inicio de la estadía. Solo aplica a reservas activas
+// dentro de su periodo y con el pago total completado.
+func (s *Service) Checkin(ctx context.Context, id int) (*ReservationDetail, error) {
+	if id <= 0 {
+		return nil, errors.New("ID de reservación inválido")
+	}
+
+	eligibility, err := s.repository.GetCheckinEligibility(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if eligibility.Status != StatusActive {
+		return nil, ErrReservationNotCheckinable
+	}
+
+	startDate, err := parseReservationDate(eligibility.StartDate, "fecha de inicio")
+	if err != nil {
+		return nil, err
+	}
+	endDate, err := parseReservationDate(eligibility.EndDate, "fecha de fin")
+	if err != nil {
+		return nil, err
+	}
+
+	today := startOfToday()
+	if today.Before(startDate) {
+		return nil, errors.New("El check-in solo puede registrarse a partir de la fecha de inicio de la reserva")
+	}
+	if today.After(endDate) {
+		return nil, errors.New("El periodo de la reserva ya finalizó")
+	}
+
+	total, err := calculateReservationTotalPrice(eligibility.StartDate, eligibility.EndDate, eligibility.NightlyRate)
+	if err != nil {
+		return nil, err
+	}
+	if eligibility.PaidTotal < total {
+		return nil, ErrCheckinPaymentIncomplete
+	}
+
+	if err := s.repository.RecordCheckin(ctx, id, time.Now()); err != nil {
+		return nil, err
+	}
+
+	updated, err := s.repository.GetReservationByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	s.notifyCheckin(ctx, updated)
+
+	return updated, nil
+}
+
+// notifyCheckin avisa al huésped y al anfitrión del inicio de la estadía.
+func (s *Service) notifyCheckin(ctx context.Context, reservation *ReservationDetail) {
+	if reservation == nil {
+		return
+	}
+
+	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
+	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
+
+	s.notify(ctx, reservation.UserID, notifications.TipoReservaCheckin,
+		fmt.Sprintf("Tu estadía en %s %s ha iniciado. ¡Buen viaje!", cabinName, period),
+		notifications.EntidadReservacion, reservation.ID)
+
+	if reservation.HostID != reservation.UserID {
+		s.notify(ctx, reservation.HostID, notifications.TipoReservaCheckin,
+			fmt.Sprintf("Se registró el check-in de tu cabaña %s %s.", cabinName, period),
+			notifications.EntidadReservacion, reservation.ID)
+	}
+
+	s.notifyAdmins(ctx, notifications.TipoReservaCheckin,
+		fmt.Sprintf("Check-in registrado en %s %s (reserva #%d).", cabinName, period, reservation.ID),
+		notifications.EntidadReservacion, reservation.ID)
 }
 
 // notifyReservationCancelled avisa al huésped y al anfitrión de la

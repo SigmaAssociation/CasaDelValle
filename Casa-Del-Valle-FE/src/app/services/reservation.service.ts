@@ -4,6 +4,7 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { Reservation } from "../models/reservation";
 import { ReservationDetail } from "../models/reservation-detail";
+import { CheckinReservationResponse } from "../models/checkin-reservation-response";
 import { CancelReservationResponse } from "../models/cancelReservationResponse";
 import { ReservationRequest } from "../models/create-reservation";
 import { CreateReservationResponse } from "../models/create-reservation-response";
@@ -49,4 +50,10 @@ export class ReservationService {
         );
     }
 
+    public checkin(id: number): Observable<CheckinReservationResponse> {
+        return this.httpClient.patch<CheckinReservationResponse>(
+            `${this.restConstants.getApiURL()}reservations/${id}/checkin`,
+            {}
+        );
+    }
 }

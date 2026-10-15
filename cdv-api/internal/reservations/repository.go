@@ -258,6 +258,60 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 	return cards, nil
 }
 
+// GetCheckinEligibility retorna estado y fechas de la reserva junto con
+// la tarifa por noche de la cabaña y el total pagado según la tabla pagos.
+func (r *Repository) GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error) {
+	var e CheckinEligibility
+	query := `
+		SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
+		       r.estado,
+		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+		       c.precio,
+		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id), 0)
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		WHERE r.id = $1
+	`
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&e.ReservationID, &e.UserID, &e.CabinID, &e.HostID,
+		&e.Status, &e.StartDate, &e.EndDate,
+		&e.NightlyRate, &e.PaidTotal,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrReservationNotFound
+		}
+		return nil, err
+	}
+	return &e, nil
+}
+
+// RecordCheckin registra fecha y hora del check-in y mueve la reserva al
+// estado 'checkin'. Solo aplica sobre reservas activas.
+//
+// PENDIENTE BD: requiere la migración con la columna fecha_checkin y el
+// estado 'checkin' en chk_estado. Sin ella retorna ErrCheckinNotMigrated.
+func (r *Repository) RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error {
+	query := `
+		UPDATE reservaciones
+		SET estado = 'checkin', fecha_checkin = $2
+		WHERE id = $1 AND estado = 'activa'
+	`
+	tag, err := r.pool.Exec(ctx, query, id, checkedInAt)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "42703" {
+			return ErrCheckinNotMigrated
+		}
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+	return nil
+}
+
 // GetCabinHostID devuelve el anfitrión de una cabaña.
 func (r *Repository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
 	var hostID uint
@@ -344,12 +398,12 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 }
 
 // FinalizePastReservations marca como finalizadas las reservaciones activas
-// cuya fecha de fin ya pasó y devuelve los IDs afectados.
+// o con check-in cuya fecha de fin ya pasó y devuelve los IDs afectados.
 func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error) {
 	query := `
 		UPDATE reservaciones
 		SET estado = 'finalizada'
-		WHERE estado = 'activa' AND fecha_fin < CURRENT_DATE
+		WHERE estado IN ('activa', 'checkin') AND fecha_fin < CURRENT_DATE
 		RETURNING id
 	`
 

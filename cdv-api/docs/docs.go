@@ -1098,16 +1098,21 @@ const docTemplate = `{
                 "security": [
                     {
                         "BearerAuth": []
+                    },
+                    {
+                        "BearerAuth": []
                     }
                 ],
-                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.",
+                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.\nRegistra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.",
                 "produces": [
+                    "application/json",
                     "application/json"
                 ],
                 "tags": [
+                    "Reservaciones",
                     "Reservaciones"
                 ],
-                "summary": "Listar reservaciones por usuario",
+                "summary": "Registrar check-in",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1119,16 +1124,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Listado de reservaciones",
+                        "description": "Check-in registrado",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/reservations.ReservationCard"
-                            }
+                            "$ref": "#/definitions/reservations.CheckinReservationResponse"
                         }
                     },
                     "400": {
-                        "description": "ID de usuario inválido",
+                        "description": "ID de reservación inválido",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1138,6 +1140,24 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "No cumple requisitos (estado, fechas o pago)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1349,6 +1369,81 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "No cancelable o con menos de 3 días de anticipación",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/{id}/checkin": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    },
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.\nRegistra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.",
+                "produces": [
+                    "application/json",
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones",
+                    "Reservaciones"
+                ],
+                "summary": "Registrar check-in",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-in registrado",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckinReservationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "No cumple requisitos (estado, fechas o pago)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1963,6 +2058,17 @@ const docTemplate = `{
             }
         },
         "reservations.CancelReservationResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "reservation": {
+                    "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.CheckinReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {

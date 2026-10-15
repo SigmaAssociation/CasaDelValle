@@ -34,6 +34,7 @@ const (
 	StatusActive        = "activa"
 	StatusCancelled     = "cancelada"
 	StatusFinished      = "finalizada"
+	StatusCheckedIn     = "checkin"
 	MinCancellationDays = 3
 )
 
@@ -41,8 +42,11 @@ var (
 	ErrReservationNotFound       = errors.New("reservation not found")
 	ErrReservationNotCancellable = errors.New("reservation not cancellable")
 	ErrReservationNotEditable    = errors.New("reservation not editable")
+	ErrReservationNotCheckinable = errors.New("reservation not checkinable")
+	ErrCheckinPaymentIncomplete  = errors.New("checkin payment incomplete")
 	ErrCancellationTooLate       = errors.New("cancellation too late")
 	ErrCabinNotFound             = errors.New("cabin not found")
+	ErrCheckinNotMigrated        = errors.New("checkin not migrated")
 )
 
 type UpdateReservationRequest struct {
@@ -82,6 +86,25 @@ type ReservationCard struct {
 	CancelledAt   *time.Time `json:"cancelledAt"`
 }
 type UpdateReservationResponse struct {
+	Message     string             `json:"message"`
+	Reservation *ReservationDetail `json:"reservation"`
+}
+
+// CheckinEligibility reúne lo necesario para validar un check-in:
+// estado y fechas de la reserva, tarifa de la cabaña y total pagado.
+type CheckinEligibility struct {
+	ReservationID int
+	UserID        uint
+	CabinID       uint
+	HostID        uint
+	Status        string
+	StartDate     string
+	EndDate       string
+	NightlyRate   float64
+	PaidTotal     float64
+}
+
+type CheckinReservationResponse struct {
 	Message     string             `json:"message"`
 	Reservation *ReservationDetail `json:"reservation"`
 }

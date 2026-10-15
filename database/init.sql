@@ -165,7 +165,8 @@ CREATE TABLE IF NOT EXISTS notificaciones (
             'cabana_creada',
             'cabana_actualizada',
             'cabana_eliminada',
-            'rol_actualizado'
+            'rol_actualizado',
+            'reserva_checkin'
         )),
     CONSTRAINT chk_notificacion_entidad_tipo
         CHECK (entidad_tipo IS NULL OR entidad_tipo IN ('reservacion', 'cabana', 'usuario'))

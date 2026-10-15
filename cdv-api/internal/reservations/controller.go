@@ -210,6 +210,78 @@ func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, reservation)
 }
 
+// Checkin registra el inicio de la estadía de una reservación.
+// @Summary Registrar check-in
+// @Description Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva activa dentro de su periodo y con el pago total completado. Requiere token.
+// @Tags Reservaciones
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Success 200 {object} CheckinReservationResponse "Check-in registrado"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Failure 409 {object} map[string]string "No cumple requisitos (estado, fechas o pago)"
+// @Router /reservations/{id}/checkin [patch]
+func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("id")
+	if idParam == "" {
+		idParam = r.URL.Query().Get("id")
+	}
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "ID de reservación inválido")
+		return
+	}
+
+	reservation, err := c.service.GetReservationByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, ErrReservationNotFound) {
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "Error al obtener la reservación")
+		return
+	}
+
+	// El check-in lo registra el anfitrión de la cabaña o un administrador.
+	if !middleware.AuthorizeSelfOrAdmin(r, reservation.HostID) {
+		writeError(w, http.StatusForbidden, "Solo el anfitrión puede registrar el check-in")
+		return
+	}
+
+	checkedIn, err := c.service.Checkin(r.Context(), id)
+	if err != nil {
+		switch {
+		case errors.Is(err, ErrReservationNotFound):
+			writeError(w, http.StatusNotFound, "Reservación no encontrada")
+		case errors.Is(err, ErrReservationNotCheckinable):
+			writeError(w, http.StatusConflict, "La reservación no admite check-in")
+		case errors.Is(err, ErrCheckinPaymentIncomplete):
+			writeError(w, http.StatusConflict, "El pago total de la reservación no está completo")
+		case errors.Is(err, ErrCheckinNotMigrated):
+			writeError(w, http.StatusInternalServerError, "Check-in no disponible: falta la migración de base de datos (fecha_checkin)")
+		case err.Error() == "El check-in solo puede registrarse a partir de la fecha de inicio de la reserva" ||
+			err.Error() == "El periodo de la reserva ya finalizó":
+			writeError(w, http.StatusConflict, err.Error())
+		default:
+			writeError(w, http.StatusBadRequest, err.Error())
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, CheckinReservationResponse{
+		Message:     "Check-in registrado exitosamente",
+		Reservation: checkedIn,
+	})
+}
+
 // GetReservationsByUser lista las reservaciones de un usuario.
 // @Summary Listar reservaciones por usuario
 // @Description Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.

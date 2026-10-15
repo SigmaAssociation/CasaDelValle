@@ -190,8 +190,12 @@
       <section class="mt-8">
         <h2 class="text-2xl text-brown mb-1">Reservaciones de esta cabaña</h2>
         <p class="text-gray-500 text-sm mb-4 font-sans">
-          Quién reservó, en qué fechas y la opción de cancelar si es necesario.
+          Quién reservó, en qué fechas y las opciones de check-in o cancelar si es necesario.
         </p>
+
+        @if (reservationNotice) {
+          <p class="mb-3 text-sm rounded-md px-4 py-2 bg-green/10 text-green">{{ reservationNotice }}</p>
+        }
 
         @if (isLoadingReservations) {
           <p class="text-sm text-gray-500">Cargando reservaciones…</p>
@@ -215,7 +219,9 @@
             @for (reservation of cabinReservations; track reservation.id) {
               <app-reservation-card
                 [reservation]="reservation"
+                [showCheckin]="true"
                 (cancelled)="onReservationCancelled($event)"
+                (checkedIn)="onReservationCheckedIn($event)"
               />
             }
           </div>

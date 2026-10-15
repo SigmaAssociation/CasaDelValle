@@ -2,6 +2,7 @@ package reservations
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,9 @@ type mockReservationRepository struct {
 	getByCabinErr     error
 	getCabinHostID    uint
 	getCabinHostErr   error
+	checkinElig       *CheckinEligibility
+	checkinEligErr    error
+	recordCheckinErr  error
 	updateReturnErr   error
 	getCabinName      string
 	getCabinNameErr   error
@@ -87,6 +91,14 @@ func (m *mockReservationRepository) GetReservationsByCabinID(ctx context.Context
 
 func (m *mockReservationRepository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
 	return m.getCabinHostID, m.getCabinHostErr
+}
+
+func (m *mockReservationRepository) GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error) {
+	return m.checkinElig, m.checkinEligErr
+}
+
+func (m *mockReservationRepository) RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error {
+	return m.recordCheckinErr
 }
 
 func (m *mockReservationRepository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
@@ -410,5 +422,122 @@ func TestUpdateReservationNotifiesGuestAndHost(t *testing.T) {
 	updated := notifier.byTipo(notifications.TipoReservaActualizada)
 	if len(updated) != 2 {
 		t.Fatalf("expected 2 update notifications (guest + host), got %d", len(updated))
+	}
+}
+
+func pastDate(days int) string {
+	return time.Now().AddDate(0, 0, -days).Format(dateLayout)
+}
+
+func checkinEligibility(status string, startDate, endDate string, nightlyRate, paid float64) *CheckinEligibility {
+	return &CheckinEligibility{
+		ReservationID: 50,
+		UserID:        1,
+		CabinID:       2,
+		HostID:        3,
+		Status:        status,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		NightlyRate:   nightlyRate,
+		PaidTotal:     paid,
+	}
+}
+
+func TestCheckinHappyPath(t *testing.T) {
+	repo := &mockReservationRepository{
+		checkinElig: checkinEligibility(StatusActive, pastDate(1), futureDate(2), 100, 300),
+		getByIDReturn: &ReservationDetail{
+			ID: 50, UserID: 1, HostID: 3, CabinID: 2,
+			StartDate: pastDate(1), EndDate: futureDate(2), Status: StatusCheckedIn,
+		},
+		getCabinName: "Cabaña Mar",
+	}
+	notifier := &mockNotifier{}
+	service := NewService(repo, notifier)
+
+	detail, err := service.Checkin(context.Background(), 50)
+	if err != nil {
+		t.Fatalf("Checkin returned error: %v", err)
+	}
+	if detail.ID != 50 {
+		t.Fatalf("Checkin() reservation ID = %d, want 50", detail.ID)
+	}
+
+	notified := notifier.byTipo(notifications.TipoReservaCheckin)
+	if len(notified) != 2 {
+		t.Fatalf("expected 2 checkin notifications (guest + host), got %d", len(notified))
+	}
+	if len(notifier.adminInputs) != 1 {
+		t.Fatalf("expected 1 admin notification, got %d", len(notifier.adminInputs))
+	}
+}
+
+func TestCheckinRejects(t *testing.T) {
+	testCases := []struct {
+		name      string
+		id        int
+		elig      *CheckinEligibility
+		eligErr   error
+		recordErr error
+		wantErr   error
+	}{
+		{
+			name: "invalid id",
+			id:   0,
+		},
+		{
+			name:    "reservation not found",
+			id:      51,
+			eligErr: ErrReservationNotFound,
+			wantErr: ErrReservationNotFound,
+		},
+		{
+			name:    "not active",
+			id:      52,
+			elig:    checkinEligibility(StatusCancelled, pastDate(1), futureDate(2), 100, 300),
+			wantErr: ErrReservationNotCheckinable,
+		},
+		{
+			name: "before start date",
+			id:   53,
+			elig: checkinEligibility(StatusActive, futureDate(5), futureDate(7), 100, 200),
+		},
+		{
+			name: "after end date",
+			id:   54,
+			elig: checkinEligibility(StatusActive, pastDate(5), pastDate(1), 100, 400),
+		},
+		{
+			name:    "payment incomplete",
+			id:      55,
+			elig:    checkinEligibility(StatusActive, pastDate(1), futureDate(2), 100, 100),
+			wantErr: ErrCheckinPaymentIncomplete,
+		},
+		{
+			name:      "record error propagates",
+			id:        56,
+			elig:      checkinEligibility(StatusActive, pastDate(1), futureDate(2), 100, 300),
+			recordErr: errors.New("db down"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &mockReservationRepository{
+				checkinElig:      tc.elig,
+				checkinEligErr:   tc.eligErr,
+				recordCheckinErr: tc.recordErr,
+				getByIDReturn:    &ReservationDetail{ID: tc.id, Status: StatusCheckedIn},
+			}
+			service := NewService(repo, &mockNotifier{})
+
+			_, err := service.Checkin(context.Background(), tc.id)
+			if err == nil {
+				t.Fatalf("Checkin() expected error, got nil")
+			}
+			if tc.wantErr != nil && !errors.Is(err, tc.wantErr) {
+				t.Fatalf("Checkin() error = %v, want %v", err, tc.wantErr)
+			}
+		})
 	}
 }

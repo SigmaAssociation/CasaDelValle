@@ -6,6 +6,7 @@ import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
+import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
 import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
@@ -32,6 +33,7 @@ export class CabinDetailPage implements OnInit {
   cabinReservations: Reservation[] = [];
   isLoadingReservations = false;
   reservationsError: string | null = null;
+  reservationNotice: string | null = null;
 
   constructor(
     private cabinService: CabinService,
@@ -98,6 +100,15 @@ export class CabinDetailPage implements OnInit {
       r.id === res.reservation.id ? { ...r, ...res.reservation } : r,
     );
     this.cd.detectChanges();
+  }
+
+  onReservationCheckedIn(res: CheckinReservationResponse): void {
+    this.reservationNotice = res.message ?? 'Check-in registrado exitosamente.';
+    if (this.cabin) {
+      this.loadCabinReservations(this.cabin.id);
+    } else {
+      this.cd.detectChanges();
+    }
   }
 
   canEdit(): boolean {

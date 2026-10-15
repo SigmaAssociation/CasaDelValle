@@ -71,6 +71,16 @@
           Cancelar reservación
         </button>
       }
+      @if (showCheckin && isActive) {
+        <button
+          type="button"
+          (click)="registerCheckin()"
+          [disabled]="isCheckingIn()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white hover:bg-green-dark transition disabled:opacity-50"
+        >
+          {{ isCheckingIn() ? 'Registrando…' : 'Registrar check-in' }}
+        </button>
+      }
     </div>
 
     @if (errorMessage(); as error) {
