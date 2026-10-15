@@ -134,7 +134,7 @@ func (r *Repository) CancelReservation(ctx context.Context, id int, cancelledAt 
 	query := `
 		UPDATE reservaciones
 		SET estado = 'cancelada', fecha_cancelacion = $2
-		WHERE id = $1 AND estado = 'activa'
+		WHERE id = $1 AND estado IN ('proxima', 'en_curso')
 	`
 	tag, err := r.pool.Exec(ctx, query, id, cancelledAt)
 	if err != nil {
@@ -280,7 +280,7 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 		FROM reservaciones
 		WHERE id_usuario = $1
 		  AND id <> $2
-		  AND estado = 'activa'
+		  AND estado IN ('proxima', 'en_curso')
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID, excludeID)
@@ -319,7 +319,7 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 	query := `
 		UPDATE reservaciones
 		SET id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
-		WHERE id = $4 AND estado = 'activa'
+		WHERE id = $4 AND estado IN ('proxima', 'en_curso')
 	`
 	tag, err := r.pool.Exec(ctx, query, req.CabinID, req.StartDate, req.EndDate, id)
 	if err != nil {
@@ -348,8 +348,10 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 func (r *Repository) FinalizePastReservations(ctx context.Context) ([]int, error) {
 	query := `
 		UPDATE reservaciones
-		SET estado = 'finalizada'
-		WHERE estado = 'activa' AND fecha_fin < CURRENT_DATE
+		SET estado = 'finalizada',
+		    fecha_checkin = COALESCE(fecha_checkin, fecha_inicio::timestamp AT TIME ZONE 'America/Guatemala'),
+		    fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala')
+		WHERE estado IN ('proxima', 'en_curso') AND fecha_fin < CURRENT_DATE
 		RETURNING id
 	`
 

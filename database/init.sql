@@ -99,9 +99,11 @@ CREATE TABLE IF NOT EXISTS reservaciones (
     fecha_fin DATE NOT NULL,
     id_cabana INT NOT NULL, 
     id_usuario INT NOT NULL,
-    estado VARCHAR(20) NOT NULL DEFAULT 'activa',
+    estado VARCHAR(20) NOT NULL DEFAULT 'proxima',
     fecha_creacion TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     fecha_cancelacion TIMESTAMPTZ,
+    fecha_checkin TIMESTAMPTZ,
+    fecha_checkout TIMESTAMPTZ,
 
     CONSTRAINT fk_reservacion_usuario
         FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
@@ -109,21 +111,34 @@ CREATE TABLE IF NOT EXISTS reservaciones (
         FOREIGN KEY (id_cabana) REFERENCES cabanas(id) ON DELETE RESTRICT,
 
     CONSTRAINT chk_fechas CHECK (fecha_fin > fecha_inicio),
-    CONSTRAINT chk_estado CHECK (estado IN ('activa', 'cancelada', 'finalizada'))
+    CONSTRAINT chk_estado CHECK (estado IN ('proxima', 'en_curso', 'finalizada', 'cancelada')),
+    CONSTRAINT chk_checkin_checkout CHECK (
+        fecha_checkout IS NULL
+        OR (fecha_checkin IS NOT NULL AND fecha_checkout >= fecha_checkin)
+    )
 );
+
+CREATE INDEX IF NOT EXISTS idx_reservaciones_estado_fechas
+    ON reservaciones (estado, fecha_inicio, fecha_fin);
 
 CREATE TABLE IF NOT EXISTS pagos (
     id SERIAL PRIMARY KEY,
     id_usuario INT NOT NULL,
     cantidad NUMERIC(10, 2) NOT NULL,
     tipo_pago VARCHAR(50) NOT NULL,
+    method VARCHAR(20) NOT NULL,
     fecha TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     id_reservacion INT NOT NULL,
 
     CONSTRAINT fk_pago_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
-
-    CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT
+    CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
+    CONSTRAINT chk_pago_method CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH')),
+    CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'pago')),
+    CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0)
 );
+
+CREATE INDEX IF NOT EXISTS idx_pagos_reservacion
+    ON pagos (id_reservacion);
 
 CREATE TABLE IF NOT EXISTS comentario (
     id SERIAL PRIMARY KEY,
@@ -186,4 +201,4 @@ INSERT INTO usuarios (nombre, telefono, direccion, dpi, correo, contrasena, id_r
 ('Admin', '12345678', 'Direccion Admin', '1234567890123', 'admin@admin.com', '$2a$10$SFxM4MJU3I1zjpotR/LfyeKREmKO7gqCIoiijEznmZD94cbiJJg7a', 1);
 
 INSERT INTO comisiones (id_usuario, porcentaje_comision) VALUES 
-(1, 25.0)
+(1, 25.0);

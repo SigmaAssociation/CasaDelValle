@@ -31,11 +31,16 @@ type ErrorResponse struct {
 }
 
 const (
-	StatusActive        = "activa"
+	StatusUpcoming      = "proxima"
+	StatusInProgress    = "en_curso"
 	StatusCancelled     = "cancelada"
 	StatusFinished      = "finalizada"
 	MinCancellationDays = 3
 )
+
+func IsActiveStatus(status string) bool {
+	return status == StatusUpcoming || status == StatusInProgress
+}
 
 var (
 	ErrReservationNotFound       = errors.New("reservation not found")

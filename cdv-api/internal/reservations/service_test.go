@@ -277,7 +277,7 @@ func TestCreateReservationNotifiesGuestAndHost(t *testing.T) {
 		createReturnID:   55,
 		getByIDReturn: &ReservationDetail{
 			ID: 55, UserID: 1, HostID: 2, CabinID: 3,
-			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusActive,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusUpcoming,
 		},
 		getCabinName: "Cabaña Lago",
 	}
@@ -313,7 +313,7 @@ func TestCreateReservationSkipsDuplicateWhenHostIsGuest(t *testing.T) {
 		createReturnID:   56,
 		getByIDReturn: &ReservationDetail{
 			ID: 56, UserID: 7, HostID: 7, CabinID: 3,
-			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusActive,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusUpcoming,
 		},
 		getCabinName: "Cabaña Sol",
 	}
@@ -339,7 +339,7 @@ func TestCancelReservationNotifiesGuestAndHost(t *testing.T) {
 	repo := &mockReservationRepository{
 		getByIDReturn: &ReservationDetail{
 			ID: 77, UserID: 1, HostID: 2, CabinID: 3,
-			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusActive,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusUpcoming,
 		},
 		getCabinName: "Cabaña Río",
 	}
@@ -392,7 +392,7 @@ func TestUpdateReservationNotifiesGuestAndHost(t *testing.T) {
 	repo := &mockReservationRepository{
 		getByIDReturn: &ReservationDetail{
 			ID: 88, UserID: 1, HostID: 2, CabinID: 3,
-			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusActive,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusUpcoming,
 		},
 		getCabinName: "Cabaña Mar",
 	}
