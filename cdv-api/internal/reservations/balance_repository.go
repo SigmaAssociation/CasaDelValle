@@ -7,8 +7,6 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// GetReservationLedger lee precio, cargos, pagos y reembolsos en una sola
-// transacción de solo lectura para que las cifras sean consistentes entre sí.
 func (r *Repository) GetReservationLedger(ctx context.Context, reservationID int, cabinID uint) (*ReservationLedger, error) {
 	tx, err := r.pool.BeginTx(ctx, pgx.TxOptions{
 		IsoLevel:   pgx.RepeatableRead,
@@ -56,7 +54,7 @@ func (r *Repository) GetReservationLedger(ctx context.Context, reservationID int
 	paymentRows, err := tx.Query(ctx, `
 		SELECT id, cantidad, tipo_pago, fecha
 		FROM pagos
-		WHERE id_reservacion = $1
+		WHERE id_reservacion = $1 AND tipo_pago <> 'reembolso'
 		ORDER BY fecha ASC, id ASC`, reservationID)
 	if err != nil {
 		return nil, err
@@ -78,6 +76,10 @@ func (r *Repository) GetReservationLedger(ctx context.Context, reservationID int
 		SELECT id, id_pago, cantidad, motivo, fecha
 		FROM reembolsos
 		WHERE id_reservacion = $1
+		UNION ALL
+		SELECT id, NULL::int AS id_pago, cantidad, NULL::text AS motivo, fecha
+		FROM pagos
+		WHERE id_reservacion = $1 AND tipo_pago = 'reembolso'
 		ORDER BY fecha ASC, id ASC`, reservationID)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"math"
 	"regexp"
 	"strings"
@@ -13,16 +14,18 @@ import (
 )
 
 type Service struct {
-	repository ReservationRepository
-	notifier   Notifier
+	repository     ReservationRepository
+	notifier       Notifier
+	refundRecorder RefundRecorder
 }
 
-// Notifier registra notificaciones en el buzón personal de los usuarios.
-// Interfaz declarada en este package para desacoplarlo del módulo de
-// notifications y poder sustituirla en pruebas.
 type Notifier interface {
 	Notify(ctx context.Context, input notifications.NotificationInput)
 	NotifyAdmins(ctx context.Context, input notifications.NotificationInput)
+}
+
+type RefundRecorder interface {
+	RecordRefundOnCancellation(ctx context.Context, reservation *ReservationDetail) (*CancelRefund, error)
 }
 
 type ReservationRepository interface {
@@ -54,8 +57,10 @@ func NewService(repository ReservationRepository, notifier Notifier) *Service {
 	}
 }
 
-// notify registra una notificación en el buzón del usuario sin interrumpir
-// la operación principal: los errores quedan en el log del notifier.
+func (s *Service) SetRefundRecorder(recorder RefundRecorder) {
+	s.refundRecorder = recorder
+}
+
 func (s *Service) notify(ctx context.Context, userID uint, tipo, mensaje, entidadTipo string, entidadID int) {
 	if s.notifier == nil || userID == 0 {
 		return
@@ -69,7 +74,6 @@ func (s *Service) notify(ctx context.Context, userID uint, tipo, mensaje, entida
 	})
 }
 
-// notifyAdmins replica un evento del sistema en el buzón de los administradores.
 func (s *Service) notifyAdmins(ctx context.Context, tipo, mensaje, entidadTipo string, entidadID int) {
 	if s.notifier == nil {
 		return
@@ -82,8 +86,6 @@ func (s *Service) notifyAdmins(ctx context.Context, tipo, mensaje, entidadTipo s
 	})
 }
 
-// cabinDisplayName devuelve el nombre de la cabaña para los mensajes del
-// buzón; si no se puede obtener, se usa una referencia genérica por ID.
 func (s *Service) cabinDisplayName(ctx context.Context, cabinID uint) string {
 	name, err := s.repository.GetCabinName(ctx, int(cabinID))
 	if err != nil || strings.TrimSpace(name) == "" {
@@ -195,9 +197,6 @@ func (s *Service) CreateReservation(ctx context.Context, req ReservationRequest)
 	return reservationID, nil
 }
 
-// notifyReservationCreated avisa al huésped y al anfitrión de la nueva
-// reservación. Se ejecuta después del éxito de la operación; los fallos al
-// notificar nunca afectan la reservación.
 func (s *Service) notifyReservationCreated(ctx context.Context, reservationID int, req ReservationRequest) {
 	detail, err := s.repository.GetReservationByID(ctx, reservationID)
 	if err != nil || detail == nil {
@@ -232,49 +231,59 @@ func cancellationLocation() *time.Location {
 	return loc
 }
 
+func daysUntilStartDate(startDate string, loc *time.Location, now time.Time) (int, bool) {
+	start, err := time.ParseInLocation(dateLayout, startDate, loc)
+	if err != nil {
+		return 0, false
+	}
+
+	y, m, d := now.In(loc).Date()
+	today := time.Date(y, m, d, 0, 0, 0, 0, loc)
+	return int(math.Round(start.Sub(today).Hours() / 24)), true
+}
+
+func formatMoney(value float64) string {
+	return fmt.Sprintf("Q %.2f", value)
+}
+
 func (s *Service) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
 	return s.repository.GetReservationByID(ctx, id)
 }
 
 func (s *Service) CancelReservation(ctx context.Context, id int) (*ReservationDetail, error) {
+	detail, _, err := s.CancelReservationWithRefund(ctx, id)
+	return detail, err
+}
+
+func (s *Service) CancelReservationWithRefund(ctx context.Context, id int) (*ReservationDetail, *CancelRefund, error) {
 	reservation, err := s.repository.GetReservationByID(ctx, id)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	if reservation.Status != StatusPending && reservation.Status != StatusConfirmed {
-		return nil, ErrReservationNotCancellable
+		return nil, nil, ErrReservationNotCancellable
 	}
 
 	loc := cancellationLocation()
 	now := time.Now().In(loc)
 
-	startDate, err := time.ParseInLocation(dateLayout, reservation.StartDate, loc)
-	if err != nil {
-		return nil, err
-	}
-
-	y, m, d := now.Date()
-	today := time.Date(y, m, d, 0, 0, 0, 0, loc)
-	limit := today.AddDate(0, 0, MinCancellationDays)
-
-	if startDate.Before(limit) {
-		return nil, ErrCancellationTooLate
-	}
-
 	if err := s.repository.CancelReservation(ctx, id, now); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	s.notifyReservationCancelled(ctx, reservation)
+	refund, err := s.recordRefundOnCancellation(ctx, reservation)
+	if err != nil {
+		log.Printf("reservations: no se pudo registrar el reembolso de la reservación %d: %v", id, err)
+	}
 
-	return s.repository.GetReservationByID(ctx, id)
+	daysLeft, _ := daysUntilStartDate(reservation.StartDate, loc, now)
+	s.notifyReservationCancelled(ctx, reservation, refund, daysLeft < MinCancellationDays)
+
+	updated, err := s.repository.GetReservationByID(ctx, id)
+	return updated, refund, err
 }
 
-// Checkin registra el inicio de la estadía. Aplica a reservas confirmadas
-// dentro de su periodo y con el pago total completado. Si cashAmount > 0, el
-// anfitrión registra en ese momento el pago en efectivo del saldo pendiente,
-// que debe cubrir exactamente lo que falta.
 func (s *Service) Checkin(ctx context.Context, id int, cashAmount float64) (*ReservationDetail, error) {
 	if id <= 0 {
 		return nil, errors.New("ID de reservación inválido")
@@ -292,9 +301,7 @@ func (s *Service) Checkin(ctx context.Context, id int, cashAmount float64) (*Res
 	recordTimestampOnly := false
 	switch {
 	case eligibility.Status == StatusConfirmed:
-		// Flujo normal: pasa a en_curso con fecha de check-in.
 	case eligibility.Status == StatusInProgress && eligibility.CheckedInAt == nil:
-		// El job automático se adelantó: solo falta registrar fecha y hora.
 		recordTimestampOnly = true
 	default:
 		return nil, ErrReservationNotCheckinable
@@ -354,7 +361,6 @@ func (s *Service) Checkin(ctx context.Context, id int, cashAmount float64) (*Res
 	return updated, nil
 }
 
-// notifyCheckin avisa al huésped y al anfitrión del inicio de la estadía.
 func (s *Service) notifyCheckin(ctx context.Context, reservation *ReservationDetail) {
 	if reservation == nil {
 		return
@@ -378,9 +384,14 @@ func (s *Service) notifyCheckin(ctx context.Context, reservation *ReservationDet
 		notifications.EntidadReservacion, reservation.ID)
 }
 
-// notifyReservationCancelled avisa al huésped y al anfitrión de la
-// cancelación de la reservación.
-func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *ReservationDetail) {
+func (s *Service) recordRefundOnCancellation(ctx context.Context, reservation *ReservationDetail) (*CancelRefund, error) {
+	if s.refundRecorder == nil {
+		return nil, nil
+	}
+	return s.refundRecorder.RecordRefundOnCancellation(ctx, reservation)
+}
+
+func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *ReservationDetail, refund *CancelRefund, noRefundByDeadline bool) {
 	if reservation == nil {
 		return
 	}
@@ -388,25 +399,29 @@ func (s *Service) notifyReservationCancelled(ctx context.Context, reservation *R
 	cabinName := s.cabinDisplayName(ctx, reservation.CabinID)
 	period := fmt.Sprintf("del %s al %s", reservation.StartDate, reservation.EndDate)
 
+	notice := ""
+	switch {
+	case refund != nil:
+		notice = fmt.Sprintf(" Se registró un reembolso %s de %s.", refund.Kind, formatMoney(refund.Amount))
+	case noRefundByDeadline:
+		notice = fmt.Sprintf(" Al cancelarse con menos de %d días de anticipación no corresponde reembolso.", MinCancellationDays)
+	}
+
 	s.notify(ctx, reservation.UserID, notifications.TipoReservaCancelada,
-		fmt.Sprintf("Tu reserva en %s %s fue cancelada.", cabinName, period),
+		fmt.Sprintf("Tu reserva en %s %s fue cancelada.%s", cabinName, period, notice),
 		notifications.EntidadReservacion, reservation.ID)
 
 	if reservation.HostID != reservation.UserID {
 		s.notify(ctx, reservation.HostID, notifications.TipoReservaCancelada,
-			fmt.Sprintf("La reserva de tu cabaña %s %s fue cancelada.", cabinName, period),
+			fmt.Sprintf("La reserva de tu cabaña %s %s fue cancelada.%s", cabinName, period, notice),
 			notifications.EntidadReservacion, reservation.ID)
 	}
 
 	s.notifyAdmins(ctx, notifications.TipoReservaCancelada,
-		fmt.Sprintf("Se canceló la reserva #%d en %s %s.", reservation.ID, cabinName, period),
+		fmt.Sprintf("Se canceló la reserva #%d en %s %s.%s", reservation.ID, cabinName, period, notice),
 		notifications.EntidadReservacion, reservation.ID)
 }
 
-// PayAnticipo registra el pago del anticipo y confirma la reservación
-// pendiente. Amount <= 0 usa el 30% del total; si se indica debe estar
-// entre el 30% y el total. Method es simulado (tarjeta, transferencia o
-// efectivo). Devuelve el detalle actualizado y el monto pagado.
 func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, method string) (*ReservationDetail, float64, error) {
 	if id <= 0 {
 		return nil, 0, errors.New("ID de reservación inválido")
@@ -452,8 +467,6 @@ func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, metho
 		return nil, 0, errors.New("El monto no puede superar el total de la reservación")
 	}
 
-	// El pagador de registro es quien reservó; la autorización (propietario o
-	// administrador) ya se validó en el controller.
 	if err := s.repository.PayAnticipo(ctx, id, reservation.UserID, amount, method); err != nil {
 		return nil, 0, err
 	}
@@ -462,15 +475,12 @@ func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, metho
 
 	updated, err := s.repository.GetReservationByID(ctx, id)
 	if err != nil {
-		// El pago ya quedó registrado; no fallar solo por la relectura.
 		return reservation, amount, nil
 	}
 
 	return updated, amount, nil
 }
 
-// notifyReservationConfirmed avisa al huésped, al anfitrión y a los
-// administradores de que el anticipo confirmó la reservación.
 func (s *Service) notifyReservationConfirmed(ctx context.Context, reservation *ReservationDetail) {
 	if reservation == nil {
 		return
@@ -588,8 +598,6 @@ func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReser
 	return updated, nil
 }
 
-// notifyReservationUpdated avisa al huésped y al anfitrión de que la
-// reservación fue modificada.
 func (s *Service) notifyReservationUpdated(ctx context.Context, reservation *ReservationDetail) {
 	if reservation == nil {
 		return
@@ -613,10 +621,6 @@ func (s *Service) notifyReservationUpdated(ctx context.Context, reservation *Res
 		notifications.EntidadReservacion, reservation.ID)
 }
 
-// AdvanceReservationStates aplica las transiciones automáticas del ciclo de
-// vida (en_curso al iniciar la estancia, finalizada al terminar) y avisa del
-// cierre. Está pensada para ejecutarse periódicamente desde un job en
-// segundo plano; devuelve cuántas finalizó.
 func (s *Service) AdvanceReservationStates(ctx context.Context) (int, error) {
 	ids, err := s.repository.AdvanceReservationStates(ctx)
 	if err != nil {
@@ -634,8 +638,6 @@ func (s *Service) AdvanceReservationStates(ctx context.Context) (int, error) {
 	return len(ids), nil
 }
 
-// notifyReservationFinished avisa al huésped y al anfitrión de que la
-// reservación concluyó.
 func (s *Service) notifyReservationFinished(ctx context.Context, reservation *ReservationDetail) {
 	if reservation == nil {
 		return

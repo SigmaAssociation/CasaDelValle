@@ -117,7 +117,7 @@ BEGIN
     UPDATE reservaciones
     SET estado         = 'finalizada',
         fecha_checkin  = COALESCE(fecha_checkin,  fecha_inicio::timestamp AT TIME ZONE tz),
-        fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp    AT TIME ZONE tz)
+        fecha_checkout = COALESCE(fecha_checkout, GREATEST(fecha_checkin, fecha_fin::timestamp AT TIME ZONE tz))
     WHERE estado IN ('pendiente', 'confirmada', 'en_curso') AND fecha_fin < hoy;
 
     -- Iniciadas: confirmada cuya fecha_inicio llegó -> en_curso

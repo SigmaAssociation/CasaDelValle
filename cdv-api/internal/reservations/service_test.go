@@ -434,6 +434,140 @@ func TestCancelReservationNotifiesGuestAndHost(t *testing.T) {
 	}
 }
 
+type mockRefundRecorder struct {
+	calledWith   *ReservationDetail
+	returnRefund *CancelRefund
+	returnErr    error
+}
+
+func (m *mockRefundRecorder) RecordRefundOnCancellation(ctx context.Context, reservation *ReservationDetail) (*CancelRefund, error) {
+	m.calledWith = reservation
+	return m.returnRefund, m.returnErr
+}
+
+func TestCancelReservationWithRefundRecordsAutomaticRefund(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 77, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	recorder := &mockRefundRecorder{
+		returnRefund: &CancelRefund{Amount: 90, Percent: 1, Kind: "total"},
+	}
+	service := NewService(repo, &mockNotifier{})
+	service.SetRefundRecorder(recorder)
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 77)
+	if err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+	if recorder.calledWith == nil || recorder.calledWith.ID != 77 {
+		t.Fatalf("expected the refund recorder to be called with reservation 77, got %+v", recorder.calledWith)
+	}
+	if refund == nil || refund.Amount != 90 || refund.Kind != "total" {
+		t.Fatalf("expected the automatic refund to be returned, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithRefundSurvivesRecorderFailure(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 78, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	recorder := &mockRefundRecorder{returnErr: errors.New("fallo al registrar reembolso")}
+	service := NewService(repo, &mockNotifier{})
+	service.SetRefundRecorder(recorder)
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 78)
+	if err != nil {
+		t.Fatalf("un fallo al registrar el reembolso no debe revertir la cancelación: %v", err)
+	}
+	if refund != nil {
+		t.Fatalf("no debería devolverse un reembolso cuando el registro falla, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithoutRecorderDoesNotFail(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 79, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	service := NewService(repo, &mockNotifier{})
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 79)
+	if err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+	if refund != nil {
+		t.Fatalf("sin registrador inyectado no debería haber reembolso, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithinMinDaysSucceeds(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 80, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(1), EndDate: futureDate(3), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	notifier := &mockNotifier{}
+	recorder := &mockRefundRecorder{}
+	service := NewService(repo, notifier)
+	service.SetRefundRecorder(recorder)
+
+	if _, _, err := service.CancelReservationWithRefund(context.Background(), 80); err != nil {
+		t.Fatalf("cancelar con menos de %d días debería estar permitido: %v", MinCancellationDays, err)
+	}
+
+	cancelled := notifier.byTipo(notifications.TipoReservaCancelada)
+	if len(cancelled) != 2 {
+		t.Fatalf("expected 2 cancellation notifications (guest + host), got %d", len(cancelled))
+	}
+	if !strings.Contains(cancelled[0].Mensaje, "no corresponde reembolso") {
+		t.Errorf("la notificación al huésped debería explicar por qué no hay reembolso, got %q", cancelled[0].Mensaje)
+	}
+}
+
+func TestCancelReservationNotifiesRefundAmount(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 81, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(12), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	notifier := &mockNotifier{}
+	recorder := &mockRefundRecorder{
+		returnRefund: &CancelRefund{Amount: 90, Percent: 1, Kind: "total"},
+	}
+	service := NewService(repo, notifier)
+	service.SetRefundRecorder(recorder)
+
+	if _, _, err := service.CancelReservationWithRefund(context.Background(), 81); err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+
+	cancelled := notifier.byTipo(notifications.TipoReservaCancelada)
+	if len(cancelled) != 2 {
+		t.Fatalf("expected 2 cancellation notifications (guest + host), got %d", len(cancelled))
+	}
+	if !strings.Contains(cancelled[0].Mensaje, "reembolso total") || !strings.Contains(cancelled[0].Mensaje, "Q 90.00") {
+		t.Errorf("la notificación al huésped debería informar el reembolso, got %q", cancelled[0].Mensaje)
+	}
+	if !strings.Contains(cancelled[1].Mensaje, "reembolso total") {
+		t.Errorf("la notificación al anfitrión debería informar el reembolso, got %q", cancelled[1].Mensaje)
+	}
+}
+
 func TestAdvanceReservationStatesNotifiesGuestHostAndAdmins(t *testing.T) {
 	repo := &mockReservationRepository{
 		advanceReturnIDs: []int{42},
@@ -650,7 +784,6 @@ func TestCheckinWithCashCompletesPayment(t *testing.T) {
 	notifier := &mockNotifier{}
 	service := NewService(repo, notifier)
 
-	// Total 300, pagados 100: el efectivo debe cubrir los 200 restantes.
 	if _, err := service.Checkin(context.Background(), 50, 200); err != nil {
 		t.Fatalf("Checkin with cash returned error: %v", err)
 	}
@@ -686,7 +819,6 @@ func TestPayAnticipoConfirmsReservationAndNotifies(t *testing.T) {
 	if updated == nil || updated.Status != StatusConfirmed {
 		t.Fatalf("PayAnticipo should return the confirmed reservation, got %+v", updated)
 	}
-	// 5 noches × Q100 × 30% = Q150
 	if amount != 150 {
 		t.Fatalf("PayAnticipo amount = %v, want 150", amount)
 	}
@@ -723,7 +855,6 @@ func TestPayAnticipoAcceptsCustomAmountAndMethod(t *testing.T) {
 		}
 	}
 
-	// Monto personalizado dentro del rango [30%, total] con tarjeta.
 	repo := newRepo()
 	service := NewService(repo, &mockNotifier{})
 	if _, amount, err := service.PayAnticipo(context.Background(), 10, 300, PaymentMethodCard); err != nil {
@@ -735,7 +866,6 @@ func TestPayAnticipoAcceptsCustomAmountAndMethod(t *testing.T) {
 		t.Fatalf("expected tarjeta to reach the repository, got %+v", repo.payCalledWith)
 	}
 
-	// Por debajo del 30% se rechaza.
 	repo = newRepo()
 	service = NewService(repo, &mockNotifier{})
 	if _, _, err := service.PayAnticipo(context.Background(), 10, 50, PaymentMethodCash); err == nil {
@@ -744,14 +874,12 @@ func TestPayAnticipoAcceptsCustomAmountAndMethod(t *testing.T) {
 		t.Fatal("repository.PayAnticipo should not be called")
 	}
 
-	// Por encima del total se rechaza.
 	repo = newRepo()
 	service = NewService(repo, &mockNotifier{})
 	if _, _, err := service.PayAnticipo(context.Background(), 10, 600, PaymentMethodCash); err == nil {
 		t.Fatal("PayAnticipo should reject amounts above the total")
 	}
 
-	// Método inválido se rechaza.
 	repo = newRepo()
 	service = NewService(repo, &mockNotifier{})
 	if _, _, err := service.PayAnticipo(context.Background(), 10, 150, "BITCOIN"); err == nil {

@@ -69,7 +69,7 @@ describe('ReservationCard · check-out', () => {
             },
           },
         },
-        { provide: AuthService, useValue: { getCurrentUserId: () => 1 } },
+        { provide: AuthService, useValue: { getCurrentUserId: () => 1, user: () => null } },
       ],
     });
   });

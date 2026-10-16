@@ -110,15 +110,7 @@
             </p>
           }
         } @else if (isConfirmed) {
-          @if (canCancel) {
-            <p class="text-xs text-brown">
-              Cancelación disponible hasta el {{ formatDeadline() }}
-            </p>
-          } @else {
-            <p class="text-xs text-orange">
-              Solo se puede cancelar con 3 días de anticipación
-            </p>
-          }
+          <p class="text-xs text-brown">{{ refundTierLabel }}</p>
         }
       </div>
 
@@ -202,6 +194,24 @@
           </p>
         }
       }
+      @if (canViewHistory) {
+        <button
+          type="button"
+          (click)="openHistoryModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-brown/10 text-brown"
+        >
+          Historial financiero
+        </button>
+      }
+      @if (canRefund) {
+        <button
+          type="button"
+          (click)="openRefundModal()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
+        >
+          Registrar reembolso
+        </button>
+      }
       @if (showCheckout && isInProgress) {
         <button
           type="button"
@@ -213,6 +223,10 @@
         </button>
       }
     </div>
+
+    @if (statusMessage(); as notice) {
+      <p role="status" class="text-sm text-green">{{ notice }}</p>
+    }
 
     @if (errorMessage(); as error) {
       <p role="alert" class="text-sm text-orange">
@@ -245,5 +259,27 @@
     [reservation]="reservation"
     (registered)="onPaymentRegistered($event)"
     (dismiss)="closePaymentsModal()"
+  />
+}
+
+@if (showHistoryModal()) {
+  <app-financial-history-modal
+    [reservation]="reservation"
+    [history]="refundHistory()"
+    [loading]="isLoadingHistory()"
+    [errorMessage]="historyError()"
+    (dismiss)="closeHistoryModal()"
+    (openRefund)="openRefundModal()"
+  />
+}
+
+@if (showRefundModal()) {
+  <app-refund-modal
+    [reservation]="reservation"
+    [history]="refundHistory()"
+    [loading]="isRefunding()"
+    [errorMessage]="errorMessage()"
+    (confirm)="confirmRefund($event)"
+    (dismiss)="closeRefundModal()"
   />
 }

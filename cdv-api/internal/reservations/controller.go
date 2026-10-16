@@ -32,7 +32,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 
 // CreateReservation registra una nueva reservación.
 // @Summary Crear reservación
-// @Description Crea una reservación. Para clientes el usuario se toma del token; para administradores puede indicarse. Requiere token.
+// @Description Crea una reservación en estado pendiente. Para clientes el usuario se toma del token; para administradores puede indicarse. Valida solape de cabaña y de usuario. Requiere token.
 // @Tags Reservaciones
 // @Accept json
 // @Produce json
@@ -93,9 +93,9 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// CancelReservation cancela una reservación.
+// CancelReservation cancela una reservación y registra el reembolso automático.
 // @Summary Cancelar reservación
-// @Description Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.
+// @Description Cancela una reservación pendiente o confirmada y registra el reembolso según días de anticipación (100% ≥7 días, 70% 3–7 días, 0% <3 días). Puede cancelar quien reservó, el dueño o un admin. Requiere token.
 // @Tags Reservaciones
 // @Produce json
 // @Security BearerAuth
@@ -140,11 +140,9 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cancelled, err := c.service.CancelReservation(r.Context(), id)
+	cancelled, refund, err := c.service.CancelReservationWithRefund(r.Context(), id)
 	if err != nil {
 		switch {
-		case errors.Is(err, ErrCancellationTooLate):
-			writeError(w, http.StatusConflict, "Solo se puede cancelar con al menos 3 días de anticipación")
 		case errors.Is(err, ErrReservationNotCancellable):
 			writeError(w, http.StatusConflict, "La reservación no se puede cancelar")
 		case errors.Is(err, ErrReservationNotFound):
@@ -158,6 +156,7 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, CancelReservationResponse{
 		Message:     "Reservación cancelada exitosamente",
 		Reservation: cancelled,
+		Refund:      refund,
 	})
 }
 
@@ -171,7 +170,7 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 // @Param id path int true "ID de reservación"
 // @Param payment body PayAnticipoRequest false "Monto y método (opcionales)"
 // @Success 200 {object} PayAnticipoResponse "Anticipo registrado y reservación confirmada"
-// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 400 {object} map[string]string "Datos o monto/método inválidos"
 // @Failure 403 {object} map[string]string "Sin permisos"
 // @Failure 404 {object} map[string]string "Reservación o cabaña no encontrada"
 // @Failure 409 {object} map[string]string "La reservación no está pendiente de anticipo"
@@ -241,7 +240,7 @@ func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, PayAnticipoResponse{		Message:     "Anticipo registrado. La reservación fue confirmada",
+	writeJSON(w, http.StatusOK, PayAnticipoResponse{Message: "Anticipo registrado. La reservación fue confirmada",
 		Amount:      amount,
 		Reservation: updated,
 	})
@@ -286,7 +285,6 @@ func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Puede verla: quien reservó, el dueño de la cabaña o un administrador.
 	canView := middleware.AuthorizeSelfOrAdmin(r, reservation.UserID) ||
 		middleware.AuthorizeSelfOrAdmin(r, reservation.HostID)
 	if !canView {
@@ -339,14 +337,11 @@ func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// El check-in lo registra el anfitrión de la cabaña o un administrador.
 	if !middleware.AuthorizeSelfOrAdmin(r, reservation.HostID) {
 		writeError(w, http.StatusForbidden, "Solo el anfitrión puede registrar el check-in")
 		return
 	}
 
-	// cash_amount es opcional: permite al anfitrión registrar en efectivo el
-	// saldo pendiente al momento del check-in. Debe cubrirlo exactamente.
 	var checkinReq CheckinRequest
 	if r.Body != nil {
 		if err := json.NewDecoder(r.Body).Decode(&checkinReq); err != nil && !errors.Is(err, io.EOF) {
@@ -515,7 +510,6 @@ func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Pueden editar: quien reservó, el dueño de la cabaña o un administrador.
 	canEdit := middleware.AuthorizeSelfOrAdmin(r, existing.UserID) ||
 		middleware.AuthorizeSelfOrAdmin(r, existing.HostID)
 	if !canEdit {
