@@ -38,6 +38,21 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, ErrorResponse{Message: message})
 }
 
+// CreateRefund registra un reembolso manual para una reservación cancelada.
+// @Summary Registrar reembolso
+// @Description Registra un reembolso total o parcial sobre lo pagado. Solo el anfitrión de la cabaña o un admin. Sin monto se reembolsa todo lo disponible. Requiere token.
+// @Tags Reembolsos
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Param refund body CreateRefundRequest false "Monto parcial (opcional)"
+// @Success 201 {object} CreateRefundResponse "Reembolso registrado"
+// @Failure 400 {object} map[string]string "Datos o monto inválidos"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Failure 409 {object} map[string]string "No cancelada, sin monto disponible o excede disponible"
+// @Router /refunds/reservation/{id} [post]
 func (c *Controller) CreateRefund(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -96,6 +111,18 @@ func (c *Controller) CreateRefund(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetRefunds retorna el historial financiero de una reservación.
+// @Summary Historial financiero
+// @Description Retorna pagos, reembolsos y totales de la reservación. Puede verlo quien reservó, el dueño o un admin. Requiere token.
+// @Tags Reembolsos
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID de reservación"
+// @Success 200 {object} RefundsHistoryResponse "Historial financiero"
+// @Failure 400 {object} map[string]string "ID de reservación inválido"
+// @Failure 403 {object} map[string]string "Sin permisos"
+// @Failure 404 {object} map[string]string "Reservación no encontrada"
+// @Router /refunds/reservation/{id} [get]
 func (c *Controller) GetRefunds(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")

@@ -441,7 +441,7 @@ func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error
 		UPDATE reservaciones
 		SET estado = 'finalizada',
 		    fecha_checkin = COALESCE(fecha_checkin, fecha_inicio::timestamp AT TIME ZONE 'America/Guatemala'),
-		    fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala')
+		    fecha_checkout = COALESCE(fecha_checkout, GREATEST(fecha_checkin, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala'))
 		WHERE estado IN ('pendiente', 'confirmada', 'en_curso')
 		  AND fecha_fin < CURRENT_DATE
 		RETURNING id

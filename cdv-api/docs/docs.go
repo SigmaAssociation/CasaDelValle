@@ -1127,14 +1127,14 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Devuelve los movimientos financieros (pagos y reembolsos) de una reservación, el total pagado, el total reembolsado y el monto reembolsable disponible. Puede consultarlo el huésped, el anfitrión o un administrador. Requiere token.",
+                "description": "Retorna pagos, reembolsos y totales de la reservación. Puede verlo quien reservó, el dueño o un admin. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
                     "Reembolsos"
                 ],
-                "summary": "Historial financiero de la reservación",
+                "summary": "Historial financiero",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1146,7 +1146,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Historial financiero de la reservación",
+                        "description": "Historial financiero",
                         "schema": {
                             "$ref": "#/definitions/refunds.RefundsHistoryResponse"
                         }
@@ -1186,7 +1186,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Registra un reembolso total o parcial a discreción del anfitrión, como un movimiento nuevo en el historial financiero (los pagos originales no se eliminan). Solo para reservaciones canceladas y sin superar el monto reembolsable disponible. Si se omite el monto, se reembolsa el total disponible. Operación simulada. Requiere token del anfitrión de la cabaña o de un administrador.",
+                "description": "Registra un reembolso total o parcial sobre lo pagado. Solo el anfitrión de la cabaña o un admin. Sin monto se reembolsa todo lo disponible. Requiere token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1196,7 +1196,7 @@ const docTemplate = `{
                 "tags": [
                     "Reembolsos"
                 ],
-                "summary": "Registrar reembolso manual",
+                "summary": "Registrar reembolso",
                 "parameters": [
                     {
                         "type": "integer",
@@ -1206,10 +1206,9 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Datos del reembolso (amount opcional)",
-                        "name": "request",
+                        "description": "Monto parcial (opcional)",
+                        "name": "refund",
                         "in": "body",
-                        "required": true,
                         "schema": {
                             "$ref": "#/definitions/refunds.CreateRefundRequest"
                         }
@@ -1217,13 +1216,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "201": {
-                        "description": "Reembolso registrado exitosamente",
+                        "description": "Reembolso registrado",
                         "schema": {
                             "$ref": "#/definitions/refunds.CreateRefundResponse"
                         }
                     },
                     "400": {
-                        "description": "ID o monto inválido",
+                        "description": "Datos o monto inválidos",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1250,7 +1249,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "Reservación no cancelada, sin saldo reembolsable o monto que supera lo disponible",
+                        "description": "No cancelada, sin monto disponible o excede disponible",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1349,7 +1348,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una reservación. Para clientes el usuario se toma del token; para administradores puede indicarse. Requiere token.",
+                "description": "Crea una reservación en estado pendiente. Para clientes el usuario se toma del token; para administradores puede indicarse. Valida solape de cabaña y de usuario. Requiere token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1745,7 +1744,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancela una reservación pendiente o confirmada en cualquier momento. Puede cancelar quien reservó, el dueño de la cabaña o un admin. Registra automáticamente el reembolso correspondiente como un movimiento nuevo en el historial financiero: 100% del monto pagado con al menos 7 días de anticipación, 70% con al menos 3 y ninguno cuando faltan menos de 3 días (los pagos originales no se eliminan; en ese caso el anfitrión aún puede reembolsar de forma manual). El huésped y el anfitrión reciben una notificación con el resultado. Requiere token.",
+                "description": "Cancela una reservación pendiente o confirmada y registra el reembolso según días de anticipación (100% ≥7 días, 70% 3–7 días, 0% \u003c3 días). Puede cancelar quien reservó, el dueño o un admin. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1764,7 +1763,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Reservación cancelada exitosamente (refund: reembolso automático registrado, ausente si no corresponde)",
+                        "description": "Reservación cancelada exitosamente",
                         "schema": {
                             "$ref": "#/definitions/reservations.CancelReservationResponse"
                         }
@@ -1797,7 +1796,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "La reservación no se puede cancelar",
+                        "description": "No cancelable o con menos de 3 días de anticipación",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2002,7 +2001,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "ID de reservación inválido",
+                        "description": "Datos o monto/método inválidos",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2764,11 +2763,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "subtype": {
-                    "description": "valor original de tipo_pago",
                     "type": "string"
                 },
                 "type": {
-                    "description": "\"pago\" | \"reembolso\"",
                     "type": "string"
                 }
             }
@@ -2917,7 +2914,6 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "kind": {
-                    "description": "\"total\" | \"parcial\"",
                     "type": "string"
                 },
                 "percent": {
@@ -2932,12 +2928,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "refund": {
-                    "description": "Refund resume el reembolso automático registrado al cancelar (total con al\nmenos 7 días de anticipación y parcial del 70% con al menos 3); ausente si\nno había pagos que reembolsar o si se canceló con menos de 3 días de\nanticipación.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/reservations.CancelRefund"
-                        }
-                    ]
+                    "$ref": "#/definitions/reservations.CancelRefund"
                 },
                 "reservation": {
                     "$ref": "#/definitions/reservations.ReservationDetail"
@@ -3206,11 +3197,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "end_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "start_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "user_id": {
@@ -3225,11 +3214,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "end_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "start_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 }
             }
