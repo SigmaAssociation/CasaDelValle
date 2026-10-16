@@ -399,6 +399,13 @@ definitions:
       reservation:
         $ref: '#/definitions/reservations.ReservationDetail'
     type: object
+  reservations.CheckoutReservationResponse:
+    properties:
+      message:
+        type: string
+      reservation:
+        $ref: '#/definitions/reservations.ReservationDetail'
+    type: object
   reservations.CreateReservationResponse:
     properties:
       message:
@@ -1797,6 +1804,53 @@ paths:
       security:
       - BearerAuth: []
       summary: Registrar check-in
+      tags:
+      - Reservaciones
+  /reservations/{id}/checkout:
+    patch:
+      description: Finaliza la estadía de una reservación en curso que ya tiene check-in
+        registrado y la pasa a finalizada. Solo el anfitrión de la cabaña o un admin.
+        Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Check-out registrado exitosamente
+          schema:
+            $ref: '#/definitions/reservations.CheckoutReservationResponse'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Sin check-in o reservación no en curso
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar check-out
       tags:
       - Reservaciones
   /reservations/{id}/payment:

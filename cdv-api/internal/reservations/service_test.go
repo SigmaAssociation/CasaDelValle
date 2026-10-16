@@ -52,6 +52,9 @@ type mockReservationRepository struct {
 	advanceErr        error
 	ledgerReturn      *ReservationLedger
 	ledgerErr         error
+
+	recordCheckoutErr    error
+	recordCheckoutCalled bool
 }
 
 type mockNotifier struct {
@@ -126,6 +129,14 @@ func (m *mockReservationRepository) RecordCheckinTimestamp(ctx context.Context, 
 func (m *mockReservationRepository) CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error {
 	m.cashCalledWith = &cashCall{reservationID: id, payerID: payerID, amount: cashAmount}
 	return m.cashReturnErr
+}
+
+func (m *mockReservationRepository) RecordCheckout(ctx context.Context, id int, checkedOutAt time.Time) error {
+	m.recordCheckoutCalled = true
+	if m.recordCheckoutErr == nil && m.getByIDReturn != nil {
+		m.getByIDReturn.Status = StatusFinished
+	}
+	return m.recordCheckoutErr
 }
 
 func (m *mockReservationRepository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {

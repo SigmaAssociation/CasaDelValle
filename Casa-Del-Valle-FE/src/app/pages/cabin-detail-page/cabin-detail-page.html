@@ -190,7 +190,7 @@
       <section class="mt-8">
         <h2 class="text-2xl text-brown mb-1">Reservaciones de esta cabaña</h2>
         <p class="text-gray-500 text-sm mb-4 font-sans">
-          Quién reservó, en qué fechas y las opciones de check-in o cancelar si es necesario.
+          Quién reservó, en qué fechas y las opciones de check-in, check-out o cancelar si es necesario.
         </p>
 
         @if (reservationNotice) {
@@ -228,8 +228,10 @@
               <app-reservation-card
                 [reservation]="reservation"
                 [showCheckin]="true"
+                [showCheckout]="true"
                 (cancelled)="onReservationCancelled($event)"
                 (checkedIn)="onReservationCheckedIn($event)"
+                (checkedOut)="onReservationCheckedOut($event)"
                 (paid)="onReservationPaid($event)"
                 (paymentRegistered)="onPaymentRegistered($event)"
                 (refunded)="onReservationRefunded($event)"
