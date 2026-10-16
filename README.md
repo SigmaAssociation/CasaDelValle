@@ -82,6 +82,9 @@ docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_
 
 # 5. Crea las tablas de cargos adicionales y reembolsos para el saldo.
 docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservation_balance.sql
+
+# 6. Habilita el tipo de pago reembolso para el historial.
+docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_refunds.sql
 ```
 
 Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.

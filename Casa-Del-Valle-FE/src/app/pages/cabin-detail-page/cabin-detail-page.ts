@@ -9,6 +9,7 @@ import { CancelReservationResponse } from '../../models/cancelReservationRespons
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
+import { RefundEvent } from '../../models/refund';
 import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
@@ -36,6 +37,7 @@ export class CabinDetailPage implements OnInit {
   isLoadingReservations = false;
   reservationsError: string | null = null;
   reservationNotice: string | null = null;
+  reservationsMessage: string | null = null;
 
   constructor(
     private cabinService: CabinService,
@@ -121,11 +123,14 @@ export class CabinDetailPage implements OnInit {
   }
 
   onPaymentRegistered(_res: CreatePaymentResponse): void {
-    // El pago no cambia el estado de la reservación; se recarga el listado
-    // para reflejar el saldo actualizado.
     if (this.cabin) {
       this.loadCabinReservations(this.cabin.id);
     }
+  }
+
+  onReservationRefunded(event: RefundEvent): void {
+    this.reservationsMessage = event.message;
+    this.cd.detectChanges();
   }
 
   canEdit(): boolean {
@@ -139,7 +144,6 @@ export class CabinDetailPage implements OnInit {
   toggleReservationForm(): void {
     this.showReservationForm = !this.showReservationForm;
     if (this.showReservationForm) {
-      // Espera a que Angular renderice el formulario antes de desplazarse.
       setTimeout(() => this.reservationSection?.nativeElement.scrollIntoView({
         behavior: 'smooth',
         block: 'start',

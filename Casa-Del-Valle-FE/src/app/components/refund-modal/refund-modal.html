@@ -1,0 +1,121 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 font-sans"
+  (click)="!loading && dismiss.emit()"
+>
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="refund-title"
+    class="bg-white rounded-xl shadow-lg border border-brown/15 p-6 w-full max-w-md"
+    (click)="$event.stopPropagation()"
+  >
+    <h3 id="refund-title" class="font-serif text-xl text-black mb-1">Registrar reembolso</h3>
+    <p class="text-sm text-brown mb-4">
+      La devolución queda en el historial financiero como un movimiento nuevo; el pago original no
+      se elimina.
+    </p>
+
+    <div class="bg-cream rounded-lg p-3 text-sm text-brown mb-5 flex flex-col gap-1">
+      <p class="font-medium text-black">{{ reservation.cabinName }}</p>
+      <p>Total pagado: {{ formatPrice(history?.totalPaid ?? 0) }}</p>
+      <p>Ya reembolsado: {{ formatPrice(history?.totalRefunded ?? 0) }}</p>
+      <p class="font-medium text-black">
+        Disponible a reembolsar: {{ formatPrice(available) }}
+      </p>
+    </div>
+
+    @if (!history) {
+      <p class="py-8 text-center text-brown/60">Cargando saldo disponible…</p>
+    } @else if (available <= 0) {
+      <p role="status" class="text-sm text-brown mb-5">
+        Esta reservación no tiene un monto reembolsable disponible.
+      </p>
+    } @else {
+      <div class="flex flex-col gap-3 mb-5">
+        <label class="flex items-start gap-2 text-sm text-brown">
+          <input
+            type="radio"
+            name="refund-mode"
+            value="total"
+            [checked]="mode() === 'total'"
+            (change)="mode.set('total')"
+            [disabled]="loading"
+            class="mt-0.5"
+          />
+          <span>
+            <span class="font-medium text-black">Reembolso total</span>
+            <br />
+            Devuelve todo el disponible ({{ formatPrice(available) }}).
+          </span>
+        </label>
+
+        <label class="flex items-start gap-2 text-sm text-brown">
+          <input
+            type="radio"
+            name="refund-mode"
+            value="parcial"
+            [checked]="mode() === 'parcial'"
+            (change)="mode.set('parcial')"
+            [disabled]="loading"
+            class="mt-0.5"
+          />
+          <span>
+            <span class="font-medium text-black">Reembolso parcial</span>
+            <br />
+            Devuelve un monto menor al disponible.
+          </span>
+        </label>
+
+        @if (mode() === 'parcial') {
+          <div>
+            <label for="refund-amount" class="block text-sm text-brown mb-1">Monto a reembolsar</label>
+            <input
+              id="refund-amount"
+              type="number"
+              min="0.01"
+              step="0.01"
+              [max]="available"
+              [ngModel]="partialAmount()"
+              (ngModelChange)="partialAmount.set($event)"
+              [disabled]="loading"
+              class="w-full rounded-md border border-brown/30 px-3 py-2 text-sm text-black focus:outline-none focus:ring-2 focus:ring-green/40"
+              placeholder="0.00"
+            />
+            <p class="text-xs text-brown mt-1">Máximo disponible: {{ formatPrice(available) }}</p>
+          </div>
+        }
+      </div>
+
+      @if (validationError) {
+        <p role="alert" class="text-sm text-orange mb-4">{{ validationError }}</p>
+      }
+
+      @if (errorMessage) {
+        <p role="alert" class="text-sm text-orange mb-4">{{ errorMessage }}</p>
+      }
+
+      <div class="bg-green/10 rounded-lg p-3 text-sm text-green mb-5">
+        Se reembolsarán <span class="font-medium">{{ formatPrice(amountToRefund()) }}</span>.
+      </div>
+    }
+
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+      <button
+        type="button"
+        (click)="dismiss.emit()"
+        [disabled]="loading"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="submit()"
+        [disabled]="!canConfirm"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-orange text-white disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {{ loading ? 'Registrando…' : 'Registrar reembolso' }}
+      </button>
+    </div>
+  </div>
+</div>

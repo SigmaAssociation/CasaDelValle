@@ -5,11 +5,14 @@ import { vi } from 'vitest';
 import { ReservationCard } from './reservation-card';
 import { ReservationService } from '../../services/reservation.service';
 import { PaymentService } from '../../services/payment.service';
+import { RefundService } from '../../services/refund.service';
 import { AuthService } from '../../services/auth.service';
+import { Reservation } from '../../models/reservation';
 
-const reservation = {
+const reservation: Reservation = {
   id: 1,
   cabinId: 1,
+  hostId: 2,
   cabinName: 'Cabaña Luna',
   startDate: '2026-10-10',
   endDate: '2026-10-15',
@@ -38,14 +41,23 @@ function daysFromToday(days: number): string {
   return `${d.getFullYear()}-${month}-${day}`;
 }
 
+const history = {
+  movements: [],
+  totalPaid: 300,
+  totalRefunded: 0,
+  refundableAvailable: 300,
+};
 
 describe('ReservationCard', () => {
   let component: ReservationCard;
   let fixture: ComponentFixture<ReservationCard>;
   let confirmSpy: ReturnType<typeof vi.spyOn>;
+  let currentUserId = 1;
 
   beforeEach(async () => {
     confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    currentUserId = 1;
+
     await TestBed.configureTestingModule({
       imports: [ReservationCard],
       providers: [
@@ -67,9 +79,17 @@ describe('ReservationCard', () => {
           },
         },
         {
+          provide: RefundService,
+          useValue: {
+            getHistory: () => of(history),
+            create: () => of({ message: 'Reembolso registrado exitosamente', refund: { amount: 300 } }),
+          },
+        },
+        {
           provide: AuthService,
           useValue: {
-            getCurrentUserId: () => 1,
+            getCurrentUserId: () => currentUserId,
+            user: () => ({ role: 2 }),
           },
         },
       ],
@@ -77,7 +97,7 @@ describe('ReservationCard', () => {
 
     fixture = TestBed.createComponent(ReservationCard);
     component = fixture.componentInstance;
-    component.reservation = reservation;
+    component.reservation = { ...reservation };
     await fixture.whenStable();
     fixture.detectChanges();
   });
@@ -125,6 +145,7 @@ describe('ReservationCard', () => {
   });
 
   it('should emit checkedIn after confirming', () => {
+    component.reservation = { ...reservation, startDate: daysFromToday(-1), endDate: daysFromToday(2) };
     fixture.componentRef.setInput('showCheckin', true);
     let emitted: unknown = null;
     component.checkedIn.subscribe((res) => (emitted = res));
@@ -143,6 +164,7 @@ describe('ReservationCard', () => {
     failingService.checkin = () =>
       throwError(() => ({ error: { message: 'El pago total de la reservación no está completo' } }));
 
+    component.reservation = { ...reservation, startDate: daysFromToday(-1), endDate: daysFromToday(2) };
     fixture.componentRef.setInput('showCheckin', true);
     component.registerCheckin();
     fixture.detectChanges();
@@ -193,5 +215,67 @@ describe('ReservationCard', () => {
     component.onPaymentRegistered(response);
 
     expect(emitted).toEqual(response);
+  });
+
+  it('hides refund actions for a guest on a cancelled reservation', () => {
+    component.reservation = { ...reservation, status: 'cancelada' };
+    fixture.detectChanges();
+
+    expect(component.canRefund).toBe(false);
+    expect(component.canViewHistory).toBe(true);
+  });
+
+  it('shows refund actions for the host on a cancelled reservation', () => {
+    currentUserId = 2;
+    component.reservation = { ...reservation, status: 'cancelada' };
+    fixture.detectChanges();
+
+    expect(component.isHostOfCabin).toBe(true);
+    expect(component.canRefund).toBe(true);
+  });
+
+  it('does not offer refunds on a non-cancelled reservation', () => {
+    currentUserId = 2;
+    component.reservation = { ...reservation, status: 'confirmada' };
+    fixture.detectChanges();
+
+    expect(component.canRefund).toBe(false);
+    expect(component.canViewHistory).toBe(false);
+  });
+
+  it('loads the history and registers a refund', () => {
+    currentUserId = 2;
+    component.reservation = { ...reservation, status: 'cancelada' };
+    fixture.detectChanges();
+
+    let emitted = false;
+    component.refunded.subscribe(() => (emitted = true));
+
+    component.confirmRefund(120);
+
+    expect(emitted).toBe(true);
+    expect(component.statusMessage()).toBe('Reembolso registrado exitosamente');
+  });
+
+  it('muestra el monto del reembolso en la tarjeta antes de cancelar', () => {
+    const future = new Date();
+    future.setHours(0, 0, 0, 0);
+    future.setDate(future.getDate() + 10);
+    const iso = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}-${String(
+      future.getDate()
+    ).padStart(2, '0')}`;
+
+    component.reservation = {
+      ...reservation,
+      status: 'confirmada',
+      startDate: iso,
+      endDate: iso,
+      totalPrice: 1500,
+    };
+    fixture.detectChanges();
+
+    expect(component.refundTier).toBe('total');
+    expect(component.refundAmount).toBe(450);
+    expect(component.refundTierLabel).toContain('Q 450.00');
   });
 });

@@ -244,6 +244,63 @@ definitions:
       total:
         type: number
     type: object
+  refunds.CreateRefundRequest:
+    properties:
+      amount:
+        type: number
+    type: object
+  refunds.CreateRefundResponse:
+    properties:
+      message:
+        type: string
+      refund:
+        $ref: '#/definitions/refunds.Refund'
+    type: object
+  refunds.FinancialMovement:
+    properties:
+      amount:
+        type: number
+      createdAt:
+        type: string
+      id:
+        type: integer
+      method:
+        type: string
+      subtype:
+        description: valor original de tipo_pago
+        type: string
+      type:
+        description: '"pago" | "reembolso"'
+        type: string
+    type: object
+  refunds.Refund:
+    properties:
+      amount:
+        type: number
+      createdAt:
+        type: string
+      hostId:
+        type: integer
+      id:
+        type: integer
+      method:
+        type: string
+      reservationId:
+        type: integer
+    type: object
+  refunds.RefundsHistoryResponse:
+    properties:
+      movements:
+        items:
+          $ref: '#/definitions/refunds.FinancialMovement'
+        type: array
+      refundableAvailable:
+        type: number
+      totalPaid:
+        type: number
+      totalRefunded:
+        type: number
+    type: object
   reportreservations.CabinReport:
     properties:
       address:
@@ -305,10 +362,28 @@ definitions:
       name:
         type: string
     type: object
+  reservations.CancelRefund:
+    properties:
+      amount:
+        type: number
+      kind:
+        description: '"total" | "parcial"'
+        type: string
+      percent:
+        type: number
+    type: object
   reservations.CancelReservationResponse:
     properties:
       message:
         type: string
+      refund:
+        allOf:
+        - $ref: '#/definitions/reservations.CancelRefund'
+        description: |-
+          Refund resume el reembolso automático registrado al cancelar (total con al
+          menos 7 días de anticipación y parcial del 70% con al menos 3); ausente si
+          no había pagos que reembolsar o si se canceló con menos de 3 días de
+          anticipación.
       reservation:
         $ref: '#/definitions/reservations.ReservationDetail'
     type: object
@@ -439,6 +514,8 @@ definitions:
         type: integer
       guestName:
         type: string
+      hostId:
+        type: integer
       id:
         type: integer
       paidTotal:
@@ -1317,6 +1394,105 @@ paths:
       summary: Registrar pago de una reservación
       tags:
       - Pagos
+  /refunds/reservation/{id}:
+    get:
+      description: Devuelve los movimientos financieros (pagos y reembolsos) de una
+        reservación, el total pagado, el total reembolsado y el monto reembolsable
+        disponible. Puede consultarlo el huésped, el anfitrión o un administrador.
+        Requiere token.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Historial financiero de la reservación
+          schema:
+            $ref: '#/definitions/refunds.RefundsHistoryResponse'
+        "400":
+          description: ID de reservación inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Historial financiero de la reservación
+      tags:
+      - Reembolsos
+    post:
+      consumes:
+      - application/json
+      description: Registra un reembolso total o parcial a discreción del anfitrión,
+        como un movimiento nuevo en el historial financiero (los pagos originales
+        no se eliminan). Solo para reservaciones canceladas y sin superar el monto
+        reembolsable disponible. Si se omite el monto, se reembolsa el total disponible.
+        Operación simulada. Requiere token del anfitrión de la cabaña o de un administrador.
+      parameters:
+      - description: ID de reservación
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Datos del reembolso (amount opcional)
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/refunds.CreateRefundRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Reembolso registrado exitosamente
+          schema:
+            $ref: '#/definitions/refunds.CreateRefundResponse'
+        "400":
+          description: ID o monto inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Sin permisos
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Reservación no encontrada
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Reservación no cancelada, sin saldo reembolsable o monto que
+            supera lo disponible
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Registrar reembolso manual
+      tags:
+      - Reembolsos
   /reports/reservations:
     get:
       description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),
@@ -1518,9 +1694,13 @@ paths:
       - Reservaciones
   /reservations/{id}/cancel:
     patch:
-      description: Cancela una reservación pendiente o confirmada. Puede cancelar
-        quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos
-        3 días para el inicio. Requiere token.
+      description: 'Cancela una reservación pendiente o confirmada en cualquier momento.
+        Puede cancelar quien reservó, el dueño de la cabaña o un admin. Registra automáticamente
+        el reembolso correspondiente como un movimiento nuevo en el historial financiero:
+        100% del monto pagado con al menos 7 días de anticipación, 70% con al menos
+        3 y ninguno cuando faltan menos de 3 días (los pagos originales no se eliminan;
+        en ese caso el anfitrión aún puede reembolsar de forma manual). El huésped
+        y el anfitrión reciben una notificación con el resultado. Requiere token.'
       parameters:
       - description: ID de reservación
         in: path
@@ -1531,7 +1711,8 @@ paths:
       - application/json
       responses:
         "200":
-          description: Reservación cancelada exitosamente
+          description: 'Reservación cancelada exitosamente (refund: reembolso automático
+            registrado, ausente si no corresponde)'
           schema:
             $ref: '#/definitions/reservations.CancelReservationResponse'
         "400":
@@ -1553,7 +1734,7 @@ paths:
               type: string
             type: object
         "409":
-          description: No cancelable o con menos de 3 días de anticipación
+          description: La reservación no se puede cancelar
           schema:
             additionalProperties:
               type: string

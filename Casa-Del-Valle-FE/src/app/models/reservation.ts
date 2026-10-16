@@ -1,6 +1,7 @@
 export interface Reservation {
   id: number;
   cabinId: number;
+  hostId?: number;
   cabinName: string;
   cabinImageUrl?: string;
   guestId?: number;

@@ -3,22 +3,27 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Reservation } from '../../models/reservation';
 import { ReservationService } from '../../services/reservation.service';
+import { RefundService } from '../../services/refund.service';
 import { AuthService } from '../../services/auth.service';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
+import { RefundEvent, RefundsHistoryResponse, RefundTier, anticipoFor, estimatedRefundAmount, refundTierFor } from '../../models/refund';
 import { CancelReservationModal } from '../cancel-reservation-modal/cancel-reservation-modal';
 import { PayAnticipoModal } from '../pay-anticipo-modal/pay-anticipo-modal';
 import { PaymentsModal } from '../payments-modal/payments-modal';
+import { RefundModal } from '../refund-modal/refund-modal';
+import { FinancialHistoryModal } from '../financial-history-modal/financial-history-modal';
 
 @Component({
   selector: 'app-reservation-card',
-  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RouterLink, FormsModule],
+  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RefundModal, FinancialHistoryModal, RouterLink, FormsModule],
   templateUrl: './reservation-card.html',
 })
 export class ReservationCard {
   private reservationService = inject(ReservationService);
+  private refundService = inject(RefundService);
   private auth = inject(AuthService);
 
   @Input({ required: true }) reservation!: Reservation;
@@ -28,6 +33,7 @@ export class ReservationCard {
   @Output() checkedIn = new EventEmitter<CheckinReservationResponse>();
   @Output() paid = new EventEmitter<PayAnticipoResponse>();
   @Output() paymentRegistered = new EventEmitter<CreatePaymentResponse>();
+  @Output() refunded = new EventEmitter<RefundEvent>();
 
   showModal = signal(false);
   isCancelling = signal(false);
@@ -36,6 +42,14 @@ export class ReservationCard {
   isPaying = signal(false);
   showPaymentsModal = signal(false);
   errorMessage = signal<string | null>(null);
+  statusMessage = signal<string | null>(null);
+
+  showRefundModal = signal(false);
+  showHistoryModal = signal(false);
+  isLoadingHistory = signal(false);
+  isRefunding = signal(false);
+  historyError = signal<string | null>(null);
+  refundHistory = signal<RefundsHistoryResponse | null>(null);
 
   openModal(): void {
     if (!this.canCancel) return;
@@ -54,6 +68,14 @@ export class ReservationCard {
       next: (res: CancelReservationResponse) => {
         this.isCancelling.set(false);
         this.showModal.set(false);
+        this.errorMessage.set(null);
+        this.statusMessage.set(
+          res.refund
+            ? `Se registró un reembolso ${res.refund.kind} de ${this.formatPrice(res.refund.amount)}.`
+            : this.refundTier === 'ninguno'
+              ? 'Reservación cancelada. Por cancelar con menos de 3 días de anticipación no corresponde reembolso.'
+              : res.message
+        );
         this.cancelled.emit(res);
       },
       error: (err) => {
@@ -106,6 +128,77 @@ export class ReservationCard {
 
   onPaymentRegistered(res: CreatePaymentResponse): void {
     this.paymentRegistered.emit(res);
+  }
+
+  openHistoryModal(): void {
+    if (!this.canViewHistory) return;
+    this.showHistoryModal.set(true);
+    this.loadHistory();
+  }
+
+  closeHistoryModal(): void {
+    this.showHistoryModal.set(false);
+  }
+
+  openRefundModal(): void {
+    if (!this.canRefund) return;
+    this.errorMessage.set(null);
+    this.showHistoryModal.set(false);
+    this.showRefundModal.set(true);
+    this.loadHistory();
+  }
+
+  closeRefundModal(): void {
+    if (this.isRefunding()) return;
+    this.showRefundModal.set(false);
+  }
+
+  confirmRefund(amount?: number): void {
+    this.isRefunding.set(true);
+    this.errorMessage.set(null);
+    this.refundService
+      .create(this.reservation.id, amount === undefined ? {} : { amount })
+      .subscribe({
+        next: (res) => {
+          this.isRefunding.set(false);
+          this.showRefundModal.set(false);
+          this.statusMessage.set(res.message);
+          this.loadHistory(() => {
+            const history = this.refundHistory();
+            if (history) {
+              this.refunded.emit({
+                message: res.message,
+                reservationId: this.reservation.id,
+                history,
+              });
+            }
+          });
+        },
+        error: (err) => {
+          this.isRefunding.set(false);
+          this.errorMessage.set(
+            err.error?.message ?? err.error?.error ?? 'No se pudo registrar el reembolso. Intenta de nuevo.'
+          );
+        },
+      });
+  }
+
+  private loadHistory(onDone?: () => void): void {
+    this.isLoadingHistory.set(true);
+    this.historyError.set(null);
+    this.refundService.getHistory(this.reservation.id).subscribe({
+      next: (history) => {
+        this.refundHistory.set(history);
+        this.isLoadingHistory.set(false);
+        onDone?.();
+      },
+      error: (err) => {
+        console.error('Error al cargar el historial financiero:', err);
+        this.isLoadingHistory.set(false);
+        this.historyError.set('No se pudo cargar el historial financiero.');
+        onDone?.();
+      },
+    });
   }
 
   get isCancelled(): boolean {
@@ -189,10 +282,18 @@ export class ReservationCard {
     return this.reservation.status === 'finalizada';
   }
 
-  // Solo quien reservó (el huésped) puede pagar el anticipo.
   get isOwnReservation(): boolean {
     const userId = this.auth.getCurrentUserId();
     return userId != null && userId === this.reservation.guestId;
+  }
+
+  get isHostOfCabin(): boolean {
+    const userId = this.auth.getCurrentUserId();
+    return userId != null && this.reservation.hostId != null && userId === this.reservation.hostId;
+  }
+
+  get isAdminUser(): boolean {
+    return this.auth.user()?.role === 1;
   }
 
   get canPay(): boolean {
@@ -205,8 +306,16 @@ export class ReservationCard {
     return (this.isConfirmed || this.isInProgress) && this.remainingBalance > 0;
   }
 
+  get canRefund(): boolean {
+    return this.isCancelled && (this.isHostOfCabin || this.isAdminUser);
+  }
+
+  get canViewHistory(): boolean {
+    return this.isCancelled;
+  }
+
   get anticipoAmount(): number {
-    return Math.round(this.reservation.totalPrice * 0.3 * 100) / 100;
+    return anticipoFor(this.reservation.totalPrice);
   }
 
   get nights(): number {
@@ -216,17 +325,27 @@ export class ReservationCard {
     return Math.round(ms / 86_400_000);
   }
 
-  get cancelDeadline(): Date {
-    const d = this.parse(this.reservation.startDate);
-    d.setDate(d.getDate() - 3);
-    return d;
+  get refundTier(): RefundTier {
+    return refundTierFor(this.reservation.startDate);
+  }
+
+  get refundAmount(): number {
+    return estimatedRefundAmount(this.reservation);
+  }
+
+  get refundTierLabel(): string {
+    switch (this.refundTier) {
+      case 'total':
+        return `Reembolso total: ${this.formatPrice(this.refundAmount)}`;
+      case 'parcial':
+        return `Reembolso parcial (70%): ${this.formatPrice(this.refundAmount)}`;
+      default:
+        return 'Cancelación sin reembolso (menos de 3 días)';
+    }
   }
 
   get canCancel(): boolean {
-    if (!this.isPending && !this.isConfirmed) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today <= this.cancelDeadline;
+    return this.isPending || this.isConfirmed;
   }
 
   formatDate(value: string): string {
@@ -239,13 +358,6 @@ export class ReservationCard {
 
   formatPrice(value: number): string {
     return `Q ${value.toLocaleString('es-GT', { minimumFractionDigits: 2 })}`;
-  }
-
-  formatDeadline(): string {
-    return this.cancelDeadline.toLocaleDateString('es-GT', {
-      day: 'numeric',
-      month: 'long',
-    });
   }
 
   private parse(value: string): Date {

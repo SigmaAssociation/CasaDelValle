@@ -1120,6 +1120,147 @@ const docTemplate = `{
                 }
             }
         },
+        "/refunds/reservation/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve los movimientos financieros (pagos y reembolsos) de una reservación, el total pagado, el total reembolsado y el monto reembolsable disponible. Puede consultarlo el huésped, el anfitrión o un administrador. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reembolsos"
+                ],
+                "summary": "Historial financiero de la reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historial financiero de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/refunds.RefundsHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra un reembolso total o parcial a discreción del anfitrión, como un movimiento nuevo en el historial financiero (los pagos originales no se eliminan). Solo para reservaciones canceladas y sin superar el monto reembolsable disponible. Si se omite el monto, se reembolsa el total disponible. Operación simulada. Requiere token del anfitrión de la cabaña o de un administrador.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reembolsos"
+                ],
+                "summary": "Registrar reembolso manual",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos del reembolso (amount opcional)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/refunds.CreateRefundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Reembolso registrado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/refunds.CreateRefundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID o monto inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Reservación no cancelada, sin saldo reembolsable o monto que supera lo disponible",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reports/reservations": {
             "get": {
                 "security": [
@@ -1604,7 +1745,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.",
+                "description": "Cancela una reservación pendiente o confirmada en cualquier momento. Puede cancelar quien reservó, el dueño de la cabaña o un admin. Registra automáticamente el reembolso correspondiente como un movimiento nuevo en el historial financiero: 100% del monto pagado con al menos 7 días de anticipación, 70% con al menos 3 y ninguno cuando faltan menos de 3 días (los pagos originales no se eliminan; en ese caso el anfitrión aún puede reembolsar de forma manual). El huésped y el anfitrión reciben una notificación con el resultado. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1623,7 +1764,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "Reservación cancelada exitosamente",
+                        "description": "Reservación cancelada exitosamente (refund: reembolso automático registrado, ausente si no corresponde)",
                         "schema": {
                             "$ref": "#/definitions/reservations.CancelReservationResponse"
                         }
@@ -1656,7 +1797,7 @@ const docTemplate = `{
                         }
                     },
                     "409": {
-                        "description": "No cancelable o con menos de 3 días de anticipación",
+                        "description": "La reservación no se puede cancelar",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2518,6 +2659,93 @@ const docTemplate = `{
                 }
             }
         },
+        "refunds.CreateRefundRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "refunds.CreateRefundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "refund": {
+                    "$ref": "#/definitions/refunds.Refund"
+                }
+            }
+        },
+        "refunds.FinancialMovement": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "subtype": {
+                    "description": "valor original de tipo_pago",
+                    "type": "string"
+                },
+                "type": {
+                    "description": "\"pago\" | \"reembolso\"",
+                    "type": "string"
+                }
+            }
+        },
+        "refunds.Refund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "hostId": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "reservationId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "refunds.RefundsHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "movements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/refunds.FinancialMovement"
+                    }
+                },
+                "refundableAvailable": {
+                    "type": "number"
+                },
+                "totalPaid": {
+                    "type": "number"
+                },
+                "totalRefunded": {
+                    "type": "number"
+                }
+            }
+        },
         "reportreservations.CabinReport": {
             "type": "object",
             "properties": {
@@ -2612,11 +2840,34 @@ const docTemplate = `{
                 }
             }
         },
+        "reservations.CancelRefund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "kind": {
+                    "description": "\"total\" | \"parcial\"",
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "number"
+                }
+            }
+        },
         "reservations.CancelReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
+                },
+                "refund": {
+                    "description": "Refund resume el reembolso automático registrado al cancelar (total con al\nmenos 7 días de anticipación y parcial del 70% con al menos 3); ausente si\nno había pagos que reembolsar o si se canceló con menos de 3 días de\nanticipación.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/reservations.CancelRefund"
+                        }
+                    ]
                 },
                 "reservation": {
                     "$ref": "#/definitions/reservations.ReservationDetail"
@@ -2817,6 +3068,9 @@ const docTemplate = `{
                 },
                 "guestName": {
                     "type": "string"
+                },
+                "hostId": {
+                    "type": "integer"
                 },
                 "id": {
                     "type": "integer"

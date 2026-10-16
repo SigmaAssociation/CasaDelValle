@@ -14,11 +14,15 @@
     </h3>
     <p class="text-sm text-brown mb-4">Esta accion no se puede deshacer.</p>
 
-    <div class="bg-cream rounded-lg p-3 text-sm text-brown mb-5">
+    <div class="bg-cream rounded-lg p-3 text-sm text-brown mb-3">
       <p class="font-medium text-black">{{ reservation.cabinName }}</p>
       <p>{{ formatDate(reservation.startDate) }} – {{ formatDate(reservation.endDate) }}</p>
       <p>{{ formatPrice(reservation.totalPrice) }}</p>
     </div>
+
+    <p class="text-sm mb-4" [class.text-orange]="!hasRefund" [class.text-brown]="hasRefund">
+      {{ refundMessage }}
+    </p>
 
     <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
       <button
