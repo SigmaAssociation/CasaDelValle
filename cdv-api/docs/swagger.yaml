@@ -244,25 +244,25 @@ definitions:
       total:
         type: number
     type: object
-  reportreservations.CabanaReporte:
+  reportreservations.CabinReport:
     properties:
-      anfitrion:
-        $ref: '#/definitions/reportreservations.UsuarioResumen'
-      capacidad:
-        type: integer
-      direccion:
+      address:
         type: string
+      capacity:
+        type: integer
+      host:
+        $ref: '#/definitions/reportreservations.UserSummary'
       id:
         type: integer
-      nombre:
+      name:
         type: string
-      precio:
+      price:
         type: number
-      reservaciones:
+      reservations:
         items:
-          $ref: '#/definitions/reportreservations.ReservacionResumen'
+          $ref: '#/definitions/reportreservations.ReservationSummary'
         type: array
-      total_reservaciones:
+      total_reservations:
         type: integer
     type: object
   reportreservations.ErrorResponse:
@@ -270,39 +270,39 @@ definitions:
       message:
         type: string
     type: object
-  reportreservations.ReporteReservaciones:
+  reportreservations.ReservationSummary:
     properties:
-      cabanas:
+      created_at:
+        type: string
+      end_date:
+        type: string
+      guest:
+        $ref: '#/definitions/reportreservations.UserSummary'
+      id:
+        type: integer
+      start_date:
+        type: string
+      status:
+        type: string
+    type: object
+  reportreservations.ReservationsReport:
+    properties:
+      cabins:
         items:
-          $ref: '#/definitions/reportreservations.CabanaReporte'
+          $ref: '#/definitions/reportreservations.CabinReport'
         type: array
-      mensaje:
+      message:
         type: string
-      total_cabanas:
+      total_cabins:
         type: integer
-      total_reservaciones:
-        type: integer
-    type: object
-  reportreservations.ReservacionResumen:
-    properties:
-      estado:
-        type: string
-      fecha_creacion:
-        type: string
-      fecha_fin:
-        type: string
-      fecha_inicio:
-        type: string
-      huesped:
-        $ref: '#/definitions/reportreservations.UsuarioResumen'
-      id:
+      total_reservations:
         type: integer
     type: object
-  reportreservations.UsuarioResumen:
+  reportreservations.UserSummary:
     properties:
       id:
         type: integer
-      nombre:
+      name:
         type: string
     type: object
   reservations.CancelReservationResponse:
@@ -1320,8 +1320,9 @@ paths:
   /reports/reservations:
     get:
       description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),
-        con la información de cada reservación. Filtros opcionales por anfitrión y
-        cabaña. Solo administradores. Requiere token.
+        con la información de cada reservación. Solo aparecen cabañas con al menos
+        una reservación que cumpla los filtros. Las fechas se interpretan en hora
+        de Guatemala. Solo administradores. Requiere token.
       parameters:
       - description: Filtro por ID de anfitrión
         in: query
@@ -1331,13 +1332,30 @@ paths:
         in: query
         name: cabin_id
         type: integer
+      - description: Filtro por ID de huésped
+        in: query
+        name: guest_id
+        type: integer
+      - description: 'Estado de la reservación: pendiente, confirmada, en_curso, finalizada,
+          cancelada'
+        in: query
+        name: status
+        type: string
+      - description: Reservaciones creadas desde esta fecha, inclusive (YYYY-MM-DD)
+        in: query
+        name: created_from
+        type: string
+      - description: Reservaciones creadas hasta esta fecha, inclusive (YYYY-MM-DD)
+        in: query
+        name: created_to
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: Reporte de reservaciones
           schema:
-            $ref: '#/definitions/reportreservations.ReporteReservaciones'
+            $ref: '#/definitions/reportreservations.ReservationsReport'
         "400":
           description: Parámetros inválidos
           schema:

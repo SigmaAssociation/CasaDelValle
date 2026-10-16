@@ -1127,7 +1127,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente), con la información de cada reservación. Filtros opcionales por anfitrión y cabaña. Solo administradores. Requiere token.",
+                "description": "Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente), con la información de cada reservación. Solo aparecen cabañas con al menos una reservación que cumpla los filtros. Las fechas se interpretan en hora de Guatemala. Solo administradores. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1147,13 +1147,37 @@ const docTemplate = `{
                         "description": "Filtro por ID de cabaña",
                         "name": "cabin_id",
                         "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de huésped",
+                        "name": "guest_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reservaciones creadas desde esta fecha, inclusive (YYYY-MM-DD)",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reservaciones creadas hasta esta fecha, inclusive (YYYY-MM-DD)",
+                        "name": "created_to",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "Reporte de reservaciones",
                         "schema": {
-                            "$ref": "#/definitions/reportreservations.ReporteReservaciones"
+                            "$ref": "#/definitions/reportreservations.ReservationsReport"
                         }
                     },
                     "400": {
@@ -2494,34 +2518,34 @@ const docTemplate = `{
                 }
             }
         },
-        "reportreservations.CabanaReporte": {
+        "reportreservations.CabinReport": {
             "type": "object",
             "properties": {
-                "anfitrion": {
-                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
+                "address": {
+                    "type": "string"
                 },
-                "capacidad": {
+                "capacity": {
                     "type": "integer"
                 },
-                "direccion": {
-                    "type": "string"
+                "host": {
+                    "$ref": "#/definitions/reportreservations.UserSummary"
                 },
                 "id": {
                     "type": "integer"
                 },
-                "nombre": {
+                "name": {
                     "type": "string"
                 },
-                "precio": {
+                "price": {
                     "type": "number"
                 },
-                "reservaciones": {
+                "reservations": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/reportreservations.ReservacionResumen"
+                        "$ref": "#/definitions/reportreservations.ReservationSummary"
                     }
                 },
-                "total_reservaciones": {
+                "total_reservations": {
                     "type": "integer"
                 }
             }
@@ -2534,56 +2558,56 @@ const docTemplate = `{
                 }
             }
         },
-        "reportreservations.ReporteReservaciones": {
+        "reportreservations.ReservationSummary": {
             "type": "object",
             "properties": {
-                "cabanas": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "guest": {
+                    "$ref": "#/definitions/reportreservations.UserSummary"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportreservations.ReservationsReport": {
+            "type": "object",
+            "properties": {
+                "cabins": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/reportreservations.CabanaReporte"
+                        "$ref": "#/definitions/reportreservations.CabinReport"
                     }
                 },
-                "mensaje": {
+                "message": {
                     "type": "string"
                 },
-                "total_cabanas": {
+                "total_cabins": {
                     "type": "integer"
                 },
-                "total_reservaciones": {
-                    "type": "integer"
-                }
-            }
-        },
-        "reportreservations.ReservacionResumen": {
-            "type": "object",
-            "properties": {
-                "estado": {
-                    "type": "string"
-                },
-                "fecha_creacion": {
-                    "type": "string"
-                },
-                "fecha_fin": {
-                    "type": "string"
-                },
-                "fecha_inicio": {
-                    "type": "string"
-                },
-                "huesped": {
-                    "$ref": "#/definitions/reportreservations.UsuarioResumen"
-                },
-                "id": {
+                "total_reservations": {
                     "type": "integer"
                 }
             }
         },
-        "reportreservations.UsuarioResumen": {
+        "reportreservations.UserSummary": {
             "type": "object",
             "properties": {
                 "id": {
                     "type": "integer"
                 },
-                "nombre": {
+                "name": {
                     "type": "string"
                 }
             }

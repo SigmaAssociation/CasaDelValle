@@ -9,7 +9,7 @@ import (
 )
 
 type Repository interface {
-	ObtenerReporte(ctx context.Context, filtro FiltroReporte) ([]CabanaReporte, error)
+	GetReport(ctx context.Context, filter ReportFilter) ([]CabinReport, error)
 }
 
 type repository struct {
@@ -20,7 +20,7 @@ func NewRepository(pool *pgxpool.Pool) Repository {
 	return &repository{pool: pool}
 }
 
-const queryReporte = `
+const reportQuery = `
 SELECT
     c.id,
     c.nombre,
@@ -39,86 +39,81 @@ SELECT
     h.nombre
 FROM cabanas c
 JOIN usuarios a ON a.id = c.id_anfitrion
-LEFT JOIN reservaciones r
-       ON r.id_cabana = c.id
-      AND r.estado <> 'cancelada'
-LEFT JOIN usuarios h ON h.id = r.id_usuario
+JOIN reservaciones r ON r.id_cabana = c.id
+JOIN usuarios h ON h.id = r.id_usuario
 WHERE ($1::int IS NULL OR c.id_anfitrion = $1)
   AND ($2::int IS NULL OR c.id = $2)
+  AND ($3::int IS NULL OR r.id_usuario = $3)
+  AND ($4::text = '' OR r.estado = $4)
+  AND ($5::timestamptz IS NULL OR r.fecha_creacion >= $5)
+  AND ($6::timestamptz IS NULL OR r.fecha_creacion < $6)
 ORDER BY total_reservaciones DESC, c.nombre ASC, c.id ASC, r.fecha_inicio DESC, r.id DESC
 `
 
-func (r *repository) ObtenerReporte(ctx context.Context, filtro FiltroReporte) ([]CabanaReporte, error) {
-	rows, err := r.pool.Query(ctx, queryReporte, filtro.IDAnfitrion, filtro.IDCabana)
+func (r *repository) GetReport(ctx context.Context, filter ReportFilter) ([]CabinReport, error) {
+
+	var createdToExclusive *time.Time
+	if filter.CreatedTo != nil {
+		t := filter.CreatedTo.AddDate(0, 0, 1)
+		createdToExclusive = &t
+	}
+
+	rows, err := r.pool.Query(ctx, reportQuery,
+		filter.HostID,
+		filter.CabinID,
+		filter.GuestID,
+		filter.Status,
+		filter.CreatedFrom,
+		createdToExclusive,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("consultando reporte de reservaciones: %w", err)
+		return nil, fmt.Errorf("querying reservations report: %w", err)
 	}
 	defer rows.Close()
 
-	cabanas := []CabanaReporte{}
-	var idActual int
+	cabins := []CabinReport{}
+	var currentCabinID int
 
 	for rows.Next() {
 		var (
-			cab CabanaReporte
-
-			resID         *int
-			resInicio     *time.Time
-			resFin        *time.Time
-			resEstado     *string
-			resCreacion   *time.Time
-			huespedID     *int
-			huespedNombre *string
+			cabin       CabinReport
+			reservation ReservationSummary
 		)
 
 		err := rows.Scan(
-			&cab.ID,
-			&cab.Nombre,
-			&cab.Direccion,
-			&cab.Precio,
-			&cab.Capacidad,
-			&cab.Anfitrion.ID,
-			&cab.Anfitrion.Nombre,
-			&cab.TotalReservaciones,
-			&resID,
-			&resInicio,
-			&resFin,
-			&resEstado,
-			&resCreacion,
-			&huespedID,
-			&huespedNombre,
+			&cabin.ID,
+			&cabin.Name,
+			&cabin.Address,
+			&cabin.Price,
+			&cabin.Capacity,
+			&cabin.Host.ID,
+			&cabin.Host.Name,
+			&cabin.TotalReservations,
+			&reservation.ID,
+			&reservation.StartDate,
+			&reservation.EndDate,
+			&reservation.Status,
+			&reservation.CreatedAt,
+			&reservation.Guest.ID,
+			&reservation.Guest.Name,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("leyendo fila del reporte: %w", err)
+			return nil, fmt.Errorf("scanning report row: %w", err)
 		}
 
-		if len(cabanas) == 0 || cab.ID != idActual {
-			cab.Reservaciones = []ReservacionResumen{} 
-			cabanas = append(cabanas, cab)
-			idActual = cab.ID
+		if len(cabins) == 0 || cabin.ID != currentCabinID {
+			cabin.Reservations = []ReservationSummary{}
+			cabins = append(cabins, cabin)
+			currentCabinID = cabin.ID
 		}
 
-		if resID == nil {
-			continue
-		}
-
-		actual := &cabanas[len(cabanas)-1]
-		actual.Reservaciones = append(actual.Reservaciones, ReservacionResumen{
-			ID:            *resID,
-			FechaInicio:   *resInicio,
-			FechaFin:      *resFin,
-			Estado:        *resEstado,
-			FechaCreacion: *resCreacion,
-			Huesped: UsuarioResumen{
-				ID:     *huespedID,
-				Nombre: *huespedNombre,
-			},
-		})
+		last := &cabins[len(cabins)-1]
+		last.Reservations = append(last.Reservations, reservation)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterando filas del reporte: %w", err)
+		return nil, fmt.Errorf("iterating report rows: %w", err)
 	}
 
-	return cabanas, nil
+	return cabins, nil
 }

@@ -1,4 +1,4 @@
-export type EstadoReservacion =
+export type ReservationStatus =
   | 'pendiente'
   | 'confirmada'
   | 'en_curso'
@@ -8,38 +8,42 @@ export type EstadoReservacion =
 export interface ReservationsReportFilter {
   host_id?: number;
   cabin_id?: number;
+  guest_id?: number;
+  status?: ReservationStatus;
+  created_from?: string;
+  created_to?: string;
 }
 
-export interface UsuarioResumen {
+export interface UserSummary {
   id: number;
-  nombre: string;
+  name: string;
 }
 
-export interface ReservacionResumen {
+export interface ReservationSummary {
   id: number;
-  fecha_inicio: string; 
-  fecha_fin: string;    
-  estado: EstadoReservacion;
-  fecha_creacion: string; 
-  huesped: UsuarioResumen;
+  start_date: string;
+  end_date: string;
+  status: ReservationStatus;
+  created_at: string;
+  guest: UserSummary;
 }
 
-export interface CabanaReporte {
+export interface CabinReport {
   id: number;
-  nombre: string;
-  direccion: string;
-  precio: number;
-  capacidad: number;
-  anfitrion: UsuarioResumen;
-  total_reservaciones: number;
-  reservaciones: ReservacionResumen[];
+  name: string;
+  address: string;
+  price: number;
+  capacity: number;
+  host: UserSummary;
+  total_reservations: number;
+  reservations: ReservationSummary[];
 }
 
 export interface ReservationsReportResponse {
-  cabanas: CabanaReporte[];
-  total_cabanas: number;
-  total_reservaciones: number;
-  mensaje?: string; 
+  cabins: CabinReport[];
+  total_cabins: number;
+  total_reservations: number;
+  message?: string;
 }
 
 export interface ApiError {

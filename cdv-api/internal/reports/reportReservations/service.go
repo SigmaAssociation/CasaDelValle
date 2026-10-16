@@ -5,9 +5,9 @@ import (
 	"errors"
 )
 
-const mensajeSinDatos = "No se encontraron reservaciones para los filtros seleccionados."
+const noDataMessage = "No reservations found for the selected filters."
 
-var ErrFiltroInvalido = errors.New("los filtros deben ser identificadores positivos")
+var ErrInvalidFilter = errors.New("filters must be positive identifiers")
 
 type Service struct {
 	repo Repository
@@ -17,28 +17,29 @@ func NewService(repo Repository) *Service {
 	return &Service{repo: repo}
 }
 
-func (s *Service) GenerarReporte(ctx context.Context, filtro FiltroReporte) (*ReporteReservaciones, error)  {
-	if (filtro.IDAnfitrion != nil && *filtro.IDAnfitrion <= 0) ||
-		(filtro.IDCabana != nil && *filtro.IDCabana <= 0) {
-		return nil, ErrFiltroInvalido
+func (s *Service) GenerateReport(ctx context.Context, filter ReportFilter) (*ReservationsReport, error) {
+	if (filter.HostID != nil && *filter.HostID <= 0) ||
+		(filter.CabinID != nil && *filter.CabinID <= 0) ||
+		(filter.GuestID != nil && *filter.GuestID <= 0) {
+		return nil, ErrInvalidFilter
 	}
 
-	cabanas, err := s.repo.ObtenerReporte(ctx, filtro)
+	cabins, err := s.repo.GetReport(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
 
-	reporte := &ReporteReservaciones{
-		Cabanas:      cabanas,
-		TotalCabanas: len(cabanas),
+	report := &ReservationsReport{
+		Cabins:      cabins,
+		TotalCabins: len(cabins),
 	}
-	for _, c := range cabanas {
-		reporte.TotalReservaciones += c.TotalReservaciones
-	}
-
-	if reporte.TotalReservaciones == 0 {
-		reporte.Mensaje = mensajeSinDatos
+	for _, c := range cabins {
+		report.TotalReservations += c.TotalReservations
 	}
 
-	return reporte, nil
+	if report.TotalReservations == 0 {
+		report.Message = noDataMessage
+	}
+
+	return report, nil
 }
