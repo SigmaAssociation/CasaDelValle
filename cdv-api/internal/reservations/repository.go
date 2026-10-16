@@ -48,9 +48,6 @@ func datesOverlap(existingStart, existingEnd, newStart, newEnd time.Time) bool {
 	return existingStart.Before(newEnd) && existingEnd.After(newStart)
 }
 
-// HasOverlap indica si ya existe otra reservación activa para la cabaña
-// cuyo rango de fechas se cruza con [startDate, endDate].
-// excludeID permite ignorar una reservación (útil al editar).
 func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string, excludeID int) (bool, error) {
 	query := `
 		SELECT fecha_inicio, fecha_fin
@@ -91,8 +88,6 @@ func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, en
 	return false, nil
 }
 
-// GetCabinName devuelve el nombre de una cabaña para redactar los mensajes
-// del buzón de notificaciones.
 func (r *Repository) GetCabinName(ctx context.Context, cabinID int) (string, error) {
 	var name string
 	query := "SELECT nombre FROM cabanas WHERE id = $1"
@@ -148,12 +143,13 @@ func (r *Repository) CancelReservation(ctx context.Context, id int, cancelledAt 
 
 func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error) {
 	query := `
-		SELECT r.id, r.id_cabana, c.nombre,
+		SELECT r.id, r.id_cabana, c.id_anfitrion, c.nombre,
 		       img.ruta,
 		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 		       c.precio,
+		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
@@ -180,9 +176,9 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		var c ReservationCard
 		var nightlyRate float64
 		if err := rows.Scan(
-			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.ID, &c.CabinID, &c.HostID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
@@ -201,16 +197,15 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	return cards, nil
 }
 
-// GetReservationsByCabinID retorna las reservaciones de una cabaña,
-// incluyendo quién reservó. De la más próxima a la más antigua.
 func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint) ([]ReservationCard, error) {
 	query := `
-		SELECT r.id, r.id_cabana, c.nombre,
+		SELECT r.id, r.id_cabana, c.id_anfitrion, c.nombre,
 		       img.ruta,
 		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 		       c.precio,
+		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
@@ -237,9 +232,9 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 		var c ReservationCard
 		var nightlyRate float64
 		if err := rows.Scan(
-			&c.ID, &c.CabinID, &c.CabinName, &c.CabinImageURL,
+			&c.ID, &c.CabinID, &c.HostID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate,
+			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
@@ -258,7 +253,98 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 	return cards, nil
 }
 
-// GetCabinHostID devuelve el anfitrión de una cabaña.
+func (r *Repository) GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error) {
+	var e CheckinEligibility
+	query := `
+	SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
+	       r.estado,
+	       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
+	       to_char(r.fecha_fin, 'YYYY-MM-DD'),
+	       r.fecha_checkin,
+	       c.precio,
+	       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0)
+		FROM reservaciones r
+		JOIN cabanas c ON c.id = r.id_cabana
+		WHERE r.id = $1
+	`
+	err := r.pool.QueryRow(ctx, query, id).Scan(
+		&e.ReservationID, &e.UserID, &e.CabinID, &e.HostID,
+		&e.Status, &e.StartDate, &e.EndDate, &e.CheckedInAt,
+		&e.NightlyRate, &e.PaidTotal,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrReservationNotFound
+		}
+		return nil, err
+	}
+	return &e, nil
+}
+
+func (r *Repository) RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error {
+	query := `
+		UPDATE reservaciones
+		SET estado = 'en_curso', fecha_checkin = $2
+		WHERE id = $1 AND estado = 'confirmada'
+	`
+	tag, err := r.pool.Exec(ctx, query, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+	return nil
+}
+
+func (r *Repository) RecordCheckinTimestamp(ctx context.Context, id int, checkedInAt time.Time) error {
+	query := `
+		UPDATE reservaciones
+		SET fecha_checkin = $2
+		WHERE id = $1 AND estado = 'en_curso' AND fecha_checkin IS NULL
+	`
+	tag, err := r.pool.Exec(ctx, query, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+	return nil
+}
+
+func (r *Repository) CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	insert := `
+		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
+		VALUES ($1, $2, 'pago', 'efectivo', $3)
+	`
+	if _, err := tx.Exec(ctx, insert, payerID, cashAmount, id); err != nil {
+		return err
+	}
+
+	update := `
+		UPDATE reservaciones
+		SET estado = 'en_curso', fecha_checkin = COALESCE(fecha_checkin, $2)
+		WHERE id = $1 AND (estado = 'confirmada'
+			OR (estado = 'en_curso' AND fecha_checkin IS NULL))
+	`
+	tag, err := tx.Exec(ctx, update, id, checkedInAt)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrReservationNotCheckinable
+	}
+
+	return tx.Commit(ctx)
+}
+
 func (r *Repository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error) {
 	var hostID uint
 	err := r.pool.QueryRow(ctx, `SELECT id_anfitrion FROM cabanas WHERE id = $1`, cabinID).Scan(&hostID)
@@ -271,9 +357,6 @@ func (r *Repository) GetCabinHostID(ctx context.Context, cabinID uint) (uint, er
 	return hostID, nil
 }
 
-// HasUserOverlap indica si el usuario ya tiene otra reservación activa
-// (en cualquier cabaña) que se cruza con [startDate, endDate].
-// excludeID permite ignorar una reservación (útil al editar).
 func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate, endDate string, excludeID int) (bool, error) {
 	query := `
 		SELECT fecha_inicio, fecha_fin
@@ -314,7 +397,6 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 	return false, nil
 }
 
-// UpdateReservation modifica cabaña y fechas de una reservación activa.
 func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
 	query := `
 		UPDATE reservaciones
@@ -343,10 +425,6 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 	return nil
 }
 
-// AdvanceReservationStates aplica las transiciones automáticas del ciclo de
-// vida: marca en curso las reservaciones confirmadas cuya estancia ya comenzó
-// y finaliza las no terminadas cuya estancia ya concluyó. Devuelve los IDs de
-// las reservaciones finalizadas (para notificar).
 func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error) {
 	startQuery := `
 		UPDATE reservaciones
@@ -363,7 +441,7 @@ func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error
 		UPDATE reservaciones
 		SET estado = 'finalizada',
 		    fecha_checkin = COALESCE(fecha_checkin, fecha_inicio::timestamp AT TIME ZONE 'America/Guatemala'),
-		    fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala')
+		    fecha_checkout = COALESCE(fecha_checkout, GREATEST(fecha_checkin, fecha_fin::timestamp AT TIME ZONE 'America/Guatemala'))
 		WHERE estado IN ('pendiente', 'confirmada', 'en_curso')
 		  AND fecha_fin < CURRENT_DATE
 		RETURNING id
@@ -389,7 +467,6 @@ func (r *Repository) AdvanceReservationStates(ctx context.Context) ([]int, error
 	return ids, nil
 }
 
-// GetCabinNightlyRate devuelve el precio por noche de una cabaña.
 func (r *Repository) GetCabinNightlyRate(ctx context.Context, cabinID uint) (float64, error) {
 	var rate float64
 	err := r.pool.QueryRow(ctx, `SELECT precio FROM cabanas WHERE id = $1`, cabinID).Scan(&rate)
@@ -402,9 +479,7 @@ func (r *Repository) GetCabinNightlyRate(ctx context.Context, cabinID uint) (flo
 	return rate, nil
 }
 
-// PayAnticipo registra el pago del anticipo en la tabla pagos y confirma la
-// reservación en una sola transacción: solo aplica si sigue pendiente.
-func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error {
+func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64, method string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return err
@@ -413,9 +488,9 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 
 	insert := `
 		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
-		VALUES ($1, $2, 'anticipo', 'CASH', $3)
+		VALUES ($1, $2, 'anticipo', $3, $4)
 	`
-	if _, err := tx.Exec(ctx, insert, payerID, amount, reservationID); err != nil {
+	if _, err := tx.Exec(ctx, insert, payerID, amount, method, reservationID); err != nil {
 		return err
 	}
 

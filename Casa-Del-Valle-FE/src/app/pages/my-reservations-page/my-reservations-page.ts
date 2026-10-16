@@ -4,6 +4,7 @@ import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
+import { RefundEvent } from '../../models/refund';
 import { ReservationService } from '../../services/reservation.service';
 import { ReservationCard } from '../../components/reservation-card/reservation-card';
 
@@ -91,6 +92,13 @@ export class MyReservationsPage implements OnInit {
   }
 
   onPaymentRegistered(res: CreatePaymentResponse): void {
+    this.reservations.update((list) =>
+      list.map((r) => (r.id === res.reservationId ? { ...r, paidTotal: res.paid } : r))
+    );
     this.cancelMessage.set(res.message);
+  }
+
+  onRefunded(event: RefundEvent): void {
+    this.cancelMessage.set(event.message);
   }
 }

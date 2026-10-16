@@ -954,6 +954,393 @@ const docTemplate = `{
                 }
             }
         },
+        "/payments/reservation/{reservationId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve el historial de pagos y el desglose de total, pagado y saldo pendiente. Puede verlo quien reservó, el dueño de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Listar pagos de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "reservationId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historial de pagos y saldo",
+                        "schema": {
+                            "$ref": "#/definitions/payments.ReservationPayments"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra un pago simulado (tarjeta, transferencia o efectivo) sobre una reservación confirmada o en curso. El monto debe ser mayor que 0 y no puede exceder el saldo pendiente. Puede registrarlo quien reservó, el dueño de la cabaña o un admin. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pagos"
+                ],
+                "summary": "Registrar pago de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "reservationId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Monto y método de pago",
+                        "name": "payment",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/payments.CreatePaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Pago registrado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/payments.CreatePaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos inválidos, monto o método no válidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No autenticado",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "La reservación no admite pagos o el monto excede el saldo",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/refunds/reservation/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna pagos, reembolsos y totales de la reservación. Puede verlo quien reservó, el dueño o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reembolsos"
+                ],
+                "summary": "Historial financiero",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Historial financiero",
+                        "schema": {
+                            "$ref": "#/definitions/refunds.RefundsHistoryResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra un reembolso total o parcial sobre lo pagado. Solo el anfitrión de la cabaña o un admin. Sin monto se reembolsa todo lo disponible. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reembolsos"
+                ],
+                "summary": "Registrar reembolso",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Monto parcial (opcional)",
+                        "name": "refund",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/refunds.CreateRefundRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Reembolso registrado",
+                        "schema": {
+                            "$ref": "#/definitions/refunds.CreateRefundResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Datos o monto inválidos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "No cancelada, sin monto disponible o excede disponible",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reports/reservations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente), con la información de cada reservación. Solo aparecen cabañas con al menos una reservación que cumpla los filtros. Las fechas se interpretan en hora de Guatemala. Solo administradores. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reportes"
+                ],
+                "summary": "Reporte de reservaciones por cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de anfitrión",
+                        "name": "host_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de cabaña",
+                        "name": "cabin_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de huésped",
+                        "name": "guest_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reservaciones creadas desde esta fecha, inclusive (YYYY-MM-DD)",
+                        "name": "created_from",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Reservaciones creadas hasta esta fecha, inclusive (YYYY-MM-DD)",
+                        "name": "created_to",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de reservaciones",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ReservationsReport"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error al generar el reporte",
+                        "schema": {
+                            "$ref": "#/definitions/reportreservations.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reservations": {
             "post": {
                 "security": [
@@ -961,7 +1348,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Crea una reservación. Para clientes el usuario se toma del token; para administradores puede indicarse. Requiere token.",
+                "description": "Crea una reservación en estado pendiente. Para clientes el usuario se toma del token; para administradores puede indicarse. Valida solape de cabaña y de usuario. Requiere token.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1019,6 +1406,67 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflicto de fechas",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/balance/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Consultar saldo de una reservación",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Saldo de la reservación",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.ReservationBalance"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1289,67 +1737,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/reservations/{id}/balance": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna total, cargos adicionales, pagos, reembolsos y saldo pendiente. Puede verlo quien reservó, el anfitrión de la cabaña o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Consultar saldo de una reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Saldo de la reservación",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.ReservationBalance"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/reservations/{id}/cancel": {
             "patch": {
                 "security": [
@@ -1357,7 +1744,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancela una reservación pendiente o confirmada. Puede cancelar quien reservó, el dueño de la cabaña o un admin, siempre que falten al menos 3 días para el inicio. Requiere token.",
+                "description": "Cancela una reservación pendiente o confirmada y registra el reembolso según días de anticipación (100% ≥7 días, 70% 3–7 días, 0% \u003c3 días). Puede cancelar quien reservó, el dueño o un admin. Requiere token.",
                 "produces": [
                     "application/json"
                 ],
@@ -1420,6 +1807,157 @@ const docTemplate = `{
                 }
             }
         },
+        "/reservations/{id}/checkin": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva confirmada dentro de su periodo y con el pago total completado. Acepta cash_amount opcional para que el anfitrión registre en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Registrar check-in",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Efectivo a registrar (opcional)",
+                        "name": "checkin",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckinRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-in registrado",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckinReservationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "No cumple requisitos (estado, fechas o pago)",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/reservations/{id}/checkout": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Finaliza la estadía de una reservación en curso que ya tiene check-in registrado y la pasa a finalizada. Solo el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Registrar check-out",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-out registrado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckoutReservationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Sin check-in o reservación no en curso",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/{id}/payment": {
             "post": {
                 "security": [
@@ -1427,7 +1965,10 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Registra el anticipo (30% del total, calculado en el servidor) y pasa la reservación de 'pendiente' a 'confirmada'. Solo quien reservó o un admin. Requiere token.",
+                "description": "Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'. Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin. Requiere token.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
@@ -1442,6 +1983,14 @@ const docTemplate = `{
                         "name": "id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Monto y método (opcionales)",
+                        "name": "payment",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.PayAnticipoRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -1452,7 +2001,7 @@ const docTemplate = `{
                         }
                     },
                     "400": {
-                        "description": "ID de reservación inválido",
+                        "description": "Datos o monto/método inválidos",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1480,165 +2029,6 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "La reservación no está pendiente de anticipo",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/{id}/payments": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Devuelve el historial de pagos y el desglose de total, pagado y saldo pendiente. Puede verlo quien reservó, el dueño de la cabaña o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Pagos"
-                ],
-                "summary": "Listar pagos de una reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Historial de pagos y saldo",
-                        "schema": {
-                            "$ref": "#/definitions/payments.ReservationPayments"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "No autenticado",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Registra un pago simulado (tarjeta, transferencia o efectivo) sobre una reservación confirmada o en curso. El monto debe ser mayor que 0 y no puede exceder el saldo pendiente. Puede registrarlo quien reservó, el dueño de la cabaña o un admin. Requiere token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Pagos"
-                ],
-                "summary": "Registrar pago de una reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Monto y método de pago",
-                        "name": "payment",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/payments.CreatePaymentRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Pago registrado exitosamente",
-                        "schema": {
-                            "$ref": "#/definitions/payments.CreatePaymentResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos, monto o método no válidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "No autenticado",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "La reservación no admite pagos o el monto excede el saldo",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2338,7 +2728,233 @@ const docTemplate = `{
                 }
             }
         },
+        "refunds.CreateRefundRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "refunds.CreateRefundResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "refund": {
+                    "$ref": "#/definitions/refunds.Refund"
+                }
+            }
+        },
+        "refunds.FinancialMovement": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "subtype": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "refunds.Refund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "hostId": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "reservationId": {
+                    "type": "integer"
+                }
+            }
+        },
+        "refunds.RefundsHistoryResponse": {
+            "type": "object",
+            "properties": {
+                "movements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/refunds.FinancialMovement"
+                    }
+                },
+                "refundableAvailable": {
+                    "type": "number"
+                },
+                "totalPaid": {
+                    "type": "number"
+                },
+                "totalRefunded": {
+                    "type": "number"
+                }
+            }
+        },
+        "reportreservations.CabinReport": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "capacity": {
+                    "type": "integer"
+                },
+                "host": {
+                    "$ref": "#/definitions/reportreservations.UserSummary"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "price": {
+                    "type": "number"
+                },
+                "reservations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.ReservationSummary"
+                    }
+                },
+                "total_reservations": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportreservations.ReservationSummary": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "guest": {
+                    "$ref": "#/definitions/reportreservations.UserSummary"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportreservations.ReservationsReport": {
+            "type": "object",
+            "properties": {
+                "cabins": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportreservations.CabinReport"
+                    }
+                },
+                "message": {
+                    "type": "string"
+                },
+                "total_cabins": {
+                    "type": "integer"
+                },
+                "total_reservations": {
+                    "type": "integer"
+                }
+            }
+        },
+        "reportreservations.UserSummary": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "reservations.CancelRefund": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "percent": {
+                    "type": "number"
+                }
+            }
+        },
         "reservations.CancelReservationResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "refund": {
+                    "$ref": "#/definitions/reservations.CancelRefund"
+                },
+                "reservation": {
+                    "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.CheckinRequest": {
+            "type": "object",
+            "properties": {
+                "cash_amount": {
+                    "type": "number"
+                }
+            }
+        },
+        "reservations.CheckinReservationResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "reservation": {
+                    "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.CheckoutReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -2374,6 +2990,17 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                }
+            }
+        },
+        "reservations.PayAnticipoRequest": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "method": {
+                    "type": "string"
                 }
             }
         },
@@ -2514,8 +3141,14 @@ const docTemplate = `{
                 "guestName": {
                     "type": "string"
                 },
+                "hostId": {
+                    "type": "integer"
+                },
                 "id": {
                     "type": "integer"
+                },
+                "paidTotal": {
+                    "type": "number"
                 },
                 "startDate": {
                     "type": "string"
@@ -2564,11 +3197,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "end_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "start_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "user_id": {
@@ -2583,11 +3214,9 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "end_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 },
                 "start_date": {
-                    "description": "Formato AAAA-MM-DD",
                     "type": "string"
                 }
             }

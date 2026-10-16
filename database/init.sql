@@ -132,13 +132,49 @@ CREATE TABLE IF NOT EXISTS pagos (
 
     CONSTRAINT fk_pago_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE RESTRICT,
     CONSTRAINT fk_pago_reservacion FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
-    CONSTRAINT chk_pago_method CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH')),
+    -- tipo_pago distingue el anticipo (confirma la reserva) de los abonos;
+    -- method guarda el canal simulado del pago.
+    CONSTRAINT chk_pago_method CHECK (method IN ('tarjeta', 'transferencia', 'efectivo')),
     CONSTRAINT chk_pago_tipo CHECK (tipo_pago IN ('anticipo', 'pago')),
     CONSTRAINT chk_pago_cantidad CHECK (cantidad > 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_pagos_reservacion
     ON pagos (id_reservacion);
+
+CREATE TABLE IF NOT EXISTS cargos_adicionales (
+    id SERIAL PRIMARY KEY,
+    id_reservacion INT NOT NULL,
+    concepto VARCHAR(150) NOT NULL,
+    monto NUMERIC(10, 2) NOT NULL CHECK (monto > 0),
+    id_usuario_registro INT,
+    fecha TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_cargo_reservacion
+        FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_cargo_usuario_registro
+        FOREIGN KEY (id_usuario_registro) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+CREATE TABLE IF NOT EXISTS reembolsos (
+    id SERIAL PRIMARY KEY,
+    id_reservacion INT NOT NULL,
+    id_pago INT,
+    cantidad NUMERIC(10, 2) NOT NULL CHECK (cantidad > 0),
+    motivo TEXT,
+    id_usuario_registro INT,
+    fecha TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_reembolso_reservacion
+        FOREIGN KEY (id_reservacion) REFERENCES reservaciones(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_reembolso_pago
+        FOREIGN KEY (id_pago) REFERENCES pagos(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_reembolso_usuario_registro
+        FOREIGN KEY (id_usuario_registro) REFERENCES usuarios(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cargos_reservacion ON cargos_adicionales (id_reservacion, fecha, id);
+CREATE INDEX IF NOT EXISTS idx_reembolsos_reservacion ON reembolsos (id_reservacion, fecha, id);
 
 CREATE TABLE IF NOT EXISTS comentario (
     id SERIAL PRIMARY KEY,
@@ -182,7 +218,8 @@ CREATE TABLE IF NOT EXISTS notificaciones (
             'cabana_creada',
             'cabana_actualizada',
             'cabana_eliminada',
-            'rol_actualizado'
+            'rol_actualizado',
+            'reserva_checkin'
         )),
     CONSTRAINT chk_notificacion_entidad_tipo
         CHECK (entidad_tipo IS NULL OR entidad_tipo IN ('reservacion', 'cabana', 'usuario'))

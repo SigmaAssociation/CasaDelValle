@@ -14,6 +14,7 @@ type payCall struct {
 	reservationID int
 	payerID       uint
 	amount        float64
+	method        string
 }
 
 type mockReservationRepository struct {
@@ -33,6 +34,13 @@ type mockReservationRepository struct {
 	getByCabinErr     error
 	getCabinHostID    uint
 	getCabinHostErr   error
+	checkinElig       *CheckinEligibility
+	checkinEligErr    error
+	recordCheckinErr  error
+	recordTsErr       error
+	recordTsCalled    bool
+	cashCalledWith    *cashCall
+	cashReturnErr     error
 	updateReturnErr   error
 	getCabinName      string
 	getCabinNameErr   error
@@ -44,6 +52,9 @@ type mockReservationRepository struct {
 	advanceErr        error
 	ledgerReturn      *ReservationLedger
 	ledgerErr         error
+
+	recordCheckoutErr    error
+	recordCheckoutCalled bool
 }
 
 type mockNotifier struct {
@@ -102,6 +113,32 @@ func (m *mockReservationRepository) GetCabinHostID(ctx context.Context, cabinID 
 	return m.getCabinHostID, m.getCabinHostErr
 }
 
+func (m *mockReservationRepository) GetCheckinEligibility(ctx context.Context, id int) (*CheckinEligibility, error) {
+	return m.checkinElig, m.checkinEligErr
+}
+
+func (m *mockReservationRepository) RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error {
+	return m.recordCheckinErr
+}
+
+func (m *mockReservationRepository) RecordCheckinTimestamp(ctx context.Context, id int, checkedInAt time.Time) error {
+	m.recordTsCalled = true
+	return m.recordTsErr
+}
+
+func (m *mockReservationRepository) CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error {
+	m.cashCalledWith = &cashCall{reservationID: id, payerID: payerID, amount: cashAmount}
+	return m.cashReturnErr
+}
+
+func (m *mockReservationRepository) RecordCheckout(ctx context.Context, id int, checkedOutAt time.Time) error {
+	m.recordCheckoutCalled = true
+	if m.recordCheckoutErr == nil && m.getByIDReturn != nil {
+		m.getByIDReturn.Status = StatusFinished
+	}
+	return m.recordCheckoutErr
+}
+
 func (m *mockReservationRepository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
 	return m.updateReturnErr
 }
@@ -122,9 +159,15 @@ func (m *mockReservationRepository) GetCabinNightlyRate(ctx context.Context, cab
 	return m.nightlyRate, m.nightlyRateErr
 }
 
-func (m *mockReservationRepository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64) error {
+type cashCall struct {
+	reservationID int
+	payerID       uint
+	amount        float64
+}
+
+func (m *mockReservationRepository) PayAnticipo(ctx context.Context, reservationID int, payerID uint, amount float64, method string) error {
 	if m.payReturnErr == nil {
-		m.payCalledWith = &payCall{reservationID: reservationID, payerID: payerID, amount: amount}
+		m.payCalledWith = &payCall{reservationID: reservationID, payerID: payerID, amount: amount, method: method}
 		if m.getByIDReturn != nil {
 			m.getByIDReturn.Status = StatusConfirmed
 		}
@@ -391,6 +434,140 @@ func TestCancelReservationNotifiesGuestAndHost(t *testing.T) {
 	}
 }
 
+type mockRefundRecorder struct {
+	calledWith   *ReservationDetail
+	returnRefund *CancelRefund
+	returnErr    error
+}
+
+func (m *mockRefundRecorder) RecordRefundOnCancellation(ctx context.Context, reservation *ReservationDetail) (*CancelRefund, error) {
+	m.calledWith = reservation
+	return m.returnRefund, m.returnErr
+}
+
+func TestCancelReservationWithRefundRecordsAutomaticRefund(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 77, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	recorder := &mockRefundRecorder{
+		returnRefund: &CancelRefund{Amount: 90, Percent: 1, Kind: "total"},
+	}
+	service := NewService(repo, &mockNotifier{})
+	service.SetRefundRecorder(recorder)
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 77)
+	if err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+	if recorder.calledWith == nil || recorder.calledWith.ID != 77 {
+		t.Fatalf("expected the refund recorder to be called with reservation 77, got %+v", recorder.calledWith)
+	}
+	if refund == nil || refund.Amount != 90 || refund.Kind != "total" {
+		t.Fatalf("expected the automatic refund to be returned, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithRefundSurvivesRecorderFailure(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 78, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	recorder := &mockRefundRecorder{returnErr: errors.New("fallo al registrar reembolso")}
+	service := NewService(repo, &mockNotifier{})
+	service.SetRefundRecorder(recorder)
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 78)
+	if err != nil {
+		t.Fatalf("un fallo al registrar el reembolso no debe revertir la cancelación: %v", err)
+	}
+	if refund != nil {
+		t.Fatalf("no debería devolverse un reembolso cuando el registro falla, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithoutRecorderDoesNotFail(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 79, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	service := NewService(repo, &mockNotifier{})
+
+	_, refund, err := service.CancelReservationWithRefund(context.Background(), 79)
+	if err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+	if refund != nil {
+		t.Fatalf("sin registrador inyectado no debería haber reembolso, got %+v", refund)
+	}
+}
+
+func TestCancelReservationWithinMinDaysSucceeds(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 80, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(1), EndDate: futureDate(3), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	notifier := &mockNotifier{}
+	recorder := &mockRefundRecorder{}
+	service := NewService(repo, notifier)
+	service.SetRefundRecorder(recorder)
+
+	if _, _, err := service.CancelReservationWithRefund(context.Background(), 80); err != nil {
+		t.Fatalf("cancelar con menos de %d días debería estar permitido: %v", MinCancellationDays, err)
+	}
+
+	cancelled := notifier.byTipo(notifications.TipoReservaCancelada)
+	if len(cancelled) != 2 {
+		t.Fatalf("expected 2 cancellation notifications (guest + host), got %d", len(cancelled))
+	}
+	if !strings.Contains(cancelled[0].Mensaje, "no corresponde reembolso") {
+		t.Errorf("la notificación al huésped debería explicar por qué no hay reembolso, got %q", cancelled[0].Mensaje)
+	}
+}
+
+func TestCancelReservationNotifiesRefundAmount(t *testing.T) {
+	repo := &mockReservationRepository{
+		getByIDReturn: &ReservationDetail{
+			ID: 81, UserID: 1, HostID: 2, CabinID: 3,
+			StartDate: futureDate(10), EndDate: futureDate(12), Status: StatusConfirmed,
+		},
+		getCabinName: "Cabaña Río",
+	}
+	notifier := &mockNotifier{}
+	recorder := &mockRefundRecorder{
+		returnRefund: &CancelRefund{Amount: 90, Percent: 1, Kind: "total"},
+	}
+	service := NewService(repo, notifier)
+	service.SetRefundRecorder(recorder)
+
+	if _, _, err := service.CancelReservationWithRefund(context.Background(), 81); err != nil {
+		t.Fatalf("CancelReservationWithRefund returned error: %v", err)
+	}
+
+	cancelled := notifier.byTipo(notifications.TipoReservaCancelada)
+	if len(cancelled) != 2 {
+		t.Fatalf("expected 2 cancellation notifications (guest + host), got %d", len(cancelled))
+	}
+	if !strings.Contains(cancelled[0].Mensaje, "reembolso total") || !strings.Contains(cancelled[0].Mensaje, "Q 90.00") {
+		t.Errorf("la notificación al huésped debería informar el reembolso, got %q", cancelled[0].Mensaje)
+	}
+	if !strings.Contains(cancelled[1].Mensaje, "reembolso total") {
+		t.Errorf("la notificación al anfitrión debería informar el reembolso, got %q", cancelled[1].Mensaje)
+	}
+}
+
 func TestAdvanceReservationStatesNotifiesGuestHostAndAdmins(t *testing.T) {
 	repo := &mockReservationRepository{
 		advanceReturnIDs: []int{42},
@@ -448,6 +625,181 @@ func TestUpdateReservationNotifiesGuestAndHost(t *testing.T) {
 	}
 }
 
+func pastDate(days int) string {
+	return time.Now().AddDate(0, 0, -days).Format(dateLayout)
+}
+
+func checkinEligibility(status string, startDate, endDate string, nightlyRate, paid float64) *CheckinEligibility {
+	return &CheckinEligibility{
+		ReservationID: 50,
+		UserID:        1,
+		CabinID:       2,
+		HostID:        3,
+		Status:        status,
+		StartDate:     startDate,
+		EndDate:       endDate,
+		NightlyRate:   nightlyRate,
+		PaidTotal:     paid,
+	}
+}
+
+func TestCheckinHappyPath(t *testing.T) {
+	repo := &mockReservationRepository{
+		checkinElig: checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 300),
+		getByIDReturn: &ReservationDetail{
+			ID: 50, UserID: 1, HostID: 3, CabinID: 2,
+			StartDate: pastDate(1), EndDate: futureDate(2), Status: StatusInProgress,
+		},
+		getCabinName: "Cabaña Mar",
+	}
+	notifier := &mockNotifier{}
+	service := NewService(repo, notifier)
+
+	detail, err := service.Checkin(context.Background(), 50, 0)
+	if err != nil {
+		t.Fatalf("Checkin returned error: %v", err)
+	}
+	if detail.ID != 50 {
+		t.Fatalf("Checkin() reservation ID = %d, want 50", detail.ID)
+	}
+
+	notified := notifier.byTipo(notifications.TipoReservaCheckin)
+	if len(notified) != 2 {
+		t.Fatalf("expected 2 checkin notifications (guest + host), got %d", len(notified))
+	}
+	if len(notifier.adminInputs) != 1 {
+		t.Fatalf("expected 1 admin notification, got %d", len(notifier.adminInputs))
+	}
+}
+
+func TestCheckinRejects(t *testing.T) {
+	checkinTime := time.Now()
+	testCases := []struct {
+		name      string
+		id        int
+		cash      float64
+		elig      *CheckinEligibility
+		eligErr   error
+		recordErr error
+		wantErr   error
+	}{
+		{
+			name: "invalid id",
+			id:   0,
+		},
+		{
+			name:    "reservation not found",
+			id:      51,
+			eligErr: ErrReservationNotFound,
+			wantErr: ErrReservationNotFound,
+		},
+		{
+			name:    "cancelled cannot check in",
+			id:      52,
+			elig:    checkinEligibility(StatusCancelled, pastDate(1), futureDate(2), 100, 300),
+			wantErr: ErrReservationNotCheckinable,
+		},
+		{
+			name:    "pending cannot check in",
+			id:      57,
+			elig:    checkinEligibility(StatusPending, pastDate(1), futureDate(2), 100, 300),
+			wantErr: ErrReservationNotCheckinable,
+		},
+		{
+			name: "already checked in",
+			id:   58,
+			elig: &CheckinEligibility{
+				ReservationID: 58, UserID: 1, CabinID: 2, HostID: 3,
+				Status: StatusInProgress, StartDate: pastDate(1), EndDate: futureDate(2),
+				CheckedInAt: &checkinTime, NightlyRate: 100, PaidTotal: 300,
+			},
+			wantErr: ErrReservationNotCheckinable,
+		},
+		{
+			name: "before start date",
+			id:   53,
+			elig: checkinEligibility(StatusConfirmed, futureDate(5), futureDate(7), 100, 200),
+		},
+		{
+			name: "after end date",
+			id:   54,
+			elig: checkinEligibility(StatusConfirmed, pastDate(5), pastDate(1), 100, 400),
+		},
+		{
+			name:    "payment incomplete",
+			id:      55,
+			elig:    checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 100),
+			wantErr: ErrCheckinPaymentIncomplete,
+		},
+		{
+			name: "cash must cover remaining exactly",
+			id:   59,
+			cash: 100,
+			elig: checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 100),
+		},
+		{
+			name: "cash rejected when nothing pending",
+			id:   60,
+			cash: 50,
+			elig: checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 300),
+		},
+		{
+			name:      "record error propagates",
+			id:        56,
+			elig:      checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 300),
+			recordErr: errors.New("db down"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := &mockReservationRepository{
+				checkinElig:      tc.elig,
+				checkinEligErr:   tc.eligErr,
+				recordCheckinErr: tc.recordErr,
+				getByIDReturn:    &ReservationDetail{ID: tc.id, Status: StatusInProgress},
+			}
+			service := NewService(repo, &mockNotifier{})
+
+			_, err := service.Checkin(context.Background(), tc.id, tc.cash)
+			if err == nil {
+				t.Fatalf("Checkin() expected error, got nil")
+			}
+			if tc.wantErr != nil && !errors.Is(err, tc.wantErr) {
+				t.Fatalf("Checkin() error = %v, want %v", err, tc.wantErr)
+			}
+		})
+	}
+}
+
+func TestCheckinWithCashCompletesPayment(t *testing.T) {
+	repo := &mockReservationRepository{
+		checkinElig: checkinEligibility(StatusConfirmed, pastDate(1), futureDate(2), 100, 100),
+		getByIDReturn: &ReservationDetail{
+			ID: 50, UserID: 1, HostID: 3, CabinID: 2,
+			StartDate: pastDate(1), EndDate: futureDate(2), Status: StatusInProgress,
+		},
+		getCabinName: "Cabaña Mar",
+	}
+	notifier := &mockNotifier{}
+	service := NewService(repo, notifier)
+
+	if _, err := service.Checkin(context.Background(), 50, 200); err != nil {
+		t.Fatalf("Checkin with cash returned error: %v", err)
+	}
+	if repo.cashCalledWith == nil {
+		t.Fatal("repository.CheckinWithCashPayment should be called")
+	}
+	if repo.cashCalledWith.amount != 200 || repo.cashCalledWith.payerID != 1 {
+		t.Fatalf("cash call = %+v, want amount 200 payer 1", repo.cashCalledWith)
+	}
+
+	notified := notifier.byTipo(notifications.TipoReservaCheckin)
+	if len(notified) != 2 {
+		t.Fatalf("expected 2 checkin notifications (guest + host), got %d", len(notified))
+	}
+}
+
 func TestPayAnticipoConfirmsReservationAndNotifies(t *testing.T) {
 	repo := &mockReservationRepository{
 		getByIDReturn: &ReservationDetail{
@@ -460,14 +812,13 @@ func TestPayAnticipoConfirmsReservationAndNotifies(t *testing.T) {
 	notifier := &mockNotifier{}
 	service := NewService(repo, notifier)
 
-	updated, amount, err := service.PayAnticipo(context.Background(), 10)
+	updated, amount, err := service.PayAnticipo(context.Background(), 10, 0, "")
 	if err != nil {
 		t.Fatalf("PayAnticipo returned error: %v", err)
 	}
 	if updated == nil || updated.Status != StatusConfirmed {
 		t.Fatalf("PayAnticipo should return the confirmed reservation, got %+v", updated)
 	}
-	// 5 noches × Q100 × 30% = Q150
 	if amount != 150 {
 		t.Fatalf("PayAnticipo amount = %v, want 150", amount)
 	}
@@ -476,6 +827,9 @@ func TestPayAnticipoConfirmsReservationAndNotifies(t *testing.T) {
 	}
 	if repo.payCalledWith.payerID != 1 {
 		t.Fatalf("payerID = %d, want 1 (the guest)", repo.payCalledWith.payerID)
+	}
+	if repo.payCalledWith.method != PaymentMethodCash {
+		t.Fatalf("method = %q, want default CASH", repo.payCalledWith.method)
 	}
 
 	confirmed := notifier.byTipo(notifications.TipoReservaConfirmada)
@@ -490,6 +844,49 @@ func TestPayAnticipoConfirmsReservationAndNotifies(t *testing.T) {
 	}
 }
 
+func TestPayAnticipoAcceptsCustomAmountAndMethod(t *testing.T) {
+	newRepo := func() *mockReservationRepository {
+		return &mockReservationRepository{
+			getByIDReturn: &ReservationDetail{
+				ID: 10, UserID: 1, HostID: 2, CabinID: 3,
+				StartDate: futureDate(10), EndDate: futureDate(15), Status: StatusPending,
+			},
+			nightlyRate: 100,
+		}
+	}
+
+	repo := newRepo()
+	service := NewService(repo, &mockNotifier{})
+	if _, amount, err := service.PayAnticipo(context.Background(), 10, 300, PaymentMethodCard); err != nil {
+		t.Fatalf("PayAnticipo with custom amount returned error: %v", err)
+	} else if amount != 300 {
+		t.Fatalf("PayAnticipo amount = %v, want 300", amount)
+	}
+	if repo.payCalledWith == nil || repo.payCalledWith.method != PaymentMethodCard {
+		t.Fatalf("expected tarjeta to reach the repository, got %+v", repo.payCalledWith)
+	}
+
+	repo = newRepo()
+	service = NewService(repo, &mockNotifier{})
+	if _, _, err := service.PayAnticipo(context.Background(), 10, 50, PaymentMethodCash); err == nil {
+		t.Fatal("PayAnticipo should reject amounts below 30%")
+	} else if repo.payCalledWith != nil {
+		t.Fatal("repository.PayAnticipo should not be called")
+	}
+
+	repo = newRepo()
+	service = NewService(repo, &mockNotifier{})
+	if _, _, err := service.PayAnticipo(context.Background(), 10, 600, PaymentMethodCash); err == nil {
+		t.Fatal("PayAnticipo should reject amounts above the total")
+	}
+
+	repo = newRepo()
+	service = NewService(repo, &mockNotifier{})
+	if _, _, err := service.PayAnticipo(context.Background(), 10, 150, "BITCOIN"); err == nil {
+		t.Fatal("PayAnticipo should reject invalid methods")
+	}
+}
+
 func TestPayAnticipoRejectsNonPendingReservation(t *testing.T) {
 	for _, status := range []string{StatusConfirmed, StatusInProgress, StatusFinished, StatusCancelled} {
 		repo := &mockReservationRepository{
@@ -501,7 +898,7 @@ func TestPayAnticipoRejectsNonPendingReservation(t *testing.T) {
 		}
 		service := NewService(repo, &mockNotifier{})
 
-		_, _, err := service.PayAnticipo(context.Background(), 11)
+		_, _, err := service.PayAnticipo(context.Background(), 11, 0, "")
 		if !errors.Is(err, ErrReservationNotPending) {
 			t.Fatalf("status %q: expected ErrReservationNotPending, got %v", status, err)
 		}

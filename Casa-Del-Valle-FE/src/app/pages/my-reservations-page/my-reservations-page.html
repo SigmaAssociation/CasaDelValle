@@ -49,6 +49,11 @@
       </div>
     }
 
+    <div class="px-4 py-3 rounded-md text-sm border bg-cream border-brown/15 text-brown">
+      Para confirmar tu reservación paga el anticipo (mínimo 30%). El saldo total debe estar
+      completo antes del check-in; si falta algo, el anfitrión puede registrar tu pago en efectivo al llegar.
+    </div>
+
     @if (isLoading()) {
       <p class="py-8 text-center text-brown/60">Cargando reservaciones…</p>
     } @else if (loadError()) {
@@ -69,6 +74,7 @@
           (cancelled)="onCancelled($event)"
           (paid)="onPaid($event)"
           (paymentRegistered)="onPaymentRegistered($event)"
+          (refunded)="onRefunded($event)"
         />
       } @empty {
         <p class="py-8 text-center text-brown/60">{{ emptyMessage() }}</p>

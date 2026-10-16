@@ -26,6 +26,8 @@ import (
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/notifications"
 	"cdv-api/internal/payments"
+	"cdv-api/internal/refunds"
+	reportreservations "cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/users"
 
@@ -71,21 +73,22 @@ func main() {
 	reservationService := reservations.NewService(reservationRepository, notificationService)
 	reservationController := reservations.NewController(reservationService)
 
+	refundRepository := refunds.NewRepository(pool)
+	refundService := refunds.NewService(refundRepository)
+	refundController := refunds.NewController(refundService, reservationService)
+	reservationService.SetRefundRecorder(refundService)
+
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
 	imageController := images.NewController(imageService)
 
+	reportRepository := reportreservations.NewRepository(pool)
+	reportService := reportreservations.NewService(reportRepository)
+	reportController := reportreservations.NewController(reportService)
 	paymentRepository := payments.NewRepository(pool)
 	paymentService := payments.NewService(paymentRepository, notificationService)
 	paymentController := payments.NewController(paymentService)
 
-	// -------------------------
-	// Jobs en segundo plano
-	// -------------------------
-	// Avanza las reservaciones en su ciclo de vida (en_curso al iniciar la
-	// estancia, finalizada al terminar) y notifica al huésped, al anfitrión y
-	// a los administradores. Se ejecuta al arrancar y luego cada 6 horas; los
-	// errores nunca detienen la API.
 	go func() {
 		const finalizeInterval = 6 * time.Hour
 
@@ -140,19 +143,27 @@ func main() {
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkin", reservationController.Checkin)
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkout", reservationController.Checkout)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
+	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", paymentController.GetReservationPayments)
+	mux.HandleFunc("POST /cdv-api/payments/reservation/{reservationId}", paymentController.CreatePayment)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
-	mux.HandleFunc("GET /cdv-api/payments/reservation/{id}", paymentController.GetReservationPayments)
-	mux.HandleFunc("POST /cdv-api/payments/reservation/{id}", paymentController.CreatePayment)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)
 	mux.HandleFunc("GET /cdv-api/reservations/balance/{id}", reservationController.GetReservationBalance)
 
-	// Buzón de notificaciones (personal: siempre el usuario del token).
+	mux.HandleFunc("POST /cdv-api/refunds/reservation/{id}", refundController.CreateRefund)
+	mux.HandleFunc("GET /cdv-api/refunds/reservation/{id}", refundController.GetRefunds)
+
 	mux.HandleFunc("GET /cdv-api/notifications", notificationController.GetNotifications)
 	mux.HandleFunc("GET /cdv-api/notifications/unread-count", notificationController.GetUnreadCount)
 	mux.HandleFunc("POST /cdv-api/notifications/read-all", notificationController.MarkAllRead)
 	mux.HandleFunc("PATCH /cdv-api/notifications/{id}/read", notificationController.MarkRead)
+
+	//Reportes
+	mux.HandleFunc("GET /cdv-api/reports/reservations", reportController.GetReservationsReport)
+
 	// -------------------------
 	// Server
 	// -------------------------

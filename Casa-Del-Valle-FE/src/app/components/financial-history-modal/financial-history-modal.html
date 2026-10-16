@@ -1,0 +1,80 @@
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 font-sans"
+  (click)="dismiss.emit()"
+>
+  <div
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="history-title"
+    class="bg-white rounded-xl shadow-lg border border-brown/15 p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto"
+    (click)="$event.stopPropagation()"
+  >
+    <h3 id="history-title" class="font-serif text-xl text-black mb-1">Historial financiero</h3>
+    <p class="text-sm text-brown mb-4">{{ reservation.cabinName }}</p>
+
+    @if (loading || !history) {
+      <p class="py-8 text-center text-brown/60">Cargando movimientos…</p>
+    } @else if (errorMessage) {
+      <p role="alert" class="text-sm text-orange py-4">{{ errorMessage }}</p>
+    } @else {
+      <div class="bg-cream rounded-lg p-3 text-sm text-brown mb-5 flex flex-col gap-1">
+        <p>Total pagado: <span class="font-medium text-black">{{ formatPrice(history.totalPaid) }}</span></p>
+        <p>Total reembolsado: <span class="font-medium text-black">{{ formatPrice(history.totalRefunded) }}</span></p>
+        <p>Disponible a reembolsar: <span class="font-medium text-black">{{ formatPrice(history.refundableAvailable) }}</span></p>
+      </div>
+
+      @if (history.movements.length === 0) {
+        <p class="py-6 text-center text-brown/60 text-sm">
+          Esta reservación todavía no tiene movimientos financieros.
+        </p>
+      } @else {
+        <ul class="flex flex-col gap-2 mb-5">
+          @for (movement of history.movements; track movement.id) {
+            <li
+              class="flex items-start justify-between gap-3 rounded-lg border border-brown/15 px-4 py-3"
+            >
+              <div>
+                <span
+                  class="inline-block text-xs px-2 py-0.5 rounded-md mb-1"
+                  [class]="
+                    movement.type === 'reembolso'
+                      ? 'bg-orange/10 text-orange'
+                      : 'bg-green/10 text-green'
+                  "
+                >
+                  {{ movementLabel(movement) }}
+                </span>
+                <p class="text-xs text-brown">{{ formatDateTime(movement.createdAt) }}</p>
+              </div>
+              <p
+                class="text-sm font-medium whitespace-nowrap"
+                [class]="movement.type === 'reembolso' ? 'text-orange' : 'text-green'"
+              >
+                {{ movement.type === 'reembolso' ? '−' : '+' }} {{ formatPrice(movement.amount) }}
+              </p>
+            </li>
+          }
+        </ul>
+      }
+    }
+
+    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+      @if (history && history.refundableAvailable > 0) {
+        <button
+          type="button"
+          (click)="openRefund.emit()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-orange text-white"
+        >
+          Registrar reembolso
+        </button>
+      }
+      <button
+        type="button"
+        (click)="dismiss.emit()"
+        class="px-4 py-2 rounded-md text-sm font-medium bg-green text-white"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

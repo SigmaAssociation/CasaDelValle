@@ -4,6 +4,8 @@ import { Injectable } from "@angular/core";
 import { Observable } from "rxjs";
 import { Reservation } from "../models/reservation";
 import { ReservationDetail } from "../models/reservation-detail";
+import { CheckinReservationResponse } from "../models/checkin-reservation-response";
+import { CheckoutReservationResponse } from "../models/checkout-reservation-response";
 import { CancelReservationResponse } from "../models/cancelReservationResponse";
 import { PayAnticipoResponse } from "../models/pay-anticipo-response";
 import { ReservationRequest } from "../models/create-reservation";
@@ -57,11 +59,24 @@ export class ReservationService {
         );
     }
 
-    public payAnticipo(id: number): Observable<PayAnticipoResponse> {
-        return this.httpClient.post<PayAnticipoResponse>(
-            `${this.restConstants.getApiURL()}reservations/${id}/payment`,
+    public checkin(id: number, cashAmount = 0): Observable<CheckinReservationResponse> {
+        return this.httpClient.patch<CheckinReservationResponse>(
+            `${this.restConstants.getApiURL()}reservations/${id}/checkin`,
+            { cash_amount: cashAmount }
+        );
+    }
+
+    public checkout(id: number): Observable<CheckoutReservationResponse> {
+        return this.httpClient.patch<CheckoutReservationResponse>(
+            `${this.restConstants.getApiURL()}reservations/${id}/checkout`,
             {}
         );
     }
 
+    public payAnticipo(id: number, payload?: { amount?: number; method?: string }): Observable<PayAnticipoResponse> {
+        return this.httpClient.post<PayAnticipoResponse>(
+            `${this.restConstants.getApiURL()}reservations/${id}/payment`,
+            payload ?? {}
+        );
+    }
 }

@@ -40,20 +40,30 @@ CREATE INDEX IF NOT EXISTS idx_reservaciones_estado_fechas
 
 
 ALTER TABLE pagos
-    ADD COLUMN IF NOT EXISTS method VARCHAR(20) NOT NULL DEFAULT 'CASH';
+    ADD COLUMN IF NOT EXISTS method VARCHAR(20) NOT NULL DEFAULT 'efectivo';
 
 ALTER TABLE pagos
     ALTER COLUMN method DROP DEFAULT;
 
-UPDATE pagos SET method = 'CASH' WHERE method IS NULL;
+UPDATE pagos SET method = 'efectivo' WHERE method IS NULL;
     ALTER TABLE pagos ALTER COLUMN method SET NOT NULL;
 
+-- Unifica el vocabulario de canales simulados a español.
+-- Se suelta primero el CHECK anterior para que el backfill no lo viole.
 ALTER TABLE pagos
     DROP CONSTRAINT IF EXISTS chk_pago_method;
 
+UPDATE pagos SET method = CASE method
+    WHEN 'CASH' THEN 'efectivo'
+    WHEN 'CARD_SIMULATED' THEN 'tarjeta'
+    WHEN 'TRANSFER_SIMULATED' THEN 'transferencia'
+    ELSE method
+END
+WHERE method IN ('CASH', 'CARD_SIMULATED', 'TRANSFER_SIMULATED');
+
 ALTER TABLE pagos
     ADD CONSTRAINT chk_pago_method
-    CHECK (method IN ('CARD_SIMULATED', 'TRANSFER_SIMULATED', 'CASH'));
+    CHECK (method IN ('tarjeta', 'transferencia', 'efectivo'));
 
 -- NOT VALID: se aplica a pagos nuevos sin rechazar filas históricas.
 ALTER TABLE pagos
@@ -74,8 +84,8 @@ CREATE INDEX IF NOT EXISTS idx_pagos_reservacion
     ON pagos (id_reservacion);
 
 
--- Tipo 'reserva_confirmada' para el aviso del pago del anticipo
--- (las BDs creadas antes no lo tienen en el CHECK).
+-- Tipos de notificación del flujo de pagos y check-in
+-- (las BDs creadas antes no los tienen en el CHECK).
 ALTER TABLE notificaciones
     DROP CONSTRAINT IF EXISTS chk_notificacion_tipo;
 
@@ -88,6 +98,8 @@ ALTER TABLE notificaciones
         'reserva_cancelada',
         'reserva_actualizada',
         'reserva_finalizada',
+        'reserva_checkin',
+        'pago_registrado',
         'cabana_creada',
         'cabana_actualizada',
         'cabana_eliminada',
@@ -105,7 +117,7 @@ BEGIN
     UPDATE reservaciones
     SET estado         = 'finalizada',
         fecha_checkin  = COALESCE(fecha_checkin,  fecha_inicio::timestamp AT TIME ZONE tz),
-        fecha_checkout = COALESCE(fecha_checkout, fecha_fin::timestamp    AT TIME ZONE tz)
+        fecha_checkout = COALESCE(fecha_checkout, GREATEST(fecha_checkin, fecha_fin::timestamp AT TIME ZONE tz))
     WHERE estado IN ('pendiente', 'confirmada', 'en_curso') AND fecha_fin < hoy;
 
     -- Iniciadas: confirmada cuya fecha_inicio llegó -> en_curso
