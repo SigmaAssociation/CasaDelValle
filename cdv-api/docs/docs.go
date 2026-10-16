@@ -1748,6 +1748,76 @@ const docTemplate = `{
                 }
             }
         },
+        "/reservations/{id}/checkout": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Finaliza la estadía de una reservación en curso que ya tiene check-in registrado y la pasa a finalizada. Solo el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Registrar check-out",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reservación",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Check-out registrado exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CheckoutReservationResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de reservación inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Reservación no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Sin check-in o reservación no en curso",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/reservations/{id}/payment": {
             "post": {
                 "security": [
@@ -2632,6 +2702,17 @@ const docTemplate = `{
             }
         },
         "reservations.CheckinReservationResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                },
+                "reservation": {
+                    "$ref": "#/definitions/reservations.ReservationDetail"
+                }
+            }
+        },
+        "reservations.CheckoutReservationResponse": {
             "type": "object",
             "properties": {
                 "message": {

@@ -7,6 +7,7 @@ import { CabinImage } from '../../models/cabin-image';
 import { Reservation } from '../../models/reservation';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
+import { CheckoutReservationResponse } from '../../models/checkout-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CabinService } from '../../services/cabin.service';
@@ -106,6 +107,15 @@ export class CabinDetailPage implements OnInit {
 
   onReservationCheckedIn(res: CheckinReservationResponse): void {
     this.reservationNotice = res.message ?? 'Check-in registrado exitosamente.';
+    if (this.cabin) {
+      this.loadCabinReservations(this.cabin.id);
+    } else {
+      this.cd.detectChanges();
+    }
+  }
+
+  onReservationCheckedOut(res: CheckoutReservationResponse): void {
+    this.reservationNotice = res.message ?? 'Check-out registrado exitosamente.';
     if (this.cabin) {
       this.loadCabinReservations(this.cabin.id);
     } else {

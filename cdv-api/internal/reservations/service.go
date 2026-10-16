@@ -43,6 +43,7 @@ type ReservationRepository interface {
 	RecordCheckin(ctx context.Context, id int, checkedInAt time.Time) error
 	RecordCheckinTimestamp(ctx context.Context, id int, checkedInAt time.Time) error
 	CheckinWithCashPayment(ctx context.Context, id int, payerID uint, cashAmount float64, checkedInAt time.Time) error
+	RecordCheckout(ctx context.Context, id int, checkedOutAt time.Time) error
 	AdvanceReservationStates(ctx context.Context) ([]int, error)
 }
 
