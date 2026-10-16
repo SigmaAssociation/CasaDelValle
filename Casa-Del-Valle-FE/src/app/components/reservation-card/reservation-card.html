@@ -1,4 +1,3 @@
-
 <article
   class="bg-white rounded-xl border border-brown/15 shadow-sm overflow-hidden flex flex-col sm:flex-row font-sans"
   [class.opacity-70]="isCancelled"
@@ -202,6 +201,16 @@
             El check-in estará disponible del {{ formatDate(reservation.startDate) }} al {{ formatDate(reservation.endDate) }}.
           </p>
         }
+      }
+      @if (showCheckout && isInProgress) {
+        <button
+          type="button"
+          (click)="registerCheckout()"
+          [disabled]="isCheckingOut()"
+          class="px-4 py-2 rounded-md text-sm font-medium bg-brown text-cream hover:bg-black transition disabled:opacity-50"
+        >
+          {{ isCheckingOut() ? 'Registrando…' : 'Registrar check-out' }}
+        </button>
       }
     </div>
 

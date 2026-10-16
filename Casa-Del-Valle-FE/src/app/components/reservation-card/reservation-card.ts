@@ -6,6 +6,7 @@ import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { CancelReservationResponse } from '../../models/cancelReservationResponse';
 import { CheckinReservationResponse } from '../../models/checkin-reservation-response';
+import { CheckoutReservationResponse } from '../../models/checkout-reservation-response';
 import { PayAnticipoResponse } from '../../models/pay-anticipo-response';
 import { CreatePaymentResponse } from '../../models/create-payment-response';
 import { CancelReservationModal } from '../cancel-reservation-modal/cancel-reservation-modal';
@@ -24,14 +25,18 @@ export class ReservationCard {
   @Input({ required: true }) reservation!: Reservation;
   // Muestra la acción de check-in (solo tiene sentido para el anfitrión).
   @Input() showCheckin = false;
+  // Muestra la acción de check-out (solo tiene sentido para el anfitrión).
+  @Input() showCheckout = false;
   @Output() cancelled = new EventEmitter<CancelReservationResponse>();
   @Output() checkedIn = new EventEmitter<CheckinReservationResponse>();
+  @Output() checkedOut = new EventEmitter<CheckoutReservationResponse>();
   @Output() paid = new EventEmitter<PayAnticipoResponse>();
   @Output() paymentRegistered = new EventEmitter<CreatePaymentResponse>();
 
   showModal = signal(false);
   isCancelling = signal(false);
   isCheckingIn = signal(false);
+  isCheckingOut = signal(false);
   showPayModal = signal(false);
   isPaying = signal(false);
   showPaymentsModal = signal(false);
@@ -163,6 +168,34 @@ export class ReservationCard {
         this.isCheckingIn.set(false);
         this.errorMessage.set(
           err.error?.message ?? err.error?.error ?? 'No se pudo registrar el check-in. Intenta de nuevo.'
+        );
+      },
+    });
+  }
+
+  // El check-out solo aplica a una reservación en curso
+  get canCheckout(): boolean {
+    return this.showCheckout && this.isInProgress && !this.isCheckingOut();
+  }
+
+  registerCheckout(): void {
+    if (!this.canCheckout) {
+      return;
+    }
+    if (!confirm(`¿Registrar el check-out de la reservación #${this.reservation.id}? La estadía pasará a finalizada.`)) {
+      return;
+    }
+    this.isCheckingOut.set(true);
+    this.errorMessage.set(null);
+    this.reservationService.checkout(this.reservation.id).subscribe({
+      next: (res: CheckoutReservationResponse) => {
+        this.isCheckingOut.set(false);
+        this.checkedOut.emit(res);
+      },
+      error: (err) => {
+        this.isCheckingOut.set(false);
+        this.errorMessage.set(
+          err.error?.message ?? err.error?.error ?? 'No se pudo registrar el check-out. Intenta de nuevo.'
         );
       },
     });

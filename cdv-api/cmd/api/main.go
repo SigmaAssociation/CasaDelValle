@@ -145,6 +145,7 @@ func main() {
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/cancel", reservationController.CancelReservation)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkin", reservationController.Checkin)
+	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkout", reservationController.Checkout)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
 	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", paymentController.GetReservationPayments)
 	mux.HandleFunc("POST /cdv-api/payments/reservation/{reservationId}", paymentController.CreatePayment)
