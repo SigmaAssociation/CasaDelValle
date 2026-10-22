@@ -1,4 +1,3 @@
-import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
@@ -9,6 +8,7 @@ import { DateRange } from '../../models/date-range';
 import { AuthService } from '../../services/auth.service';
 import { CabinAvailabilityService } from '../../services/cabin-availability.service';
 import { ReservationService } from '../../services/reservation.service';
+import { AvailabilityCalendar, CalendarRange } from '../availability-calendar/availability-calendar';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -18,7 +18,7 @@ type DateFieldName = 'start_date' | 'end_date';
 @Component({
   selector: 'app-reservation-form',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AvailabilityCalendar],
   templateUrl: './reservation-form.html',
   styleUrl: './reservation-form.css'
 })
@@ -34,6 +34,8 @@ export class ReservationForm implements OnInit {
   errorMessage = signal('');
   reservationId = signal<number | null>(null);
   blockedRanges = signal<DateRange[]>([]);
+  isLoadingAvailability = signal(false);
+  availabilityError = signal('');
 
   constructor(
     private formBuilder: FormBuilder,
@@ -55,30 +57,51 @@ export class ReservationForm implements OnInit {
       this.reservationForm.get('end_date')?.updateValueAndValidity();
     });
 
-    if (this.cabinId > 0) {
-      this.cabinAvailabilityService.getAvailability(this.cabinId).subscribe({
-        next: (availability) => {
-          this.blockedRanges.set(availability.blockedRanges || []);
-          this.reservationForm.updateValueAndValidity();
-        },
-        error: () => {
-          this.blockedRanges.set([]);
-        }
-      });
-    }
+    this.loadAvailability();
   }
 
   get minStartDate(): string {
     return this.toDateString(new Date());
   }
 
-  get minEndDate(): string | null {
-    const start = this.getRawValue('start_date');
-    const parsedStart = start ? this.parseDate(start) : null;
-    if (!parsedStart) {
-      return null;
+  get startDateValue(): string {
+    return this.getRawValue('start_date');
+  }
+
+  get endDateValue(): string {
+    return this.getRawValue('end_date');
+  }
+
+  onRangeChange(range: CalendarRange): void {
+    this.reservationForm.patchValue({
+      start_date: range.start ?? '',
+      end_date: range.end ?? ''
+    });
+    this.reservationForm.get('start_date')?.markAsTouched();
+    this.reservationForm.get('end_date')?.markAsTouched();
+    this.reservationForm.updateValueAndValidity();
+  }
+
+  private loadAvailability(): void {
+    if (this.cabinId <= 0) {
+      return;
     }
-    return this.toDateString(new Date(parsedStart.getTime() + MS_PER_DAY));
+
+    this.isLoadingAvailability.set(true);
+    this.availabilityError.set('');
+
+    this.cabinAvailabilityService.getAvailability(this.cabinId).subscribe({
+      next: (availability) => {
+        this.blockedRanges.set(availability.blockedRanges || []);
+        this.isLoadingAvailability.set(false);
+        this.reservationForm.updateValueAndValidity();
+      },
+      error: () => {
+        this.blockedRanges.set([]);
+        this.isLoadingAvailability.set(false);
+        this.availabilityError.set('No se pudo cargar la disponibilidad. Verifica las fechas antes de reservar.');
+      }
+    });
   }
 
   get nights(): number | null {
@@ -130,27 +153,6 @@ export class ReservationForm implements OnInit {
     return null;
   }
 
-  fieldError(field: DateFieldName): string | null {
-    const control = this.reservationForm.get(field);
-    if (!control || !control.invalid || !(control.dirty || control.touched)) {
-      return null;
-    }
-    if (control.errors?.['required']) {
-      return field === 'start_date'
-        ? 'La fecha de inicio es obligatoria.'
-        : 'La fecha de fin es obligatoria.';
-    }
-    if (control.errors?.['invalidDate']) {
-      return 'Ingresa una fecha válida.';
-    }
-    return null;
-  }
-
-  isInvalid(field: DateFieldName): boolean {
-    const control = this.reservationForm.get(field);
-    return !!(control && control.invalid && (control.dirty || control.touched));
-  }
-
   submit(): void {
     if (this.reservationForm.invalid) {
       this.reservationForm.markAllAsTouched();
@@ -184,6 +186,7 @@ export class ReservationForm implements OnInit {
         this.isSubmitting.set(false);
         this.isSuccess.set(true);
         this.reservationForm.reset();
+        this.loadAvailability();
       },
       error: (error: HttpErrorResponse) => {
         this.errorMessage.set(this.extractErrorMessage(error));
@@ -234,7 +237,7 @@ export class ReservationForm implements OnInit {
       if (!blockedStart || !blockedEnd) {
         continue;
       }
-      if (start <= blockedEnd && end >= blockedStart) {
+      if (start < blockedEnd && end > blockedStart) {
         return { datesBlocked: true };
       }
     }
