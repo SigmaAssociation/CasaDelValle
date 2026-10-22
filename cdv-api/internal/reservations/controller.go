@@ -540,3 +540,34 @@ func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 		Reservation: updated,
 	})
 }
+
+// GetCabinAvailability retorna los rangos de fechas ocupados de una cabaña.
+// @Summary Obtener disponibilidad de una cabaña
+// @Description Retorna los rangos de fechas ocupados por reservaciones pendientes, confirmadas o en curso. Público.
+// @Tags Reservaciones
+// @Produce json
+// @Param cabinId path int true "ID de cabaña"
+// @Success 200 {object} CabinAvailabilityResponse "Disponibilidad de la cabaña"
+// @Failure 400 {object} map[string]string "ID de cabaña inválido"
+// @Router /cabins/availability/{cabinId} [get]
+func (c *Controller) GetCabinAvailability(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
+		return
+	}
+
+	idParam := r.PathValue("cabinId")
+	cabinID, err := strconv.ParseUint(idParam, 10, 64)
+	if err != nil || cabinID == 0 {
+		writeError(w, http.StatusBadRequest, "ID de cabaña inválido")
+		return
+	}
+
+	availability, err := c.service.GetCabinAvailability(r.Context(), uint(cabinID))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "Error al obtener la disponibilidad")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, availability)
+}

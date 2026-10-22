@@ -32,6 +32,7 @@ type ReservationRepository interface {
 	CreateReservation(ctx context.Context, req ReservationRequest) (int, error)
 	HasOverlap(ctx context.Context, cabinID uint, startDate, endDate string, excludeID int) (bool, error)
 	HasUserOverlap(ctx context.Context, userID uint, startDate, endDate string, excludeID int) (bool, error)
+	GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]DateRange, error)
 	GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error)
 	CancelReservation(ctx context.Context, id int, cancelledAt time.Time) error
 	GetReservationsByUserID(ctx context.Context, userID uint) ([]ReservationCard, error)
@@ -526,6 +527,25 @@ func (s *Service) GetCabinHostID(ctx context.Context, cabinID uint) (uint, error
 	}
 
 	return s.repository.GetCabinHostID(ctx, cabinID)
+}
+
+func (s *Service) GetCabinAvailability(ctx context.Context, cabinID uint) (*CabinAvailabilityResponse, error) {
+	if cabinID == 0 {
+		return nil, errors.New("La cabaña es requerida")
+	}
+
+	ranges, err := s.repository.GetBlockedDateRanges(ctx, cabinID)
+	if err != nil {
+		return nil, err
+	}
+	if ranges == nil {
+		ranges = []DateRange{}
+	}
+
+	return &CabinAvailabilityResponse{
+		CabinID:       cabinID,
+		BlockedRanges: ranges,
+	}, nil
 }
 func (s *Service) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) (*ReservationDetail, error) {
 	if id <= 0 {

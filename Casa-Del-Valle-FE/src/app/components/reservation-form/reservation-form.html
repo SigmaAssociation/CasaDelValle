@@ -40,6 +40,10 @@
       </div>
     </div>
 
+    <div class="error" *ngIf="reservationForm.errors?.['datesBlocked'] && (reservationForm.get('start_date')?.touched || reservationForm.get('end_date')?.touched || reservationForm.touched)">
+      Algunas fechas seleccionadas ya no están disponibles. Por favor, elige otras fechas.
+    </div>
+
     @if (nights !== null && estimatedTotal !== null) {
       <div class="rounded-md bg-cream/60 border border-[#D7D0C4] p-4 text-sm">
         <div class="flex justify-between">

@@ -397,6 +397,36 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 	return false, nil
 }
 
+func (r *Repository) GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]DateRange, error) {
+	query := `
+		SELECT to_char(fecha_inicio, 'YYYY-MM-DD'), to_char(fecha_fin, 'YYYY-MM-DD')
+		FROM reservaciones
+		WHERE id_cabana = $1
+		  AND estado IN ('pendiente', 'confirmada', 'en_curso')
+		ORDER BY fecha_inicio
+	`
+
+	rows, err := r.pool.Query(ctx, query, cabinID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ranges := []DateRange{}
+	for rows.Next() {
+		var dr DateRange
+		if err := rows.Scan(&dr.Start, &dr.End); err != nil {
+			return nil, err
+		}
+		ranges = append(ranges, dr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ranges, nil
+}
+
 func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
 	query := `
 		UPDATE reservaciones

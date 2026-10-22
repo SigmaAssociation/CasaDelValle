@@ -1,10 +1,13 @@
+import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ReservationRequest } from '../../models/create-reservation';
 import { CreateReservationResponse } from '../../models/create-reservation-response';
+import { DateRange } from '../../models/date-range';
 import { AuthService } from '../../services/auth.service';
+import { CabinAvailabilityService } from '../../services/cabin-availability.service';
 import { ReservationService } from '../../services/reservation.service';
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -15,7 +18,7 @@ type DateFieldName = 'start_date' | 'end_date';
 @Component({
   selector: 'app-reservation-form',
   standalone: true,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './reservation-form.html',
   styleUrl: './reservation-form.css'
 })
@@ -30,11 +33,13 @@ export class ReservationForm implements OnInit {
   isError = signal(false);
   errorMessage = signal('');
   reservationId = signal<number | null>(null);
+  blockedRanges = signal<DateRange[]>([]);
 
   constructor(
     private formBuilder: FormBuilder,
     private reservationService: ReservationService,
-    private authService: AuthService
+    private authService: AuthService,
+    private cabinAvailabilityService: CabinAvailabilityService
   ) { }
 
   ngOnInit(): void {
@@ -49,6 +54,18 @@ export class ReservationForm implements OnInit {
     this.reservationForm.get('start_date')?.valueChanges.subscribe(() => {
       this.reservationForm.get('end_date')?.updateValueAndValidity();
     });
+
+    if (this.cabinId > 0) {
+      this.cabinAvailabilityService.getAvailability(this.cabinId).subscribe({
+        next: (availability) => {
+          this.blockedRanges.set(availability.blockedRanges || []);
+          this.reservationForm.updateValueAndValidity();
+        },
+        error: () => {
+          this.blockedRanges.set([]);
+        }
+      });
+    }
   }
 
   get minStartDate(): string {
@@ -103,6 +120,9 @@ export class ReservationForm implements OnInit {
     }
     if (errors['endBeforeStart']) {
       return 'La fecha de fin debe ser posterior a la fecha de inicio.';
+    }
+    if (errors['datesBlocked']) {
+      return 'Algunas fechas seleccionadas ya no están disponibles. Por favor, elige otras fechas.';
     }
     if (errors['invalidDate']) {
       return 'Ingresa una fecha válida.';
@@ -206,6 +226,19 @@ export class ReservationForm implements OnInit {
     if (end.getTime() <= start.getTime()) {
       return { endBeforeStart: true };
     }
+
+    const blocked = this.blockedRanges();
+    for (const range of blocked) {
+      const blockedStart = this.parseDate(range.start);
+      const blockedEnd = this.parseDate(range.end);
+      if (!blockedStart || !blockedEnd) {
+        continue;
+      }
+      if (start <= blockedEnd && end >= blockedStart) {
+        return { datesBlocked: true };
+      }
+    }
+
     return null;
   }
 

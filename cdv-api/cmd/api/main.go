@@ -130,6 +130,8 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/search", cabinController.SearchCabins)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 
+	mux.HandleFunc("GET /cdv-api/cabins/availability/{cabinId}", reservationController.GetCabinAvailability)
+
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
 	mux.HandleFunc("DELETE /cdv-api/cabins/{id}", cabinController.DeleteCabin)
@@ -147,9 +149,8 @@ func main() {
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkout", reservationController.Checkout)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
 	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", paymentController.GetReservationPayments)
-	mux.HandleFunc("POST /cdv-api/payments/reservation/{reservationId}", paymentController.CreatePayment)
-	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
+	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)
 	mux.HandleFunc("GET /cdv-api/reservations/balance/{id}", reservationController.GetReservationBalance)
 
