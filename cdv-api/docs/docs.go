@@ -104,6 +104,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/cabins/availability/{cabinId}": {
+            "get": {
+                "description": "Retorna los rangos de fechas ocupados por reservaciones pendientes, confirmadas o en curso. Público.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reservaciones"
+                ],
+                "summary": "Obtener disponibilidad de una cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Disponibilidad de la cabaña",
+                        "schema": {
+                            "$ref": "#/definitions/reservations.CabinAvailabilityResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID de cabaña inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/cabins/images/{cabinId}": {
             "get": {
                 "security": [
@@ -2907,6 +2945,20 @@ const docTemplate = `{
                 }
             }
         },
+        "reservations.CabinAvailabilityResponse": {
+            "type": "object",
+            "properties": {
+                "blockedRanges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reservations.DateRange"
+                    }
+                },
+                "cabinId": {
+                    "type": "integer"
+                }
+            }
+        },
         "reservations.CancelRefund": {
             "type": "object",
             "properties": {
@@ -2973,6 +3025,17 @@ const docTemplate = `{
                 },
                 "reservation_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "reservations.DateRange": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "string"
+                },
+                "start": {
+                    "type": "string"
                 }
             }
         },
