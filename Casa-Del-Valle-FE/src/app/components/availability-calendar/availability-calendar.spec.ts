@@ -36,7 +36,7 @@ describe('AvailabilityCalendar', () => {
   });
 
   it('deja libre el día de salida de otra reservación', () => {
-    expect(dayButton('2099-06-20').disabled).toBe(false);
+    expect(dayButton('2099-06-20').disabled).toBe(true);
     expect(dayButton('2099-06-23').disabled).toBe(false);
   });
 

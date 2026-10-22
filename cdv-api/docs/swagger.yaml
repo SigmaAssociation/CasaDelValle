@@ -360,6 +360,15 @@ definitions:
       name:
         type: string
     type: object
+  reservations.CabinAvailabilityResponse:
+    properties:
+      blockedRanges:
+        items:
+          $ref: '#/definitions/reservations.DateRange'
+        type: array
+      cabinId:
+        type: integer
+    type: object
   reservations.CancelRefund:
     properties:
       amount:
@@ -403,6 +412,13 @@ definitions:
         type: string
       reservation_id:
         type: integer
+    type: object
+  reservations.DateRange:
+    properties:
+      end:
+        type: string
+      start:
+        type: string
     type: object
   reservations.ExtraCharge:
     properties:
@@ -836,6 +852,32 @@ paths:
       summary: Actualizar cabaña
       tags:
       - Cabañas
+  /cabins/availability/{cabinId}:
+    get:
+      description: Retorna los rangos de fechas ocupados por reservaciones pendientes,
+        confirmadas o en curso. Público.
+      parameters:
+      - description: ID de cabaña
+        in: path
+        name: cabinId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Disponibilidad de la cabaña
+          schema:
+            $ref: '#/definitions/reservations.CabinAvailabilityResponse'
+        "400":
+          description: ID de cabaña inválido
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Obtener disponibilidad de una cabaña
+      tags:
+      - Reservaciones
   /cabins/images/{cabinId}:
     get:
       description: Devuelve todas las imágenes asociadas a la cabaña indicada.
