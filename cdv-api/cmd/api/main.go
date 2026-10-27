@@ -29,6 +29,7 @@ import (
 	"cdv-api/internal/refunds"
 	reportreservations "cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
+	"cdv-api/internal/seasons"
 	"cdv-api/internal/users"
 
 	_ "cdv-api/docs"
@@ -77,6 +78,10 @@ func main() {
 	refundService := refunds.NewService(refundRepository)
 	refundController := refunds.NewController(refundService, reservationService)
 	reservationService.SetRefundRecorder(refundService)
+
+	seasonRepository := seasons.NewRepository(pool)
+	seasonService := seasons.NewService(seasonRepository)
+	seasonController := seasons.NewController(seasonService)
 
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
@@ -131,6 +136,15 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 
 	mux.HandleFunc("GET /cdv-api/cabins/availability/{cabinId}", reservationController.GetCabinAvailability)
+
+	mux.HandleFunc("GET /cdv-api/seasons", seasonController.ListSeasons)
+	mux.HandleFunc("POST /cdv-api/seasons", seasonController.CreateSeason)
+	mux.HandleFunc("PUT /cdv-api/seasons/{id}", seasonController.UpdateSeason)
+	mux.HandleFunc("DELETE /cdv-api/seasons/{id}", seasonController.DeleteSeason)
+	mux.HandleFunc("GET /cdv-api/cabin-season-prices/cabin/{cabinId}", seasonController.ListCabinSeasonPrices)
+	mux.HandleFunc("POST /cdv-api/cabin-season-prices/cabin/{cabinId}", seasonController.SetCabinSeasonPrice)
+	mux.HandleFunc("DELETE /cdv-api/cabin-season-prices/{id}", seasonController.DeleteCabinSeasonPrice)
+	mux.HandleFunc("POST /cdv-api/seasons/quote", seasonController.GetPriceQuote)
 
 	mux.HandleFunc("GET /cdv-api/cabins/{id}", cabinController.GetCabinByID)
 	mux.HandleFunc("PUT /cdv-api/cabins/{id}", cabinController.UpdateCabin)
@@ -193,3 +207,5 @@ func main() {
 		log.Fatal(err)
 	}
 }
+
+// TEMPORAL

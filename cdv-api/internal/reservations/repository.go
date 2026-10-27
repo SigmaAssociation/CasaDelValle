@@ -54,7 +54,7 @@ func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, en
 		FROM reservaciones
 		WHERE id_cabana = $1
 		  AND id <> $2
-		  AND estado <> 'cancelada'
+		  AND estado IN ('confirmada', 'en_curso')
 	`
 
 	rows, err := r.pool.Query(ctx, query, cabinID, excludeID)
@@ -402,7 +402,7 @@ func (r *Repository) GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]
 		SELECT to_char(fecha_inicio, 'YYYY-MM-DD'), to_char(fecha_fin, 'YYYY-MM-DD')
 		FROM reservaciones
 		WHERE id_cabana = $1
-		  AND estado IN ('pendiente', 'confirmada', 'en_curso')
+		  AND estado IN ('confirmada', 'en_curso')
 		ORDER BY fecha_inicio
 	`
 
@@ -515,6 +515,40 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 		return err
 	}
 	defer tx.Rollback(ctx)
+
+	var cabinID uint
+	var startDate, endDate time.Time
+	err = tx.QueryRow(ctx, `
+		SELECT id_cabana, fecha_inicio, fecha_fin
+		FROM reservaciones
+		WHERE id = $1
+		FOR UPDATE
+	`, reservationID).Scan(&cabinID, &startDate, &endDate)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrReservationNotFound
+		}
+		return err
+	}
+
+	var conflict bool
+	err = tx.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM reservaciones
+			WHERE id_cabana = $1
+			  AND id <> $2
+			  AND estado IN ('confirmada', 'en_curso')
+			  AND fecha_inicio < $4
+			  AND fecha_fin > $3
+		)
+	`, cabinID, reservationID, startDate, endDate).Scan(&conflict)
+	if err != nil {
+		return err
+	}
+	if conflict {
+		return errors.New("La cabaña ya fue confirmada para el rango de fechas seleccionado")
+	}
 
 	insert := `
 		INSERT INTO pagos (id_usuario, cantidad, tipo_pago, method, id_reservacion)
