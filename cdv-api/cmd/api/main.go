@@ -29,6 +29,7 @@ import (
 	"cdv-api/internal/refunds"
 	reportreservations "cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
+	"cdv-api/internal/seasonprices"
 	"cdv-api/internal/seasons"
 	"cdv-api/internal/users"
 
@@ -86,6 +87,10 @@ func main() {
 	imageRepository := images.NewRepository(pool)
 	imageService := images.NewService(imageRepository)
 	imageController := images.NewController(imageService)
+
+	seasonPriceRepository := seasonprices.NewRepository(pool)
+	seasonPriceService := seasonprices.NewService(seasonPriceRepository)
+	seasonPriceController := seasonprices.NewController(seasonPriceService)
 
 	reportRepository := reportreservations.NewRepository(pool)
 	reportService := reportreservations.NewService(reportRepository)
@@ -155,6 +160,8 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/images/{cabinId}/principal", imageController.GetMainImageByCabin)
 	mux.HandleFunc("GET /cdv-api/images/{id}", imageController.GetImageByID)
 	mux.HandleFunc("DELETE /cdv-api/images/{id}", imageController.DeleteImage)
+
+	mux.HandleFunc("DELETE /cdv-api/cabins/{cabinId}/season-prices/{id}", seasonPriceController.DeleteSeasonPrice)
 
 	mux.HandleFunc("POST /cdv-api/reservations", reservationController.CreateReservation)
 	mux.HandleFunc("PUT /cdv-api/reservations/{id}", reservationController.UpdateReservation)
