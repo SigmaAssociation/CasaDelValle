@@ -244,6 +244,53 @@ definitions:
       total:
         type: number
     type: object
+  reportincome.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  reportincome.IncomeMovement:
+    properties:
+      amount:
+        type: number
+      cabin_id:
+        type: integer
+      cabin_name:
+        type: string
+      date:
+        type: string
+      guest_name:
+        type: string
+      id:
+        type: integer
+      method:
+        type: string
+      reservation_id:
+        type: integer
+      type:
+        type: string
+    type: object
+  reportincome.IncomeReport:
+    properties:
+      end_date:
+        type: string
+      message:
+        type: string
+      movements:
+        items:
+          $ref: '#/definitions/reportincome.IncomeMovement'
+        type: array
+      start_date:
+        type: string
+      total_income:
+        type: number
+      total_movements:
+        type: integer
+      total_payments:
+        type: number
+      total_refunds:
+        type: number
+    type: object
   reportreservations.CabinReport:
     properties:
       address:
@@ -1499,6 +1546,51 @@ paths:
       summary: Registrar pago de una reservación
       tags:
       - Pagos
+  /reports/income:
+    get:
+      description: Devuelve los pagos, anticipos y reembolsos registrados en el rango
+        de fechas indicado, junto con el total recaudado neto. Los reembolsos se devuelven
+        con monto negativo. Las fechas se interpretan en hora de Guatemala. Los administradores
+        ven todas las cabañas; los anfitriones solo las propias. Requiere token.
+      parameters:
+      - description: Fecha de inicio del rango, inclusive (YYYY-MM-DD)
+        in: query
+        name: start_date
+        required: true
+        type: string
+      - description: Fecha de fin del rango, inclusive (YYYY-MM-DD)
+        in: query
+        name: end_date
+        required: true
+        type: string
+      - description: Filtro por ID de cabaña
+        in: query
+        name: cabin_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reporte de ingresos
+          schema:
+            $ref: '#/definitions/reportincome.IncomeReport'
+        "400":
+          description: Parámetros inválidos
+          schema:
+            $ref: '#/definitions/reportincome.ErrorResponse'
+        "403":
+          description: Sin permisos
+          schema:
+            $ref: '#/definitions/reportincome.ErrorResponse'
+        "500":
+          description: Error al generar el reporte
+          schema:
+            $ref: '#/definitions/reportincome.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Reporte de ingresos por rango de fechas
+      tags:
+      - Reportes
   /reports/reservations:
     get:
       description: Devuelve las cabañas ordenadas por cantidad de reservaciones (descendente),

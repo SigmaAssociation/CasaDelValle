@@ -1,0 +1,165 @@
+<section class="max-w-6xl mx-auto p-4">
+  <h2 class="text-xl font-medium text-gray-800 mb-1">Reporte de ingresos</h2>
+  <p class="text-gray-500 text-sm mb-6">
+    Consulta los ingresos recaudados en un rango de fechas y filtra por cabaña.
+  </p>
+
+  <form
+    [formGroup]="filterForm"
+    class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex flex-wrap lg:flex-nowrap items-end gap-3 mb-6"
+    (ngSubmit)="search()"
+  >
+    <label class="flex flex-col gap-1 text-sm text-gray-500">
+      Fecha de inicio
+      <input
+        type="date"
+        formControlName="start_date"
+        class="border border-gray-200 rounded-lg px-2 py-2 text-gray-800"
+      />
+      @if (isInvalid('start_date')) {
+        <span class="text-xs text-red-600">Selecciona la fecha de inicio.</span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm text-gray-500">
+      Fecha de fin
+      <input
+        type="date"
+        formControlName="end_date"
+        class="border border-gray-200 rounded-lg px-2 py-2 text-gray-800"
+      />
+      @if (isInvalid('end_date')) {
+        <span class="text-xs text-red-600">Selecciona la fecha de fin.</span>
+      }
+    </label>
+
+    <label class="flex flex-col gap-1 text-sm text-gray-500">
+      Cabaña
+      <select
+        formControlName="cabin_id"
+        class="border border-gray-200 rounded-lg px-3 py-2 text-gray-800 w-52 bg-white"
+      >
+        <option [ngValue]="null">Todas</option>
+        @for (cabin of cabins(); track cabin.id) {
+          <option [ngValue]="cabin.id">{{ cabin.name }}</option>
+        }
+      </select>
+    </label>
+
+    @if (filterForm.hasError('invalidRange')) {
+      <span class="text-xs text-red-600 w-full lg:w-auto">
+        La fecha de inicio no puede ser posterior a la fecha de fin.
+      </span>
+    }
+
+    <div class="flex gap-2 lg:ml-auto">
+      <button
+        type="submit"
+        [disabled]="loading()"
+        class="bg-gray-800 text-white text-sm px-4 py-2 rounded-lg disabled:opacity-50"
+      >
+        Consultar
+      </button>
+      <button
+        type="button"
+        (click)="clear()"
+        [disabled]="loading()"
+        class="border border-gray-200 text-gray-500 text-sm px-4 py-2 rounded-lg disabled:opacity-50"
+      >
+        Limpiar
+      </button>
+    </div>
+  </form>
+
+  @if (loading()) {
+    <p class="text-gray-500 text-sm text-center py-8">Cargando reporte...</p>
+  }
+
+  @if (error()) {
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+      <h3 class="text-lg font-medium text-gray-800 mb-1">No se pudo cargar el reporte</h3>
+      <p class="text-gray-500 text-sm">{{ error() }}</p>
+    </div>
+  }
+
+  @if (report(); as data) {
+    @if (!loading()) {
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">Ingresos netos</p>
+          <p class="text-2xl font-medium text-gray-800">
+            {{ data.total_income | currency: 'GTQ' : 'symbol-narrow' : '1.2-2' }}
+          </p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">Pagos y anticipos</p>
+          <p class="text-2xl font-medium text-gray-800">
+            {{ data.total_payments | currency: 'GTQ' : 'symbol-narrow' : '1.2-2' }}
+          </p>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100">
+          <p class="text-sm text-gray-500 mb-1">Reembolsos</p>
+          <p class="text-2xl font-medium text-gray-800">
+            {{ data.total_refunds | currency: 'GTQ' : 'symbol-narrow' : '1.2-2' }}
+          </p>
+        </div>
+      </div>
+
+      @if (data.total_movements === 0) {
+        <div class="max-w-md mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-100 text-center">
+          <h3 class="text-xl font-medium text-gray-800 mb-2">Sin registros</h3>
+          <p class="text-gray-500 text-sm mb-4">
+            {{ data.message ?? 'No se encontraron ingresos en el rango seleccionado.' }}
+          </p>
+          <p class="text-lg font-medium text-gray-800">
+            Total: {{ data.total_income | currency: 'GTQ' : 'symbol-narrow' : '1.2-2' }}
+          </p>
+        </div>
+      } @else {
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="text-gray-500 border-b border-gray-100">
+                <th class="py-3 px-4 font-medium">Fecha</th>
+                <th class="py-3 px-4 font-medium">Cabaña</th>
+                <th class="py-3 px-4 font-medium">Huésped</th>
+                <th class="py-3 px-4 font-medium">Reservación</th>
+                <th class="py-3 px-4 font-medium">Tipo</th>
+                <th class="py-3 px-4 font-medium">Método</th>
+                <th class="py-3 px-4 font-medium text-right">Monto</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (movement of data.movements; track movement.id) {
+                <tr class="border-b border-gray-100 last:border-0 text-gray-800">
+                  <td class="py-3 px-4">{{ movement.date | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td class="py-3 px-4">{{ movement.cabin_name }}</td>
+                  <td class="py-3 px-4">{{ movement.guest_name }}</td>
+                  <td class="py-3 px-4">#{{ movement.reservation_id }}</td>
+                  <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 rounded-full text-xs" [class]="typeClass(movement.type)">
+                      {{ typeLabel(movement.type) }}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 capitalize">{{ movement.method }}</td>
+                  <td
+                    class="py-3 px-4 text-right"
+                    [class.text-red-600]="movement.type === 'reembolso'"
+                  >
+                    {{ movement.amount | currency: 'GTQ' : 'symbol-narrow' : '1.2-2' }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-sm text-gray-500 mt-4">
+          {{ data.total_movements }} movimiento(s) entre {{ data.start_date }} y {{ data.end_date }}
+        </p>
+      }
+    }
+  }
+</section>

@@ -27,6 +27,7 @@ import (
 	"cdv-api/internal/notifications"
 	"cdv-api/internal/payments"
 	"cdv-api/internal/refunds"
+	reportincome "cdv-api/internal/reports/reportIncome"
 	reportreservations "cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/seasonprices"
@@ -95,6 +96,10 @@ func main() {
 	reportRepository := reportreservations.NewRepository(pool)
 	reportService := reportreservations.NewService(reportRepository)
 	reportController := reportreservations.NewController(reportService)
+
+	incomeReportRepository := reportincome.NewRepository(pool)
+	incomeReportService := reportincome.NewService(incomeReportRepository)
+	incomeReportController := reportincome.NewController(incomeReportService)
 	paymentRepository := payments.NewRepository(pool)
 	paymentService := payments.NewService(paymentRepository, notificationService)
 	paymentController := payments.NewController(paymentService)
@@ -185,6 +190,7 @@ func main() {
 
 	//Reportes
 	mux.HandleFunc("GET /cdv-api/reports/reservations", reportController.GetReservationsReport)
+	mux.HandleFunc("GET /cdv-api/reports/income", incomeReportController.GetIncomeReport)
 
 	// -------------------------
 	// Server
