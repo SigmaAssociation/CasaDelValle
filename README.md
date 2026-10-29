@@ -54,7 +54,7 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 3. **Acceder a los servicios:**
    - Frontend: `http://localhost:4200`
    - Backend API: `http://localhost:8080`
-   - PostgreSQL: `localhost:5432`
+   - PostgreSQL: `postgres-db:5432` dentro de la red de Docker (sin puerto publicado al equipo local)
 
 4. **Detener el entorno:**
 
@@ -64,15 +64,44 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 
 ### Migraciones de base de datos
 
-Las migraciones se ejecutan manualmente con el script `database/migrate.sh`. El script recorre los archivos `.sql` de `database/migrations/` en orden alfabético y guarda los ya aplicados en `database/completed_migrations.txt`.
+El esquema inicial se crea con `database/init.sql` solamente cuando el volumen de PostgreSQL está vacío. Después, tanto para una instalación nueva como para una base existente, aplica las migraciones de `database/migrations/` con el script de desarrollo.
 
-Levantar el proyecto con docker, ubicarse en la carpeta raiz y ejecutar:
+1. Configura `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB` en el archivo `.env` de la raíz (y las variables `DB_*` correspondientes para la API).
+2. Levanta PostgreSQL y espera a que esté listo:
+
+   ```bash
+   docker compose up -d --build --wait postgres-db
+   ```
+
+   Si ya tenías el contenedor creado, este comando también incorpora el montaje de los archivos de migraciones.
+
+3. Ejecuta desde la raíz del repositorio:
+
+   ```bash
+   ./database/migrate.sh
+   ```
+
+   El script usa el servicio `postgres-db` de `docker-compose.yml` y las credenciales `POSTGRES_USER` y `POSTGRES_DB` del contenedor. No requiere instalar `psql` en tu equipo. También puedes invocarlo desde otra carpeta usando su ruta absoluta. Si tu instalación requiere `sudo` para acceder a Docker, usa `sudo ./database/migrate.sh`.
+
+   Opcionalmente puedes indicar ambos valores: `./database/migrate.sh USUARIO BASE_DE_DATOS`.
+
+4. Inicia los demás servicios:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+Los archivos se ejecutan en orden alfabético. El historial se guarda en la tabla `public.schema_migrations` de cada base de datos, dentro del mismo volumen que sus datos. Puedes volver a ejecutar el script: omite las migraciones registradas. Un bloqueo en PostgreSQL evita ejecuciones simultáneas. Si una migración falla, se revierten sus cambios y su registro, el script termina con error y las migraciones posteriores no se ejecutan; las anteriores permanecen aplicadas.
+
+Para consultar el historial:
 
 ```bash
-sudo ./database/migrate.sh USUARIO BASE_DE_DATOS
+docker compose exec postgres-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE public.schema_migrations;"'
 ```
 
-Por ejemplo, `./database/migrate.sh devuser appdb`. Para agregar una migración, cree un archivo con el siguiente consecutivo en `database/migrations/`, por ejemplo `007_descripcion_del_cambio.sql`. No modifique ni elimine archivos ya registrados en `database/completed_migrations.txt`.
+Para agregar un cambio, crea el siguiente archivo consecutivo, por ejemplo `008_descripcion.sql`, en `database/migrations/` y vuelve a ejecutar el script. No modifiques migraciones ya aplicadas. Los archivos deben contener SQL sin `BEGIN`/`COMMIT`, porque el script administra la transacción; tampoco deben usar operaciones incompatibles con transacciones, como `CREATE INDEX CONCURRENTLY`.
+
+`docker compose down` conserva los datos y el historial. **`docker compose down -v` los elimina**; no es necesario borrar el volumen para ejecutar migraciones.
 
 ### Documentación Swagger
 
