@@ -19,6 +19,7 @@ type SeasonRepository interface {
 	GetCabinBasePrice(ctx context.Context, cabinID uint) (float64, error)
 	GetMatchingCabinSeason(ctx context.Context, cabinID uint, date string) (*CabinSeasonPrice, error)
 	GetMatchingGlobalSeason(ctx context.Context, date string) (*Season, error)
+	GetPriceQuote(ctx context.Context, req PriceQuoteRequest) (*PriceQuoteResponse, error)
 }
 
 type Service struct {
