@@ -196,7 +196,7 @@ func TestCreateRefundRejectsNonCancelledReservation(t *testing.T) {
 	service := NewService(&mockRepository{summaryPaid: 300})
 
 	reservation := cancelledReservation(5)
-	reservation.Status = reservations.StatusConfirmed
+	reservation.Status = reservations.StatusPending
 
 	amount := 100.0
 	_, err := service.CreateRefund(context.Background(), reservation, CreateRefundRequest{Amount: &amount})

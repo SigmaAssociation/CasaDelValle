@@ -469,6 +469,9 @@ func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, metho
 	}
 
 	if err := s.repository.PayAnticipo(ctx, id, reservation.UserID, amount, method); err != nil {
+		if err.Error() == "La cabaña ya fue confirmada para el rango de fechas seleccionado" {
+			return nil, 0, errors.New("La cabaña no está disponible en el rango de fechas seleccionado")
+		}
 		return nil, 0, err
 	}
 

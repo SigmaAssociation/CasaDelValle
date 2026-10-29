@@ -64,30 +64,15 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 
 ### Migraciones de base de datos
 
-`database/init.sql` contiene el esquema completo (incluida la tabla `notificaciones` y el rol de **Anfitrión**), por lo que las bases **nuevas** no necesitan nada extra. Para una base **existente** que se creó antes de estas funcionalidades, se deben aplicar en orden los siguientes scripts (son idempotentes y se pueden repetir):
+Las migraciones se ejecutan manualmente con el script `database/migrate.sh`. El script recorre los archivos `.sql` de `database/migrations/` en orden alfabético y guarda los ya aplicados en `database/completed_migrations.txt`.
+
+Levantar el proyecto con docker, ubicarse en la carpeta raiz y ejecutar:
 
 ```bash
-# 1. Agrega el rol "Anfitrión" (necesario para registrar anfitriones).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_roles.sql
-
-# 2. Crea el buzón de notificaciones personales.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications.sql
-
-# 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
-
-# 4. Migra estados de reservaciones, pagos/abonos y tipos de notificación
-# (pendiente/confirmada/en_curso + anticipo 30% + pago_registrado/reserva_checkin).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_estados_pagos.sql
-
-# 5. Crea las tablas de cargos adicionales y reembolsos para el saldo.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservation_balance.sql
-
-# 6. Habilita el tipo de pago reembolso para el historial.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_refunds.sql
+sudo ./database/migrate.sh USUARIO BASE_DE_DATOS
 ```
 
-Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
+Por ejemplo, `./database/migrate.sh devuser appdb`. Para agregar una migración, cree un archivo con el siguiente consecutivo en `database/migrations/`, por ejemplo `007_descripcion_del_cambio.sql`. No modifique ni elimine archivos ya registrados en `database/completed_migrations.txt`.
 
 ### Documentación Swagger
 

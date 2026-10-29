@@ -75,5 +75,9 @@ export function refundPercentFor(startDate: string, now: Date = new Date()): num
 export function estimatedRefundAmount(reservation: Reservation, now: Date = new Date()): number {
   if (reservation.status !== 'confirmada') return 0;
   const percent = refundPercentFor(reservation.startDate, now);
+  const paidTotal = Number((reservation as any).paidTotal ?? (reservation as any).pagado ?? NaN);
+  if (Number.isFinite(paidTotal) && paidTotal > 0) {
+    return Math.round(paidTotal * percent * 100) / 100;
+  }
   return Math.round(anticipoFor(reservation.totalPrice) * percent * 100) / 100;
 }

@@ -102,7 +102,10 @@ func (s *Service) CreateRefund(ctx context.Context, reservation *reservations.Re
 	if reservation == nil {
 		return nil, ErrReservationNotFound
 	}
-	if reservation.Status != reservations.StatusCancelled {
+	if reservation.Status != reservations.StatusCancelled &&
+		reservation.Status != reservations.StatusConfirmed &&
+		reservation.Status != reservations.StatusInProgress &&
+		reservation.Status != reservations.StatusFinished {
 		return nil, ErrReservationNotRefundable
 	}
 

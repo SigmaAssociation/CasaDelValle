@@ -1,8 +1,4 @@
 -- Cargos adicionales y reembolsos para calcular el saldo de una reservación.
---
--- Uso:
---   docker exec -i postgres_db psql -U devuser -d appdb \
---     < database/migrate_reservation_balance.sql
 
 CREATE TABLE IF NOT EXISTS cargos_adicionales (
     id SERIAL PRIMARY KEY,
