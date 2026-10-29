@@ -1,15 +1,122 @@
-<section class="mt-10 pt-6 border-t border-gray-100">
-  <h3 class="text-xl font-semibold">Precios por temporada</h3>
-  <p class="text-sm text-gray-500 mb-4">Selecciona una temporada global para usar su sugerencia o define un precio exacto.</p>
-  @if (success()) { <p class="mb-3 text-sm text-green-700">{{ success() }}</p> }
-  @if (error()) { <p class="mb-3 text-sm text-red-600">{{ error() }}</p> }
-  <form [formGroup]="form" (ngSubmit)="save()" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <select formControlName="seasonId" (change)="selectSeason()" class="rounded-md border-gray-300 sm:col-span-2"><option value="">Temporada personalizada</option>@for (season of seasons(); track season.id) { <option [value]="season.id">{{ season.name }} ({{ season.suggestedAdjustmentPercent }}%)</option> }</select>
-    <input type="date" formControlName="startDate" class="rounded-md border-gray-300" />
-    <input type="date" formControlName="endDate" class="rounded-md border-gray-300" />
-    <input type="number" step="0.01" formControlName="adjustmentPercent" placeholder="Ajuste porcentual" class="rounded-md border-gray-300" />
-    <input type="number" min="0.01" step="0.01" formControlName="fixedPrice" placeholder="Precio exacto por noche (opcional)" class="rounded-md border-gray-300" />
-    <button type="submit" [disabled]="submitting()" class="bg-orange text-white rounded-md py-2 sm:col-span-2">{{ submitting() ? 'Guardando...' : 'Guardar precio' }}</button>
-  </form>
-  @if (prices().length) { <div class="mt-5 space-y-2">@for (price of prices(); track price.id) { <div class="flex justify-between text-sm bg-gray-50 p-3 rounded"><span>{{ price.startDate }} al {{ price.endDate }}: @if (price.fixedPrice) { Q{{ price.fixedPrice }} } @else { {{ price.adjustmentPercent }}% }</span><button type="button" (click)="remove(price)" class="text-red-600">Eliminar</button></div> }</div> }
+@if (success()) { <div role="status" class="mb-5 rounded-lg border border-green/20 bg-green/10 px-4 py-3 text-sm text-green">{{ success() }}</div> }
+@if (error()) { <div role="alert" class="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ error() }} @if (loadFailed()) { <button type="button" (click)="load()" class="ml-2 underline font-semibold">Reintentar</button> }</div> }
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+  <section class="lg:col-span-2 rounded-xl border border-brown/10 bg-white p-5 sm:p-7 shadow-sm" aria-labelledby="season-form-title">
+    <h2 id="season-form-title" class="text-2xl text-brown">Configurar una tarifa</h2>
+    <p class="mt-2 mb-6 text-sm text-brown/70 leading-relaxed">Parte de una temporada global o elige tus propias fechas. Puedes ajustar el porcentaje recomendado o definir un precio fijo por noche.</p>
+    <form [formGroup]="form" (ngSubmit)="save()" class="space-y-6">
+      <fieldset [disabled]="loading() || submitting() || loadFailed()" class="space-y-6">
+        <div>
+          <label for="season-choice" class="field-label">Temporada</label>
+          <select id="season-choice" formControlName="seasonId" (change)="selectSeason()" class="field-control">
+            <option value="">Personalizada · elegir mis fechas</option>
+            @for (season of seasons(); track season.id) {
+              @if (season.active) { <option [value]="season.id">{{ season.name }} · {{ percent(season.suggestedAdjustmentPercent) }} recomendado</option> }
+            }
+          </select>
+          @if (selectedSeason; as season) {
+            <p class="field-help">{{ season.name }}: del {{ date(season.startDate) }} al {{ date(season.endDate) }}. Las fechas y el ajuste se completaron por ti.</p>
+          } @else { <p class="field-help">Crea una tarifa especial para el periodo que necesites.</p> }
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="season-start" class="field-label">Primera noche</label>
+            <input id="season-start" type="date" formControlName="startDate" class="field-control" [attr.aria-invalid]="form.controls.startDate.touched && form.controls.startDate.invalid" />
+            @if (form.controls.startDate.touched && form.controls.startDate.hasError('required')) { <p class="field-error">Selecciona la fecha de inicio.</p> }
+          </div>
+          <div>
+            <label for="season-end" class="field-label">Última noche</label>
+            <input id="season-end" type="date" formControlName="endDate" [min]="form.controls.startDate.value || ''" class="field-control" [attr.aria-invalid]="form.hasError('dateOrder')" />
+            @if (form.controls.endDate.touched && form.controls.endDate.hasError('required')) { <p class="field-error">Selecciona la fecha de fin.</p> }
+            @if (form.hasError('dateOrder') && form.controls.endDate.touched) { <p class="field-error">La última noche debe ser igual o posterior a la primera.</p> }
+          </div>
+        </div>
+        <p class="field-help -mt-3">La tarifa se aplica a las noches de ambas fechas, inclusive.</p>
+
+        <div class="border-t border-brown/10 pt-5">
+          <p id="price-mode-label" class="field-label">¿Cómo quieres definir el precio?</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2" role="group" aria-labelledby="price-mode-label">
+            <label class="mode-choice" [class.mode-selected]="form.controls.pricingMode.value === 'percent'">
+              <input type="radio" name="pricingMode" formControlName="pricingMode" value="percent" />
+              <span><span class="block font-semibold text-sm">Ajuste porcentual</span><span class="block text-xs text-brown/65 mt-1">Aumenta o reduce tu tarifa base.</span></span>
+            </label>
+            <label class="mode-choice" [class.mode-selected]="form.controls.pricingMode.value === 'fixed'">
+              <input type="radio" name="pricingMode" formControlName="pricingMode" value="fixed" />
+              <span><span class="block font-semibold text-sm">Precio fijo por noche</span><span class="block text-xs text-brown/65 mt-1">Cobra un importe exacto en quetzales.</span></span>
+            </label>
+          </div>
+        </div>
+
+        @if (form.controls.pricingMode.value === 'percent') {
+          <div>
+            <label for="season-percent" class="field-label">Ajuste sobre la tarifa base</label>
+            <div class="relative max-w-xs"><input id="season-percent" type="number" formControlName="adjustmentPercent" min="-99.99" max="9999.99" step="0.01" class="field-control pr-10" [attr.aria-invalid]="form.hasError('invalidPercent')" /><span class="absolute right-4 top-3 text-brown/60 pointer-events-none">%</span></div>
+            <p class="field-help">Ejemplo: 25 aumenta el precio un 25%; -10 aplica un descuento del 10%.</p>
+            @if (form.hasError('invalidPercent') && (attempted() || form.controls.adjustmentPercent.touched)) { <p class="field-error">Ingresa un porcentaje mayor que -100 y hasta 9999.99.</p> }
+          </div>
+        } @else {
+          <div>
+            <label for="season-fixed" class="field-label">Precio por noche</label>
+            <div class="relative max-w-xs"><span class="absolute left-4 top-3 text-brown/60 pointer-events-none">Q</span><input id="season-fixed" type="number" formControlName="fixedPrice" min="0.01" max="99999999.99" step="0.01" placeholder="0.00" class="field-control pl-10" [attr.aria-invalid]="form.hasError('invalidFixed')" /></div>
+            <p class="field-help">Este importe reemplaza la tarifa base durante las fechas elegidas.</p>
+            @if (form.hasError('invalidFixed') && (attempted() || form.controls.fixedPrice.touched)) { <p class="field-error">Ingresa un precio por noche mayor que cero.</p> }
+          </div>
+        }
+      </fieldset>
+      <div class="border-t border-brown/10 pt-5 flex flex-col sm:flex-row sm:items-center gap-3">
+        <button type="submit" [disabled]="submitting() || loading() || loadFailed()" class="bg-orange hover:bg-orange/90 text-white font-medium px-6 py-3 rounded-md transition-colors disabled:opacity-50">{{ submitting() ? 'Guardando…' : 'Guardar tarifa de temporada' }}</button>
+        <p class="text-xs text-brown/60">Las reservas ya creadas conservan su total.</p>
+      </div>
+    </form>
+  </section>
+
+  <aside class="space-y-4 lg:sticky lg:top-6" aria-label="Resumen de la tarifa">
+    <div class="rounded-xl border border-green/20 bg-green/5 p-6">
+      <p class="text-sm font-medium text-green">{{ selectedSeason ? 'Precio recomendado' : 'Tarifa de referencia' }}</p>
+      <p class="font-serif text-3xl text-green mt-3">{{ recommendedPrice | currency:'GTQ':'symbol-narrow':'1.2-2' }} <span class="font-sans text-sm text-brown/60">/ noche</span></p>
+      @if (selectedSeason; as season) {
+        <p class="text-sm text-brown/75 leading-relaxed mt-3">{{ season.name }} recomienda {{ percent(season.suggestedAdjustmentPercent) }} sobre tu tarifa base de {{ basePrice | currency:'GTQ':'symbol-narrow':'1.2-2' }}.</p>
+        <button type="button" (click)="useRecommendation()" [disabled]="loading() || submitting()" class="mt-4 text-sm font-semibold text-green underline underline-offset-4 disabled:opacity-50">Usar precio recomendado</button>
+      } @else { <p class="text-sm text-brown/70 leading-relaxed mt-3">Selecciona una temporada global para ver su recomendación de precio para esta cabaña.</p> }
+    </div>
+    <div class="rounded-xl border border-brown/10 bg-white p-6 shadow-sm" aria-live="polite">
+      <p class="text-sm font-medium text-brown/70">Tu tarifa personalizada</p>
+      @if (previewPrice !== null) {
+        <p class="font-serif text-3xl text-brown mt-3">{{ previewPrice | currency:'GTQ':'symbol-narrow':'1.2-2' }} <span class="font-sans text-sm text-brown/60">/ noche</span></p>
+        <p class="text-xs text-brown/60 mt-2">{{ form.controls.pricingMode.value === 'fixed' ? 'Precio fijo' : percent(form.controls.adjustmentPercent.value || 0) + ' sobre la tarifa base' }}</p>
+      } @else { <p class="text-sm text-brown/60 mt-3">Completa un precio válido para ver la vista previa.</p> }
+      @if (form.controls.startDate.value && form.controls.endDate.value && !form.hasError('dateOrder')) {
+        <p class="text-sm text-brown/70 mt-4 pt-4 border-t border-brown/10">Del {{ date(form.controls.startDate.value!) }} al {{ date(form.controls.endDate.value!) }}</p>
+      }
+    </div>
+    <p class="text-xs text-brown/65 leading-relaxed px-1">La tarifa personalizada tiene prioridad sobre la temporada global. Los porcentajes no se suman.</p>
+  </aside>
+</div>
+
+<section class="mt-8 rounded-xl border border-brown/10 bg-white p-5 sm:p-7 shadow-sm" aria-labelledby="configured-prices-title">
+  <div class="flex items-center justify-between gap-3 mb-5">
+    <div><h2 id="configured-prices-title" class="text-2xl text-brown">Tarifas configuradas</h2><p class="text-sm text-brown/65 mt-1">Consulta los periodos que ya tienen un precio personalizado.</p></div>
+    <span class="bg-cream rounded-full text-brown px-3 py-1 text-sm">{{ prices().length }}</span>
+  </div>
+  @if (loading()) { <p role="status" class="text-sm text-brown/60 py-5">Cargando temporadas y tarifas…</p> }
+  @else if (!prices().length && !loadFailed()) {
+    <div class="rounded-lg border border-dashed border-brown/20 bg-cream/30 p-7 text-center"><p class="text-brown font-medium">Aún no tienes tarifas personalizadas</p><p class="text-sm text-brown/65 mt-2">Se usarán las temporadas globales activas o tu tarifa base. Crea tu primera tarifa con el formulario.</p></div>
+  }
+  @for (price of prices(); track price.id) {
+    <article class="border-t border-brown/10 py-5 first:border-t-0">
+      <div class="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-4 sm:items-center">
+        <div><h3 class="font-sans text-base font-semibold text-brown">{{ labelFor(price) }}</h3><p class="text-sm text-brown/65 mt-1">{{ date(price.startDate) }} al {{ date(price.endDate) }}</p></div>
+        <div class="sm:text-right"><p class="font-semibold text-green">{{ priceFor(price) | currency:'GTQ':'symbol-narrow':'1.2-2' }} <span class="text-xs font-normal text-brown/60">/ noche</span></p><p class="text-xs text-brown/60 mt-1">{{ price.fixedPrice != null ? 'Precio fijo' : percent(price.adjustmentPercent) + ' sobre tarifa base' }}</p></div>
+        <button type="button" (click)="pendingDelete.set(price.id)" [disabled]="deleting() !== null || submitting()" class="justify-self-start sm:justify-self-end text-sm text-red-600 border border-red-200 rounded-md px-3 py-2 hover:bg-red-50 disabled:opacity-50" [attr.aria-label]="'Eliminar tarifa del ' + date(price.startDate)">Eliminar</button>
+      </div>
+      @if (pendingDelete() === price.id) {
+        <div class="rounded-lg bg-red-50 border border-red-100 p-4 mt-4 text-sm">
+          <p class="text-brown">¿Eliminar esta tarifa? Las reservas existentes conservan su precio.</p>
+          <div class="flex gap-3 mt-3"><button type="button" (click)="remove(price)" [disabled]="deleting() !== null" class="bg-red-600 text-white rounded-md px-3 py-2 disabled:opacity-50">{{ deleting() === price.id ? 'Eliminando…' : 'Confirmar eliminación' }}</button><button type="button" (click)="pendingDelete.set(null)" [disabled]="deleting() !== null" class="text-brown px-3 py-2">Conservar tarifa</button></div>
+        </div>
+      }
+    </article>
+  }
 </section>

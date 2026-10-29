@@ -9,8 +9,8 @@ func toCents(v float64) int64   { return int64(math.Round(v * 100)) }
 func fromCents(c int64) float64 { return float64(c) / 100 }
 
 // GetReservationBalance calcula el saldo en cada consulta a partir de los
-// movimientos registrados; así siempre refleja el último pago, cargo o
-// reembolso sin depender de totales almacenados que puedan desfasarse.
+// movimientos registrados y del precio_total contratado; así refleja el
+// último pago, cargo o reembolso sin recotizar las noches de la reserva.
 // Los montos se suman en centavos (enteros) para evitar errores de float.
 func (s *Service) GetReservationBalance(ctx context.Context, reservation *ReservationDetail) (*ReservationBalance, error) {
 	if reservation == nil {
@@ -28,6 +28,9 @@ func (s *Service) GetReservationBalance(ctx context.Context, reservation *Reserv
 	}
 
 	baseCents := int64(nights) * toCents(ledger.NightlyRate)
+	if ledger.TotalPrice != nil {
+		baseCents = toCents(*ledger.TotalPrice)
+	}
 
 	var chargesCents, paymentsCents, refundsCents int64
 	for _, c := range ledger.ExtraCharges {

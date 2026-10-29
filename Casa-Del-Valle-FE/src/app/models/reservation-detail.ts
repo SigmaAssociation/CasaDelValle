@@ -1,5 +1,6 @@
 export interface ReservationDetail {
   id: number;
+  precio_total?: number;
   user_id: number;
   cabin_id: number;
   host_id: number;

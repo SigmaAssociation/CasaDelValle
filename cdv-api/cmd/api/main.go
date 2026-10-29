@@ -23,6 +23,7 @@ import (
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
 	"cdv-api/internal/images"
+	"cdv-api/internal/maintenance"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/notifications"
 	"cdv-api/internal/payments"
@@ -71,6 +72,10 @@ func main() {
 	cabinRepository := cabins.NewRepository(pool)
 	cabinService := cabins.NewService(cabinRepository, notificationService)
 	cabinController := cabins.NewController(cabinService)
+
+	maintenanceRepository := maintenance.NewRepository(pool)
+	maintenanceService := maintenance.NewService(maintenanceRepository)
+	maintenanceController := maintenance.NewController(maintenanceService)
 
 	reservationRepository := reservations.NewRepository(pool)
 	reservationService := reservations.NewService(reservationRepository, notificationService)
@@ -145,6 +150,13 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/search", cabinController.SearchCabins)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 
+	mux.HandleFunc("GET /cdv-api/maintenance/reservation/{id}", maintenanceController.Pending)
+	mux.HandleFunc("POST /cdv-api/maintenance/reservation/{id}/resolve", maintenanceController.Resolve)
+	mux.HandleFunc("GET /cdv-api/maintenance/cabin/{cabinId}", maintenanceController.List)
+	mux.HandleFunc("POST /cdv-api/maintenance/cabin/{cabinId}/preview", maintenanceController.Preview)
+	mux.HandleFunc("POST /cdv-api/maintenance/cabin/{cabinId}", maintenanceController.Create)
+	mux.HandleFunc("PATCH /cdv-api/maintenance/cabin/{cabinId}/{id}/cancel", maintenanceController.Cancel)
+
 	mux.HandleFunc("GET /cdv-api/cabins/availability/{cabinId}", reservationController.GetCabinAvailability)
 
 	mux.HandleFunc("GET /cdv-api/seasons", seasonController.ListSeasons)
@@ -174,7 +186,7 @@ func main() {
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkin", reservationController.Checkin)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkout", reservationController.Checkout)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
-	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", paymentController.GetReservationPayments)
+	paymentController.RegisterRoutes(mux)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)

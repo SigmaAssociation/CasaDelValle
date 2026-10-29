@@ -10,6 +10,7 @@ import { ModelGuidePage } from './pages/model-guide-page/model-guide-page';
 import { DesignGuidePage } from './pages/design-guide-page/design-guide-page';
 import { BackendGuidePage } from './pages/backend-guide-page/backend-guide-page';
 import { GuidePage } from './pages/guide-page/guide-page';
+import { CabinSeasonPricesPage } from './pages/cabin-season-prices-page/cabin-season-prices-page';
 import { CabinEditPage } from './pages/cabin-edit-page/cabin-edit-page';
 import { CabinDetailPage } from './pages/cabin-detail-page/cabin-detail-page';
 import { authGuard } from './guards/auth-guard';
@@ -50,6 +51,11 @@ export const routes: Routes = [
         path: 'cabins/:id',
         component: CabinDetailPage,
         canActivate: [authGuard],
+    },
+    {
+        path: 'cabins/:id/season-prices',
+        component: CabinSeasonPricesPage,
+        canActivate: [authGuard, hostGuard, cabinOwnerGuard],
     },
     {
         path: 'cabins/:id/edit',

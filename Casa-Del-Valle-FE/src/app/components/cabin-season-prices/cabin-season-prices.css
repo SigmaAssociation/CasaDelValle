@@ -1,0 +1,14 @@
+:host { display: block; }
+.field-label { display: block; margin-bottom: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #423629; }
+.field-control { display: block; width: 100%; min-height: 2.875rem; padding: 0.75rem 1rem; border: 1px solid #d7d0c4; border-radius: 0.5rem; background: white; font: inherit; font-size: 0.875rem; color: #151515; transition: border-color 150ms, box-shadow 150ms; }
+.field-control:focus { outline: none; border-color: #ec4e20; box-shadow: 0 0 0 3px rgb(236 78 32 / 12%); }
+.field-control[aria-invalid="true"] { border-color: #dc2626; }
+.field-control:disabled, fieldset:disabled .field-control { background: #f7f5ef; color: #746a5d; cursor: wait; }
+.field-help { margin-top: 0.5rem; font-size: 0.75rem; line-height: 1.6; color: #766a5b; }
+.field-error { margin-top: 0.5rem; font-size: 0.75rem; line-height: 1.5; color: #b91c1c; }
+.mode-choice { display: flex; align-items: flex-start; gap: 0.75rem; padding: 1rem; border: 1px solid #d7d0c4; border-radius: 0.5rem; cursor: pointer; transition: background 150ms, border-color 150ms; }
+.mode-choice input { margin-top: 0.2rem; accent-color: #4f5d2f; }
+.mode-choice:focus-within { outline: 2px solid #ec4e20; outline-offset: 2px; }
+.mode-selected { border-color: #4f5d2f; background: rgb(79 93 47 / 5%); }
+.field-control.pr-10 { padding-right: 2.5rem; }
+.field-control.pl-10 { padding-left: 2.5rem; }

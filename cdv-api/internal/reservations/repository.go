@@ -26,6 +26,8 @@ func (r *Repository) CreateReservation(ctx context.Context, req ReservationReque
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
+			case "23P01":
+				return 0, errors.New("La cabaña no está disponible en el rango de fechas seleccionado")
 			case "23503":
 				switch pgErr.ConstraintName {
 				case "fk_reservacion_cabana":
@@ -54,7 +56,10 @@ func (r *Repository) HasOverlap(ctx context.Context, cabinID uint, startDate, en
 		FROM reservaciones
 		WHERE id_cabana = $1
 		  AND id <> $2
-		  AND estado IN ('confirmada', 'en_curso')
+		  AND estado IN ('confirmada', 'en_curso', 'por_mantenimiento')
+        UNION ALL
+        SELECT fecha_inicio, fecha_fin FROM mantenimientos
+        WHERE id_cabana=$1 AND fecha_cancelacion IS NULL
 	`
 
 	rows, err := r.pool.Query(ctx, query, cabinID, excludeID)
@@ -105,7 +110,7 @@ func (r *Repository) GetReservationByID(ctx context.Context, id int) (*Reservati
 		SELECT r.id, r.id_usuario, r.id_cabana, c.id_anfitrion,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
-		       r.estado, r.fecha_cancelacion
+		       r.estado, r.fecha_cancelacion, r.precio_total / (r.fecha_fin-r.fecha_inicio), r.precio_total
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
 		WHERE r.id = $1
@@ -114,7 +119,7 @@ func (r *Repository) GetReservationByID(ctx context.Context, id int) (*Reservati
 	var res ReservationDetail
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&res.ID, &res.UserID, &res.CabinID, &res.HostID,
-		&res.StartDate, &res.EndDate, &res.Status, &res.CancelledAt,
+		&res.StartDate, &res.EndDate, &res.Status, &res.CancelledAt, &res.NightlyRate, &res.TotalPrice,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -148,7 +153,7 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
-		       c.precio,
+		       r.precio_total,
 		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
@@ -174,21 +179,15 @@ func (r *Repository) GetReservationsByUserID(ctx context.Context, userID uint) (
 	cards := []ReservationCard{}
 	for rows.Next() {
 		var c ReservationCard
-		var nightlyRate float64
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.HostID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
+			&c.StartDate, &c.EndDate, &c.TotalPrice, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
 		}
 
-		totalPrice, err := calculateReservationTotalPrice(c.StartDate, c.EndDate, nightlyRate)
-		if err != nil {
-			return nil, err
-		}
-		c.TotalPrice = totalPrice
 		cards = append(cards, c)
 	}
 	if err := rows.Err(); err != nil {
@@ -204,7 +203,7 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 		       r.id_usuario, u.nombre,
 		       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 		       to_char(r.fecha_fin, 'YYYY-MM-DD'),
-		       c.precio,
+		       r.precio_total,
 		       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0),
 		       r.estado, r.fecha_creacion, r.fecha_cancelacion
 		FROM reservaciones r
@@ -230,21 +229,15 @@ func (r *Repository) GetReservationsByCabinID(ctx context.Context, cabinID uint)
 	cards := []ReservationCard{}
 	for rows.Next() {
 		var c ReservationCard
-		var nightlyRate float64
 		if err := rows.Scan(
 			&c.ID, &c.CabinID, &c.HostID, &c.CabinName, &c.CabinImageURL,
 			&c.GuestID, &c.GuestName,
-			&c.StartDate, &c.EndDate, &nightlyRate, &c.PaidTotal,
+			&c.StartDate, &c.EndDate, &c.TotalPrice, &c.PaidTotal,
 			&c.Status, &c.CreatedAt, &c.CancelledAt,
 		); err != nil {
 			return nil, err
 		}
 
-		totalPrice, err := calculateReservationTotalPrice(c.StartDate, c.EndDate, nightlyRate)
-		if err != nil {
-			return nil, err
-		}
-		c.TotalPrice = totalPrice
 		cards = append(cards, c)
 	}
 	if err := rows.Err(); err != nil {
@@ -261,7 +254,7 @@ func (r *Repository) GetCheckinEligibility(ctx context.Context, id int) (*Checki
 	       to_char(r.fecha_inicio, 'YYYY-MM-DD'),
 	       to_char(r.fecha_fin, 'YYYY-MM-DD'),
 	       r.fecha_checkin,
-	       c.precio,
+	       r.precio_total / (r.fecha_fin-r.fecha_inicio), r.precio_total,
 	       COALESCE((SELECT SUM(p.cantidad) FROM pagos p WHERE p.id_reservacion = r.id AND p.tipo_pago <> 'reembolso'), 0)
 		FROM reservaciones r
 		JOIN cabanas c ON c.id = r.id_cabana
@@ -270,7 +263,7 @@ func (r *Repository) GetCheckinEligibility(ctx context.Context, id int) (*Checki
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&e.ReservationID, &e.UserID, &e.CabinID, &e.HostID,
 		&e.Status, &e.StartDate, &e.EndDate, &e.CheckedInAt,
-		&e.NightlyRate, &e.PaidTotal,
+		&e.NightlyRate, &e.TotalPrice, &e.PaidTotal,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -363,7 +356,7 @@ func (r *Repository) HasUserOverlap(ctx context.Context, userID uint, startDate,
 		FROM reservaciones
 		WHERE id_usuario = $1
 		  AND id <> $2
-	  AND estado IN ('pendiente', 'confirmada', 'en_curso')
+	  AND estado IN ('pendiente', 'confirmada', 'en_curso', 'por_mantenimiento')
 	`
 
 	rows, err := r.pool.Query(ctx, query, userID, excludeID)
@@ -402,8 +395,11 @@ func (r *Repository) GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]
 		SELECT to_char(fecha_inicio, 'YYYY-MM-DD'), to_char(fecha_fin, 'YYYY-MM-DD')
 		FROM reservaciones
 		WHERE id_cabana = $1
-		  AND estado IN ('confirmada', 'en_curso')
-		ORDER BY fecha_inicio
+		  AND estado IN ('confirmada', 'en_curso', 'por_mantenimiento')
+        UNION ALL
+        SELECT to_char(fecha_inicio, 'YYYY-MM-DD'), to_char(fecha_fin, 'YYYY-MM-DD')
+        FROM mantenimientos WHERE id_cabana=$1 AND fecha_cancelacion IS NULL
+        ORDER BY 1
 	`
 
 	rows, err := r.pool.Query(ctx, query, cabinID)
@@ -430,7 +426,8 @@ func (r *Repository) GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]
 func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateReservationRequest) error {
 	query := `
 		UPDATE reservaciones
-		SET id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
+		SET precio_noche_acordado = CASE WHEN id_cabana = $1 THEN precio_noche_acordado ELSE NULL END,
+            id_cabana = $1, fecha_inicio = $2, fecha_fin = $3
 		WHERE id = $4 AND estado IN ('pendiente', 'confirmada')
 	`
 	tag, err := r.pool.Exec(ctx, query, req.CabinID, req.StartDate, req.EndDate, id)
@@ -438,6 +435,8 @@ func (r *Repository) UpdateReservation(ctx context.Context, id int, req UpdateRe
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			switch pgErr.Code {
+			case "23P01":
+				return errors.New("La cabaña no está disponible en el rango de fechas seleccionado")
 			case "23503":
 				if pgErr.ConstraintName == "fk_reservacion_cabana" {
 					return errors.New("La cabaña especificada no existe")
@@ -515,6 +514,9 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 		return err
 	}
 	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(947,1)`); err != nil {
+		return err
+	}
 
 	var cabinID uint
 	var startDate, endDate time.Time
@@ -538,10 +540,10 @@ func (r *Repository) PayAnticipo(ctx context.Context, reservationID int, payerID
 			FROM reservaciones
 			WHERE id_cabana = $1
 			  AND id <> $2
-			  AND estado IN ('confirmada', 'en_curso')
+			  AND estado IN ('confirmada', 'en_curso', 'por_mantenimiento')
 			  AND fecha_inicio < $4
 			  AND fecha_fin > $3
-		)
+		) OR EXISTS (SELECT 1 FROM mantenimientos WHERE id_cabana=$1 AND fecha_cancelacion IS NULL AND fecha_inicio<$4 AND fecha_fin>$3)
 	`, cabinID, reservationID, startDate, endDate).Scan(&conflict)
 	if err != nil {
 		return err

@@ -30,7 +30,7 @@ export class MyReservationsPage implements OnInit {
 
     switch (this.tab()) {
       case 'upcoming':
-        return list.filter((r) => ['pendiente', 'confirmada', 'en_curso'].includes(r.status));
+        return list.filter((r) => ['pendiente', 'confirmada', 'en_curso', 'por_mantenimiento'].includes(r.status));
       case 'finished':
         return list.filter((r) => r.status === 'finalizada');
       case 'cancelled':
@@ -76,6 +76,8 @@ export class MyReservationsPage implements OnInit {
       },
     });
   }
+
+  onMaintenanceResolved(message: string): void { this.cancelMessage.set(message); this.getReservations(); }
 
   onCancelled(res: CancelReservationResponse): void {
     this.reservations.update((list) =>

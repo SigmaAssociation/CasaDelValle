@@ -329,6 +329,9 @@ func (s *Service) Checkin(ctx context.Context, id int, cashAmount float64) (*Res
 	if err != nil {
 		return nil, err
 	}
+	if eligibility.TotalPrice != nil {
+		total = *eligibility.TotalPrice
+	}
 	total = math.Round(total*100) / 100
 	remaining := math.Round((total-eligibility.PaidTotal)*100) / 100
 
@@ -437,9 +440,14 @@ func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, metho
 		return nil, 0, ErrReservationNotPending
 	}
 
-	rate, err := s.repository.GetCabinNightlyRate(ctx, reservation.CabinID)
-	if err != nil {
-		return nil, 0, err
+	var rate float64
+	if reservation.NightlyRate != nil {
+		rate = *reservation.NightlyRate
+	} else {
+		rate, err = s.repository.GetCabinNightlyRate(ctx, reservation.CabinID)
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	nights, err := calculateReservationNights(reservation.StartDate, reservation.EndDate)
@@ -448,6 +456,9 @@ func (s *Service) PayAnticipo(ctx context.Context, id int, amount float64, metho
 	}
 
 	total := float64(nights) * rate
+	if reservation.TotalPrice != nil {
+		total = *reservation.TotalPrice
+	}
 	minimum := math.Round(total*AnticipoPercent*100) / 100
 
 	if method == "" {

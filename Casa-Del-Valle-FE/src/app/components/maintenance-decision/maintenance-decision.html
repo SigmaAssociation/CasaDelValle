@@ -1,0 +1,23 @@
+<section class="rounded-lg border border-orange/30 bg-cream/50 p-4 space-y-3" aria-label="Decidir sobre el mantenimiento">
+  <h3 class="font-medium text-brown">Tu reserva fue afectada por mantenimiento</h3>
+  @if (loading()) { <p class="text-sm">Cargando tus opciones…</p> }
+  @if (error()) { <p role="alert" class="text-sm text-red-700">{{ error() }}</p> }
+  @if (details(); as d) {
+    <p class="text-sm text-brown">{{ d.reason }}. Puedes elegir nuevas fechas en esta misma cabaña, conservando tus {{ d.nights }} noches y el total original de Q{{ d.total_price | number:'1.2-2' }}, o solicitar la devolución completa de lo pagado.</p>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" (click)="option.set('dates')" [disabled]="busy()" [attr.aria-pressed]="option() === 'dates'" class="border border-green text-green rounded-md px-3 py-2 text-sm">Elegir nuevas fechas</button>
+      <button type="button" (click)="option.set('refund')" [disabled]="busy()" [attr.aria-pressed]="option() === 'refund'" class="border border-orange text-orange rounded-md px-3 py-2 text-sm">Solicitar reembolso total</button>
+    </div>
+    @if (option() === 'dates') {
+      <app-availability-calendar [blockedRanges]="d.blocked_ranges" [minDate]="today" [startDate]="start()" [endDate]="end()" (rangeChange)="rangeChanged($event)" />
+      <button type="button" (click)="load()" [disabled]="busy() || loading()" class="text-sm text-orange underline">Actualizar disponibilidad</button>
+      <p class="text-sm text-brown">Selecciona {{ d.nights }} noches disponibles. Los cambios de temporada no modificarán el total de esta reserva.</p>
+      @if (start() && end() && selectedNights !== d.nights) { <p class="text-sm text-orange">Debes conservar las {{ d.nights }} noches de tu reserva.</p> }
+      <button type="button" (click)="decide()" [disabled]="!canReschedule()" class="bg-green text-white rounded-md px-4 py-2 text-sm disabled:opacity-50">{{ busy() ? 'Guardando…' : 'Confirmar nuevas fechas' }}</button>
+    }
+    @if (option() === 'refund') {
+      <p class="text-sm text-brown">Se cancelará tu reserva y se registrará un reembolso de Q{{ d.refundable | number:'1.2-2' }}: todo lo pagado que aún no se te ha devuelto, sin penalizaciones.</p>
+      <button type="button" (click)="decide()" [disabled]="busy()" class="bg-orange text-white rounded-md px-4 py-2 text-sm disabled:opacity-50">{{ busy() ? 'Procesando…' : 'Confirmar cancelación y reembolso total' }}</button>
+    }
+  } @else if (!loading()) { <button type="button" (click)="load()" class="text-sm text-orange underline">Actualizar opciones</button> }
+</section>

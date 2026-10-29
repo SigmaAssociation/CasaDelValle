@@ -3,7 +3,8 @@ export type ReservationStatus =
   | 'confirmada'
   | 'en_curso'
   | 'finalizada'
-  | 'cancelada';
+  | 'cancelada'
+  | 'por_mantenimiento';
 
 export interface ReservationsReportFilter {
   host_id?: number;

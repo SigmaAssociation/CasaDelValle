@@ -34,6 +34,13 @@ describe('NotificationNavigationService', () => {
     expect(service).toBeTruthy();
   });
 
+  it('takes maintenance notices to the guest decision in my reservations', async () => {
+    const notification = { ...base, tipo: 'reserva_mantenimiento', entidad_tipo: 'reservacion', entidad_id: 10 };
+    expect(service.linkFor(notification)).toBe('/mis-reservaciones');
+    expect(await firstValueFrom(service.resolveLink(notification))).toBe('/mis-reservaciones');
+    httpMock.expectNone('/cdv-api/reservations/10');
+  });
+
   it('should resolve cabin notifications to the cabin detail view', async () => {
     const link = await firstValueFrom(
       service.resolveLink({ ...base, entidad_tipo: 'cabana', entidad_id: 7 })

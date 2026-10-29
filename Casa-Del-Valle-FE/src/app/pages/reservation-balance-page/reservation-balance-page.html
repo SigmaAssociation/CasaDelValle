@@ -49,8 +49,8 @@
       <dl class="flex flex-col text-sm">
         <div class="flex justify-between py-2">
           <dt class="text-brown">
-            Estadía ({{ b.nights }} {{ b.nights === 1 ? 'noche' : 'noches' }} ×
-            {{ b.nightlyRate | currency: 'GTQ' : 'symbol-narrow' }})
+            Estadía ({{ b.nights }} {{ b.nights === 1 ? 'noche' : 'noches' }}; promedio
+            {{ b.nightlyRate | currency: 'GTQ' : 'symbol-narrow' }} por noche)
           </dt>
           <dd class="text-black">{{ b.baseTotal | currency: 'GTQ' : 'symbol-narrow' }}</dd>
         </div>

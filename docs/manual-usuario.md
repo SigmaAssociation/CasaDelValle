@@ -29,13 +29,13 @@ En el detalle puede consultar dirección, capacidad, descripción, reglas, imág
 4. Indique la fecha de entrada y salida.
 5. Revise las fechas y confirme la solicitud.
 
-La fecha de salida debe ser posterior a la fecha de entrada. Una vez creada, la reservación aparece en **Mis Reservaciones**.
+La fecha de salida debe ser posterior a la fecha de entrada. El total se cotiza por noche según las temporadas globales o la configuración personalizada de la cabaña; puedes abrir **Ver precio por noche** para revisar el desglose. El importe queda guardado al reservar. Una vez creada, la reservación aparece en **Mis Reservaciones**.
 
 ## Consultar y pagar una reservación
 
 En **Mis Reservaciones** encontrará tres secciones:
 
-- **Activas**: reservaciones pendientes, confirmadas o en curso.
+- **Activas**: reservaciones pendientes, confirmadas, en curso o afectadas por mantenimiento.
 - **Finalizadas**: estancias ya completadas.
 - **Canceladas**: reservaciones anuladas.
 
@@ -48,6 +48,15 @@ Para confirmar una reservación debe pagar el anticipo solicitado, que es como m
 3. Seleccione la opción de cancelar y confirme la acción.
 
 La reservación se moverá a la pestaña **Canceladas**. Si corresponde un reembolso, revise el movimiento y estado mostrados en la misma reservación.
+
+## Si tu cabaña entra en mantenimiento
+
+Recibirás un aviso en la campana y tu reserva aparecerá como **Afectada por mantenimiento** en **Mis Reservaciones → Activas**. El anfitrión no elige por ti ni devuelve dinero automáticamente.
+
+- **Elegir nuevas fechas:** selecciona la misma cantidad de noches en otra fecha disponible de la misma cabaña y confirma. Se conservan el total original y tus pagos, aunque la nueva fecha tenga otra temporada.
+- **Solicitar reembolso total:** revisa el importe y confirma la cancelación. Se devuelve todo lo pagado que aún no te haya sido devuelto, sin descuentos por anticipación. Puedes consultar el registro en el historial financiero.
+
+Si el anfitrión cancela el mantenimiento antes de que pasen tus fechas y no queda otro bloqueo, recibirás un aviso y tu reserva recuperará sus condiciones originales si aún no habías elegido otra solución.
 
 ## Notificaciones
 
