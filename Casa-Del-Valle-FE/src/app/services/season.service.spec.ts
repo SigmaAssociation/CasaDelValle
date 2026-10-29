@@ -29,4 +29,46 @@ describe('SeasonService', () => {
     http.expectOne('/cdv-api/seasons').flush([]);
     http.expectOne('/cdv-api/cabin-season-prices/cabin/12').flush([]);
   });
+
+  it('requests inactive seasons when includeInactive is true', () => {
+    service.list(true).subscribe();
+    http.expectOne('/cdv-api/seasons?all=true').flush([]);
+  });
+
+  it('creates a global season', () => {
+    const body = {
+      name: 'Navidad',
+      suggestedAdjustmentPercent: 25,
+      active: true,
+      startDate: '2026-12-20',
+      endDate: '2026-12-31',
+    };
+    service.create(body).subscribe();
+    const request = http.expectOne('/cdv-api/seasons');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual(body);
+    request.flush({ id: 1, ...body });
+  });
+
+  it('updates a global season', () => {
+    const body = {
+      name: 'Navidad',
+      suggestedAdjustmentPercent: 30,
+      active: true,
+      startDate: '2026-12-20',
+      endDate: '2026-12-31',
+    };
+    service.update(5, body).subscribe();
+    const request = http.expectOne('/cdv-api/seasons/5');
+    expect(request.request.method).toBe('PUT');
+    expect(request.request.body).toEqual(body);
+    request.flush({ message: 'Temporada actualizada' });
+  });
+
+  it('deactivates a global season', () => {
+    service.deactivate(5).subscribe();
+    const request = http.expectOne('/cdv-api/seasons/5/deactivate');
+    expect(request.request.method).toBe('PATCH');
+    request.flush({ message: 'Temporada desactivada' });
+  });
 });
