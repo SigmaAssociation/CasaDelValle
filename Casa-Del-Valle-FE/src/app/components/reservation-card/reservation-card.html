@@ -19,6 +19,9 @@
       </div>
 
       @switch (reservation.status) {
+        @case ('por_mantenimiento') {
+          <span class="text-xs px-3 py-1 rounded-md bg-orange/10 text-orange">Afectada por mantenimiento</span>
+        }
         @case ('pendiente') {
           <span
             class="text-xs px-3 py-1 rounded-md bg-orange/10 text-orange whitespace-nowrap"
@@ -223,6 +226,12 @@
         </button>
       }
     </div>
+
+    @if (isMaintenance && isOwnReservation) {
+      <app-maintenance-decision [reservationId]="reservation.id" (resolved)="maintenanceResolved.emit($event)" />
+    } @else if (isMaintenance) {
+      <p class="text-sm text-orange">Esperando que el huésped elija nuevas fechas en esta cabaña o solicite su reembolso total.</p>
+    }
 
     @if (statusMessage(); as notice) {
       <p role="status" class="text-sm text-green">{{ notice }}</p>

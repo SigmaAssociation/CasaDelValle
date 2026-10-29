@@ -23,10 +23,12 @@ import (
 	"cdv-api/internal/cabins"
 	"cdv-api/internal/database"
 	"cdv-api/internal/images"
+	"cdv-api/internal/maintenance"
 	"cdv-api/internal/middleware"
 	"cdv-api/internal/notifications"
 	"cdv-api/internal/payments"
 	"cdv-api/internal/refunds"
+	reportincome "cdv-api/internal/reports/reportIncome"
 	reportreservations "cdv-api/internal/reports/reportReservations"
 	"cdv-api/internal/reservations"
 	"cdv-api/internal/seasonprices"
@@ -71,6 +73,10 @@ func main() {
 	cabinService := cabins.NewService(cabinRepository, notificationService)
 	cabinController := cabins.NewController(cabinService)
 
+	maintenanceRepository := maintenance.NewRepository(pool)
+	maintenanceService := maintenance.NewService(maintenanceRepository)
+	maintenanceController := maintenance.NewController(maintenanceService)
+
 	reservationRepository := reservations.NewRepository(pool)
 	reservationService := reservations.NewService(reservationRepository, notificationService)
 	reservationController := reservations.NewController(reservationService)
@@ -95,6 +101,10 @@ func main() {
 	reportRepository := reportreservations.NewRepository(pool)
 	reportService := reportreservations.NewService(reportRepository)
 	reportController := reportreservations.NewController(reportService)
+
+	incomeReportRepository := reportincome.NewRepository(pool)
+	incomeReportService := reportincome.NewService(incomeReportRepository)
+	incomeReportController := reportincome.NewController(incomeReportService)
 	paymentRepository := payments.NewRepository(pool)
 	paymentService := payments.NewService(paymentRepository, notificationService)
 	paymentController := payments.NewController(paymentService)
@@ -140,6 +150,13 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/cabins/search", cabinController.SearchCabins)
 	mux.HandleFunc("GET /cdv-api/cabins/user/{userId}", cabinController.GetCabinsByUser)
 
+	mux.HandleFunc("GET /cdv-api/maintenance/reservation/{id}", maintenanceController.Pending)
+	mux.HandleFunc("POST /cdv-api/maintenance/reservation/{id}/resolve", maintenanceController.Resolve)
+	mux.HandleFunc("GET /cdv-api/maintenance/cabin/{cabinId}", maintenanceController.List)
+	mux.HandleFunc("POST /cdv-api/maintenance/cabin/{cabinId}/preview", maintenanceController.Preview)
+	mux.HandleFunc("POST /cdv-api/maintenance/cabin/{cabinId}", maintenanceController.Create)
+	mux.HandleFunc("PATCH /cdv-api/maintenance/cabin/{cabinId}/{id}/cancel", maintenanceController.Cancel)
+
 	mux.HandleFunc("GET /cdv-api/cabins/availability/{cabinId}", reservationController.GetCabinAvailability)
 
 	mux.HandleFunc("GET /cdv-api/seasons", seasonController.ListSeasons)
@@ -169,7 +186,7 @@ func main() {
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkin", reservationController.Checkin)
 	mux.HandleFunc("PATCH /cdv-api/reservations/{id}/checkout", reservationController.Checkout)
 	mux.HandleFunc("POST /cdv-api/reservations/{id}/payment", reservationController.PayAnticipo)
-	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", paymentController.GetReservationPayments)
+	paymentController.RegisterRoutes(mux)
 	mux.HandleFunc("GET /cdv-api/reservations/cabin/{cabinId}", reservationController.GetReservationsByCabin)
 	mux.HandleFunc("GET /cdv-api/reservations/user/{userId}", reservationController.GetReservationsByUser)
 	mux.HandleFunc("GET /cdv-api/reservations/{id}", reservationController.GetReservationByID)
@@ -185,6 +202,7 @@ func main() {
 
 	//Reportes
 	mux.HandleFunc("GET /cdv-api/reports/reservations", reportController.GetReservationsReport)
+	mux.HandleFunc("GET /cdv-api/reports/income", incomeReportController.GetIncomeReport)
 
 	// -------------------------
 	// Server

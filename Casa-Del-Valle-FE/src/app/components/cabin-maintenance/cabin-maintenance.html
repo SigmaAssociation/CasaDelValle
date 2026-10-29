@@ -1,0 +1,56 @@
+<section class="mt-8 bg-white rounded-xl border border-gray-100 shadow-sm p-6" aria-labelledby="maintenance-title">
+  <h2 id="maintenance-title" class="text-2xl text-brown mb-2">Mantenimiento de la cabaña</h2>
+  <p class="text-sm text-gray-600 mb-5">Bloquea las fechas que necesites. Los huéspedes afectados decidirán si cambian las fechas en esta misma cabaña o solicitan un reembolso total. La fecha de fin es el día en que la cabaña vuelve a estar disponible.</p>
+
+  @if (error()) { <p role="alert" class="bg-red-50 text-red-700 rounded-md p-3 mb-4">{{ error() }}</p> }
+  @if (notice()) { <p role="status" class="bg-green/10 text-green rounded-md p-3 mb-4">{{ notice() }}</p> }
+
+  <form (ngSubmit)="preview()" class="space-y-4">
+    <fieldset [disabled]="busy()" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <label class="text-sm font-medium text-gray-700">Inicio del mantenimiento
+        <input type="date" name="maintenanceStart" required [min]="today" [(ngModel)]="startDate" (ngModelChange)="invalidate()" class="block mt-1 w-full border border-gray-300 rounded-md p-2" />
+      </label>
+      <label class="text-sm font-medium text-gray-700">Disponible nuevamente desde
+        <input type="date" name="maintenanceEnd" required [min]="startDate || today" [(ngModel)]="endDate" (ngModelChange)="invalidate()" class="block mt-1 w-full border border-gray-300 rounded-md p-2" />
+      </label>
+      <label class="sm:col-span-2 text-sm font-medium text-gray-700">Motivo
+        <textarea name="maintenanceReason" required maxlength="500" rows="2" [(ngModel)]="reason" class="block mt-1 w-full border border-gray-300 rounded-md p-2" placeholder="Ej. reparación del techo"></textarea>
+      </label>
+    </fieldset>
+    <button type="submit" [disabled]="busy() || !startDate || !endDate" class="bg-green text-white rounded-md px-4 py-2 disabled:opacity-50">{{ busy() ? 'Procesando…' : 'Revisar reservas afectadas' }}</button>
+  </form>
+
+  @if (reviewed()) {
+    <div class="mt-6 space-y-4">
+      <h3 class="text-lg text-brown">Reservas afectadas ({{ affected().length }})</h3>
+      @if (!affected().length) { <p class="text-sm text-gray-600">No hay reservas afectadas en este rango.</p> }
+      @for (reservation of affected(); track reservation.id) {
+        <article class="border border-gray-200 rounded-lg p-4 space-y-2">
+          <p class="font-medium text-brown">Reserva #{{ reservation.id }} · {{ reservation.guest_name }}</p>
+          <p class="text-sm text-gray-600">{{ reservation.start_date }} al {{ reservation.end_date }} · {{ reservation.status }} · Total Q{{ reservation.total_price | number:'1.2-2' }}</p>
+          <p class="text-xs text-gray-500">Se avisará al huésped. La reserva quedará pendiente de su decisión, sin cambiar de cabaña ni devolver dinero automáticamente.</p>
+        </article>
+      }
+      <p class="text-sm text-gray-600">Al confirmar se bloquearán las fechas y se notificará a cada huésped. Solo el huésped podrá elegir la solución para su reserva.</p>
+      <button type="button" (click)="create()" [disabled]="!canSubmit()" class="bg-orange text-white rounded-md px-4 py-2 disabled:opacity-50">Confirmar bloqueo por mantenimiento</button>
+    </div>
+  }
+
+  <div class="mt-8 border-t border-gray-100 pt-5">
+    <h3 class="text-lg text-brown mb-3">Mantenimientos registrados</h3>
+    @if (loading()) { <p class="text-sm text-gray-500">Cargando mantenimientos…</p> }
+    @else if (!records().length) { <p class="text-sm text-gray-500">Aún no hay mantenimientos registrados.</p> }
+    @for (record of records(); track record.id) {
+      <article class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 py-4">
+        <div>
+          <p class="font-medium text-brown">{{ record.start_date }} al {{ record.end_date }} · {{ status(record) }}</p>
+          <p class="text-sm text-gray-600">{{ record.reason }}</p>
+        </div>
+        @if (!record.cancelled_at) {
+          <button type="button" (click)="cancel(record)" [disabled]="busy()" class="border border-orange text-orange rounded-md px-3 py-2 text-sm disabled:opacity-50">Cancelar mantenimiento</button>
+        }
+      </article>
+    }
+    <p class="text-xs text-gray-500 mt-3">Puedes cancelar un mantenimiento en cualquier momento. La cancelación libera el bloqueo y restituye las reservas aún pendientes si sus fechas originales siguen vigentes. Las decisiones ya tomadas se conservan.</p>
+  </div>
+</section>

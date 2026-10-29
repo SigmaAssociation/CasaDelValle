@@ -970,6 +970,329 @@ const docTemplate = `{
                 }
             }
         },
+        "/maintenance/cabin/{cabinId}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "Listar los mantenimientos de una cabaña propia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/maintenance.Maintenance"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Suspende las reservas afectadas; el huésped elige reprogramar o solicitar el reembolso total.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "Bloquear por mantenimiento y avisar a los huéspedes",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rango y motivo del mantenimiento",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.CreateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.Maintenance"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/maintenance/cabin/{cabinId}/preview": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "Consultar las reservas que se notificarán por mantenimiento",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Rango de mantenimiento [inicio, fin)",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.DateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.Preview"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/maintenance/cabin/{cabinId}/{id}/cancel": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Restituye las reservas pendientes cuyas fechas originales siguen disponibles. No revierte las decisiones ya realizadas.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "Cancelar un mantenimiento y liberar sus fechas",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de mantenimiento",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.Maintenance"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/maintenance/reservation/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "Consultar las opciones de una reserva afectada propia",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reserva",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.PendingDecision"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/maintenance/reservation/{id}/resolve": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Conserva las noches y el total originales al reprogramar. Solo puede decidir el propietario de la reserva.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Mantenimientos"
+                ],
+                "summary": "El huésped reprograma en la misma cabaña o pide el reembolso total",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de reserva",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Decisión del huésped",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.DecisionRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.DecisionResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/maintenance.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/notifications": {
             "get": {
                 "security": [
@@ -1264,13 +1587,6 @@ const docTemplate = `{
                     {
                         "type": "integer",
                         "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
                         "name": "reservationId",
                         "in": "path",
                         "required": true
@@ -1340,6 +1656,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/reports/income": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve los pagos, anticipos y reembolsos registrados en el rango de fechas indicado, junto con el total recaudado neto. Los reembolsos se devuelven con monto negativo. Las fechas se interpretan en hora de Guatemala. Los administradores ven todas las cabañas; los anfitriones solo las propias. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reportes"
+                ],
+                "summary": "Reporte de ingresos por rango de fechas",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha de inicio del rango, inclusive (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha de fin del rango, inclusive (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de cabaña",
+                        "name": "cabin_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de ingresos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.IncomeReport"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error al generar el reporte",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reports/reservations": {
             "get": {
                 "security": [
@@ -1376,7 +1757,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada",
+                        "description": "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada, por_mantenimiento",
                         "name": "status",
                         "in": "query"
                     },
@@ -2335,6 +2716,170 @@ const docTemplate = `{
                 }
             }
         },
+        "maintenance.AffectedReservation": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "guest_id": {
+                    "type": "integer"
+                },
+                "guest_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "total_price": {
+                    "type": "number"
+                }
+            }
+        },
+        "maintenance.CreateRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.DateRange": {
+            "type": "object",
+            "properties": {
+                "end": {
+                    "type": "string"
+                },
+                "start": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.DateRequest": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.DecisionRequest": {
+            "type": "object",
+            "properties": {
+                "action": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.DecisionResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.Maintenance": {
+            "type": "object",
+            "properties": {
+                "cabin_id": {
+                    "type": "integer"
+                },
+                "cancelled_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "string"
+                }
+            }
+        },
+        "maintenance.PendingDecision": {
+            "type": "object",
+            "properties": {
+                "blocked_ranges": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/maintenance.DateRange"
+                    }
+                },
+                "cabin_id": {
+                    "type": "integer"
+                },
+                "end_date": {
+                    "type": "string"
+                },
+                "nights": {
+                    "type": "integer"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "refundable": {
+                    "type": "number"
+                },
+                "reservation_id": {
+                    "type": "integer"
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "total_price": {
+                    "type": "number"
+                }
+            }
+        },
+        "maintenance.Preview": {
+            "type": "object",
+            "properties": {
+                "reservations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/maintenance.AffectedReservation"
+                    }
+                }
+            }
+        },
         "notifications.MarkAllReadResponse": {
             "type": "object",
             "properties": {
@@ -2496,6 +3041,78 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "reportincome.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportincome.IncomeMovement": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "cabin_id": {
+                    "type": "integer"
+                },
+                "cabin_name": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "guest_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "reservation_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportincome.IncomeReport": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "movements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportincome.IncomeMovement"
+                    }
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "total_income": {
+                    "type": "number"
+                },
+                "total_movements": {
+                    "type": "integer"
+                },
+                "total_payments": {
+                    "type": "number"
+                },
+                "total_refunds": {
                     "type": "number"
                 }
             }
@@ -2741,6 +3358,12 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
+                },
+                "nightly_rate": {
+                    "type": "number"
+                },
+                "precio_total": {
+                    "type": "number"
                 },
                 "start_date": {
                     "type": "string"

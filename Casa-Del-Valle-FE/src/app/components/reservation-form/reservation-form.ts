@@ -1,5 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, Input, OnInit, signal } from '@angular/core';
+import { Component, Input, OnInit, signal, DestroyRef, inject } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap, tap } from 'rxjs';
+import { SeasonService } from '../../services/season.service';
+import { PriceQuote } from '../../models/price-quote';
 import { AbstractControl, FormBuilder, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ReservationRequest } from '../../models/create-reservation';
@@ -27,6 +31,11 @@ export class ReservationForm implements OnInit {
   @Input() nightlyPrice = 0;
 
   reservationForm!: FormGroup;
+  private readonly seasons = inject(SeasonService);
+  private readonly destroyRef = inject(DestroyRef);
+  readonly quote = signal<PriceQuote | null>(null);
+  readonly quoteLoading = signal(false);
+  readonly quoteError = signal('');
 
   isSubmitting = signal(false);
   isSuccess = signal(false);
@@ -58,6 +67,23 @@ export class ReservationForm implements OnInit {
     });
 
     this.loadAvailability();
+    this.reservationForm.valueChanges.pipe(
+      map((v) => ({ start: v.start_date || '', end: v.end_date || '' })),
+      distinctUntilChanged((a, b) => a.start === b.start && a.end === b.end),
+      tap(() => { this.quote.set(null); this.quoteError.set(''); this.quoteLoading.set(true); }),
+      debounceTime(250),
+      switchMap(({ start, end }) => {
+        if (!this.parseDate(start) || !this.parseDate(end) || end <= start) { this.quoteLoading.set(false); return of({ quote: null, start, end }); }
+        return this.seasons.quote(this.cabinId, start, end).pipe(
+          catchError(() => { if (start === this.startDateValue && end === this.endDateValue) this.quoteError.set('No se pudo cotizar el precio por temporada. Reintenta seleccionando las fechas.'); return of(null); }),
+          map((quote) => ({ quote, start, end })),
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(({quote, start, end}) => {
+      if (start !== this.startDateValue || end !== this.endDateValue) return;
+      this.quote.set(quote); this.quoteLoading.set(false);
+    });
   }
 
   get minStartDate(): string {
@@ -114,13 +140,7 @@ export class ReservationForm implements OnInit {
     return diff > 0 ? diff : null;
   }
 
-  get estimatedTotal(): number | null {
-    const nights = this.nights;
-    if (nights === null || !Number.isFinite(this.nightlyPrice)) {
-      return null;
-    }
-    return nights * this.nightlyPrice;
-  }
+  get estimatedTotal(): number | null { return this.quote()?.totalPrice ?? null; }
 
   get startRangeError(): string | null {
     const errors = this.reservationForm?.errors;
@@ -154,7 +174,7 @@ export class ReservationForm implements OnInit {
   }
 
   submit(): void {
-    if (this.reservationForm.invalid) {
+    if (this.reservationForm.invalid || !this.quote() || this.quoteLoading()) {
       this.reservationForm.markAllAsTouched();
       return;
     }

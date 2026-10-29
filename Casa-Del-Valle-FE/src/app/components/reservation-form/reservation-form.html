@@ -42,15 +42,28 @@
           <span class="font-medium text-gray-800">{{ nights }}</span>
         </div>
         <div class="flex justify-between mt-1">
-          <span class="text-gray-600">Total estimado</span>
+          <span class="text-gray-600">Total según temporadas</span>
           <span class="font-semibold text-green">{{ formatPrice(estimatedTotal) }}</span>
         </div>
       </div>
     }
 
+    @if (quoteLoading()) { <p class="text-sm text-gray-500">Calculando el precio por temporada…</p> }
+    @if (quoteError()) { <p role="alert" class="text-sm text-red-600">{{ quoteError() }}</p> }
+    @if (quote(); as q) {
+      <details class="text-sm text-brown">
+        <summary class="cursor-pointer">Ver precio por noche</summary>
+        <ul class="mt-2 space-y-1">
+          @for (night of q.breakdown; track night.startDate) {
+            <li>{{ night.startDate }} · {{ night.seasonName || (night.source.startsWith('cabin_') ? 'Precio personalizado' : 'Tarifa normal') }} · {{ formatPrice(night.appliedNightly) }}</li>
+          }
+        </ul>
+      </details>
+    }
+
     <button
       type="submit"
-      [disabled]="isSubmitting()"
+      [disabled]="isSubmitting() || quoteLoading() || !quote() || reservationForm.invalid"
       class="btn-primary w-full bg-orange hover:bg-orange-dark text-white font-medium py-2.5 px-4 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {{ isSubmitting() ? 'Registrando…' : 'Confirmar reservación' }}

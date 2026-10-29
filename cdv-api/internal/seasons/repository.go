@@ -228,3 +228,42 @@ func (r *Repository) GetMatchingCabinSeason(ctx context.Context, cabinID uint, d
 	p.FixedPrice = fixed
 	return &p, nil
 }
+
+// GetPriceQuote comparte el cálculo SQL usado al guardar precio_total.
+func (r *Repository) GetPriceQuote(ctx context.Context, req PriceQuoteRequest) (*PriceQuoteResponse, error) {
+	base, err := r.GetCabinBasePrice(ctx, req.CabinID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.pool.Query(ctx, `SELECT to_char(dia,'YYYY-MM-DD'),base,precio,fuente,temporada_nombre
+        FROM cotizar_noches($1,$2,$3)`, req.CabinID, req.StartDate, req.EndDate)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	quote := &PriceQuoteResponse{CabinID: req.CabinID, BaseNightly: base, Breakdown: []PriceBreakdown{}}
+	for rows.Next() {
+		var b PriceBreakdown
+		if err := rows.Scan(&b.StartDate, &b.BaseNightly, &b.AppliedNightly, &b.Source, &b.SeasonName); err != nil {
+			return nil, err
+		}
+		if len(quote.Breakdown) == 0 {
+			quote.BaseNightly = b.BaseNightly
+		}
+		b.EndDate = b.StartDate
+		b.Nights = 1
+		b.Total = b.AppliedNightly
+		quote.TotalPrice += b.Total
+		quote.Breakdown = append(quote.Breakdown, b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	quote.TotalNights = len(quote.Breakdown)
+	if quote.TotalNights == 0 {
+		return nil, ErrInvalidDates
+	}
+	quote.TotalPrice = round2(quote.TotalPrice)
+	quote.AverageNightly = round2(quote.TotalPrice / float64(quote.TotalNights))
+	return quote, nil
+}

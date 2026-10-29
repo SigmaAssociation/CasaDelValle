@@ -19,6 +19,12 @@ func NewController(service *Service) *Controller {
 	}
 }
 
+// RegisterRoutes mantiene juntas la consulta y el registro de abonos.
+func (c *Controller) RegisterRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("GET /cdv-api/payments/reservation/{reservationId}", c.GetReservationPayments)
+	mux.HandleFunc("POST /cdv-api/payments/reservation/{reservationId}", c.CreatePayment)
+}
+
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -36,7 +42,6 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path int true "ID de reservación"
 // @Param reservationId path int true "ID de reservación"
 // @Param payment body CreatePaymentRequest true "Monto y método de pago"
 // @Success 201 {object} CreatePaymentResponse "Pago registrado exitosamente"

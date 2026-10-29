@@ -32,6 +32,7 @@ type Refund struct {
 
 // ReservationLedger agrupa los datos crudos que alimentan el saldo.
 type ReservationLedger struct {
+	TotalPrice   *float64
 	NightlyRate  float64
 	ExtraCharges []ExtraCharge
 	Payments     []Payment

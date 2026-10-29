@@ -50,18 +50,19 @@ type ErrorResponse struct {
 }
 
 const (
-	TipoBienvenida         = "bienvenida"
-	TipoReservaCreada      = "reserva_creada"
-	TipoReservaConfirmada  = "reserva_confirmada"
-	TipoReservaCancelada   = "reserva_cancelada"
-	TipoReservaActualizada = "reserva_actualizada"
-	TipoReservaFinalizada  = "reserva_finalizada"
-	TipoReservaCheckin     = "reserva_checkin"
-	TipoPagoRegistrado     = "pago_registrado"
-	TipoCabanaCreada       = "cabana_creada"
-	TipoCabanaActualizada  = "cabana_actualizada"
-	TipoCabanaEliminada    = "cabana_eliminada"
-	TipoRolActualizado     = "rol_actualizado"
+	TipoBienvenida           = "bienvenida"
+	TipoReservaMantenimiento = "reserva_mantenimiento"
+	TipoReservaCreada        = "reserva_creada"
+	TipoReservaConfirmada    = "reserva_confirmada"
+	TipoReservaCancelada     = "reserva_cancelada"
+	TipoReservaActualizada   = "reserva_actualizada"
+	TipoReservaFinalizada    = "reserva_finalizada"
+	TipoReservaCheckin       = "reserva_checkin"
+	TipoPagoRegistrado       = "pago_registrado"
+	TipoCabanaCreada         = "cabana_creada"
+	TipoCabanaActualizada    = "cabana_actualizada"
+	TipoCabanaEliminada      = "cabana_eliminada"
+	TipoRolActualizado       = "rol_actualizado"
 )
 
 const (
@@ -81,18 +82,19 @@ const (
 
 var (
 	validTipos = map[string]bool{
-		TipoBienvenida:         true,
-		TipoReservaCreada:      true,
-		TipoReservaConfirmada:  true,
-		TipoReservaCancelada:   true,
-		TipoReservaActualizada: true,
-		TipoReservaFinalizada:  true,
-		TipoReservaCheckin:     true,
-		TipoPagoRegistrado:     true,
-		TipoCabanaCreada:       true,
-		TipoCabanaActualizada:  true,
-		TipoCabanaEliminada:    true,
-		TipoRolActualizado:     true,
+		TipoReservaMantenimiento: true,
+		TipoBienvenida:           true,
+		TipoReservaCreada:        true,
+		TipoReservaConfirmada:    true,
+		TipoReservaCancelada:     true,
+		TipoReservaActualizada:   true,
+		TipoReservaFinalizada:    true,
+		TipoReservaCheckin:       true,
+		TipoPagoRegistrado:       true,
+		TipoCabanaCreada:         true,
+		TipoCabanaActualizada:    true,
+		TipoCabanaEliminada:      true,
+		TipoRolActualizado:       true,
 	}
 
 	validEntidades = map[string]bool{

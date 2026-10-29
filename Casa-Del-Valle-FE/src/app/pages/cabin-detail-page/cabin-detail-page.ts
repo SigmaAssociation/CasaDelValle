@@ -15,14 +15,16 @@ import { CabinService } from '../../services/cabin.service';
 import { ReservationService } from '../../services/reservation.service';
 import { AuthService } from '../../services/auth.service';
 import { ReservationForm } from '../../components/reservation-form/reservation-form';
+import { CabinMaintenance } from '../../components/cabin-maintenance/cabin-maintenance';
 import { ReservationCard } from '../../components/reservation-card/reservation-card';
 
 @Component({
-  imports: [CommonModule, RouterLink, ReservationForm, ReservationCard],
+  imports: [CommonModule, RouterLink, ReservationForm, ReservationCard, CabinMaintenance],
   selector: 'app-cabin-detail-page',
   templateUrl: './cabin-detail-page.html',
 })
 export class CabinDetailPage implements OnInit {
+  @ViewChild('maintenanceSection') maintenanceSection?: ElementRef<HTMLElement>;
   @ViewChild('reservationSection') reservationSection?: ElementRef<HTMLElement>;
 
   cabin: Cabin | null = null;
@@ -145,6 +147,19 @@ export class CabinDetailPage implements OnInit {
 
   canEdit(): boolean {
     return !!this.cabin && (this.isAdmin || this.cabin.host_id === this.currentUserId);
+  }
+
+  canMaintain(): boolean {
+    return !!this.cabin && this.authService.isHostOrAdmin() && this.cabin.host_id === this.currentUserId;
+  }
+
+  openMaintenance(): void {
+    this.maintenanceSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  onMaintenanceChanged(): void {
+    this.showReservationForm = false;
+    if (this.cabin) this.loadCabinReservations(this.cabin.id);
   }
 
   canReserve(): boolean {
