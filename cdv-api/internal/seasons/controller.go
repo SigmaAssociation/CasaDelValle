@@ -231,6 +231,10 @@ func (c *Controller) SetCabinSeasonPrice(w http.ResponseWriter, r *http.Request)
 	}
 	item, err := c.service.SetCabinSeasonPrice(r.Context(), uint(cabinID), req)
 	if err != nil {
+		if errors.Is(err, ErrSeasonOverlap) {
+			writeError(w, http.StatusConflict, "Ya existe un precio para ese rango de fechas")
+			return
+		}
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}

@@ -3,6 +3,7 @@ package seasons
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 )
 
@@ -19,10 +20,16 @@ func (s *Service) ListSeasons(ctx context.Context, includeInactive bool) ([]Seas
 }
 
 func (s *Service) CreateSeason(ctx context.Context, req CreateSeasonRequest) (*Season, error) {
+	if err := validateSeason(req.Name, req.StartDate, req.EndDate); err != nil {
+		return nil, err
+	}
 	return s.repo.CreateSeason(ctx, req)
 }
 
 func (s *Service) UpdateSeason(ctx context.Context, id int, req UpdateSeasonRequest) error {
+	if err := validateSeason(req.Name, req.StartDate, req.EndDate); err != nil {
+		return err
+	}
 	return s.repo.UpdateSeason(ctx, id, req)
 }
 
@@ -35,7 +42,32 @@ func (s *Service) ListCabinSeasonPrices(ctx context.Context, cabinID uint) ([]Ca
 }
 
 func (s *Service) SetCabinSeasonPrice(ctx context.Context, cabinID uint, req SetCabinSeasonPriceRequest) (*CabinSeasonPrice, error) {
+	if err := validateDates(req.StartDate, req.EndDate); err != nil {
+		return nil, err
+	}
+	if req.FixedPrice != nil && *req.FixedPrice <= 0 {
+		return nil, ErrInvalidPrice
+	}
 	return s.repo.SetCabinSeasonPrice(ctx, cabinID, req)
+}
+
+func validateSeason(name, startDate, endDate string) error {
+	if strings.TrimSpace(name) == "" {
+		return ErrInvalidDates
+	}
+	return validateDates(startDate, endDate)
+}
+
+func validateDates(startDate, endDate string) error {
+	start, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		return ErrInvalidDates
+	}
+	end, err := time.Parse("2006-01-02", endDate)
+	if err != nil || end.Before(start) {
+		return ErrInvalidDates
+	}
+	return nil
 }
 
 func (s *Service) DeleteCabinSeasonPrice(ctx context.Context, id int) error {

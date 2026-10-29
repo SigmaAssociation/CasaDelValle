@@ -6,23 +6,23 @@ import (
 )
 
 type Season struct {
-	ID                      int     `json:"id"`
-	Name                    string  `json:"name"`
-	SuggestedAdjustment     float64 `json:"suggestedAdjustmentPercent"`
-	Active                  bool    `json:"active"`
-	StartDate               string  `json:"startDate"`
-	EndDate                 string  `json:"endDate"`
+	ID                  int     `json:"id"`
+	Name                string  `json:"name"`
+	SuggestedAdjustment float64 `json:"suggestedAdjustmentPercent"`
+	Active              bool    `json:"active"`
+	StartDate           string  `json:"startDate"`
+	EndDate             string  `json:"endDate"`
 }
 
 type CabinSeasonPrice struct {
-	ID              int       `json:"id"`
-	CabinID         uint      `json:"cabinId"`
-	SeasonID        *int      `json:"seasonId,omitempty"`
-	StartDate       string    `json:"startDate"`
-	EndDate         string    `json:"endDate"`
-	AdjustmentPct   float64   `json:"adjustmentPercent"`
-	FixedPrice      *float64  `json:"fixedPrice,omitempty"`
-	CreatedAt       time.Time `json:"createdAt"`
+	ID            int       `json:"id"`
+	CabinID       uint      `json:"cabinId"`
+	SeasonID      *int      `json:"seasonId,omitempty"`
+	StartDate     string    `json:"startDate"`
+	EndDate       string    `json:"endDate"`
+	AdjustmentPct float64   `json:"adjustmentPercent"`
+	FixedPrice    *float64  `json:"fixedPrice,omitempty"`
+	CreatedAt     time.Time `json:"createdAt"`
 }
 
 type CreateSeasonRequest struct {
@@ -56,14 +56,14 @@ type PriceQuoteRequest struct {
 }
 
 type PriceBreakdown struct {
-	StartDate     string  `json:"startDate"`
-	EndDate       string  `json:"endDate"`
-	Nights        int     `json:"nights"`
-	BaseNightly   float64 `json:"baseNightly"`
+	StartDate      string  `json:"startDate"`
+	EndDate        string  `json:"endDate"`
+	Nights         int     `json:"nights"`
+	BaseNightly    float64 `json:"baseNightly"`
 	AppliedNightly float64 `json:"appliedNightly"`
-	Total         float64 `json:"total"`
-	Source        string  `json:"source"`
-	SeasonName    *string `json:"seasonName,omitempty"`
+	Total          float64 `json:"total"`
+	Source         string  `json:"source"`
+	SeasonName     *string `json:"seasonName,omitempty"`
 }
 
 type PriceQuoteResponse struct {
@@ -80,6 +80,7 @@ var (
 	ErrSeasonOverlap       = errors.New("season dates overlap")
 	ErrCabinSeasonNotFound = errors.New("cabin season price not found")
 	ErrInvalidDates        = errors.New("invalid dates")
+	ErrInvalidPrice        = errors.New("invalid seasonal price")
 )
 
 type ErrorResponse struct {
