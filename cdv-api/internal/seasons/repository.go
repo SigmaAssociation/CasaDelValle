@@ -58,7 +58,7 @@ func (r *Repository) CreateSeason(ctx context.Context, req CreateSeasonRequest) 
 	err := r.pool.QueryRow(ctx, query, req.Name, req.SuggestedAdjustment, req.Active, req.StartDate, req.EndDate).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23514" {
+		if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
 			return nil, ErrSeasonOverlap
 		}
 		return nil, err
@@ -83,7 +83,7 @@ func (r *Repository) UpdateSeason(ctx context.Context, id int, req UpdateSeasonR
 	tag, err := r.pool.Exec(ctx, query, req.Name, req.SuggestedAdjustment, req.Active, req.StartDate, req.EndDate, id)
 	if err != nil {
 		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) && pgErr.Code == "23514" {
+		if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
 			return ErrSeasonOverlap
 		}
 		return err
@@ -158,6 +158,10 @@ func (r *Repository) SetCabinSeasonPrice(ctx context.Context, cabinID uint, req 
 	`
 	err := r.pool.QueryRow(ctx, query, cabinID, req.SeasonID, req.StartDate, req.EndDate, req.AdjustmentPct, req.FixedPrice).Scan(&id, &createdAt)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
+			return nil, ErrSeasonOverlap
+		}
 		return nil, err
 	}
 	return &CabinSeasonPrice{
