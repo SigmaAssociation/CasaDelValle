@@ -21,6 +21,8 @@ import { NotificacionesPage } from './pages/notificaciones-page/notificaciones-p
 import { ReservationsReportPage } from './pages/reservations-report-page/reservations-report-page';
 import { IncomeReportPage } from './pages/income-report-page/income-report-page';
 import { ReservationBalancePage } from './pages/reservation-balance-page/reservation-balance-page';
+import { AdminSeasonsPage } from './pages/admin-seasons-page/admin-seasons-page';
+import { adminGuard } from './guards/admin-guard';
 
 export const routes: Routes = [
     {
@@ -107,6 +109,11 @@ export const routes: Routes = [
         path: 'reservations/:id/balance',
         component: ReservationBalancePage,
         canActivate: [authGuard],
+    },
+    {
+        path: 'temporadas',
+        component: AdminSeasonsPage,
+        canActivate: [authGuard, adminGuard],
     },
     {
         path: '**',

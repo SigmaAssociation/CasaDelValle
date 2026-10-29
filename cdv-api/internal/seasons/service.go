@@ -5,13 +5,28 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
-type Service struct {
-	repo *Repository
+type SeasonRepository interface {
+	ListSeasons(ctx context.Context, includeInactive bool) ([]Season, error)
+	CreateSeason(ctx context.Context, req CreateSeasonRequest) (*Season, error)
+	UpdateSeason(ctx context.Context, id int, req UpdateSeasonRequest) error
+	SetSeasonActive(ctx context.Context, id int, active bool) error
+	ListCabinSeasonPrices(ctx context.Context, cabinID uint) ([]CabinSeasonPrice, error)
+	SetCabinSeasonPrice(ctx context.Context, cabinID uint, req SetCabinSeasonPriceRequest) (*CabinSeasonPrice, error)
+	DeleteCabinSeasonPrice(ctx context.Context, id int) error
+	GetCabinBasePrice(ctx context.Context, cabinID uint) (float64, error)
+	GetMatchingCabinSeason(ctx context.Context, cabinID uint, date string) (*CabinSeasonPrice, error)
+	GetMatchingGlobalSeason(ctx context.Context, date string) (*Season, error)
+	GetPriceQuote(ctx context.Context, req PriceQuoteRequest) (*PriceQuoteResponse, error)
 }
 
-func NewService(repo *Repository) *Service {
+type Service struct {
+	repo SeasonRepository
+}
+
+func NewService(repo SeasonRepository) *Service {
 	return &Service{repo: repo}
 }
 
@@ -20,27 +35,23 @@ func (s *Service) ListSeasons(ctx context.Context, includeInactive bool) ([]Seas
 }
 
 func (s *Service) CreateSeason(ctx context.Context, req CreateSeasonRequest) (*Season, error) {
-	if req.SuggestedAdjustment <= -100 || math.IsNaN(req.SuggestedAdjustment) || math.IsInf(req.SuggestedAdjustment, 0) {
-		return nil, ErrInvalidPrice
-	}
-	if err := validateSeason(req.Name, req.StartDate, req.EndDate); err != nil {
+	if err := validateSeason(req.Name, req.SuggestedAdjustment, req.StartDate, req.EndDate); err != nil {
 		return nil, err
 	}
 	return s.repo.CreateSeason(ctx, req)
 }
 
 func (s *Service) UpdateSeason(ctx context.Context, id int, req UpdateSeasonRequest) error {
-	if req.SuggestedAdjustment <= -100 || math.IsNaN(req.SuggestedAdjustment) || math.IsInf(req.SuggestedAdjustment, 0) {
-		return ErrInvalidPrice
-	}
-	if err := validateSeason(req.Name, req.StartDate, req.EndDate); err != nil {
+	if err := validateSeason(req.Name, req.SuggestedAdjustment, req.StartDate, req.EndDate); err != nil {
 		return err
 	}
 	return s.repo.UpdateSeason(ctx, id, req)
 }
 
-func (s *Service) DeleteSeason(ctx context.Context, id int) error {
-	return s.repo.DeleteSeason(ctx, id)
+// DeactivateSeason desactiva una temporada sin eliminarla, para conservar el
+// historial de precios que la referencian.
+func (s *Service) DeactivateSeason(ctx context.Context, id int) error {
+	return s.repo.SetSeasonActive(ctx, id, false)
 }
 
 func (s *Service) ListCabinSeasonPrices(ctx context.Context, cabinID uint) ([]CabinSeasonPrice, error) {
@@ -60,9 +71,14 @@ func (s *Service) SetCabinSeasonPrice(ctx context.Context, cabinID uint, req Set
 	return s.repo.SetCabinSeasonPrice(ctx, cabinID, req)
 }
 
-func validateSeason(name, startDate, endDate string) error {
-	if strings.TrimSpace(name) == "" {
-		return ErrInvalidDates
+func validateSeason(name string, suggestedAdjustment float64, startDate, endDate string) error {
+	trimmed := strings.TrimSpace(name)
+	if trimmed == "" || utf8.RuneCountInString(trimmed) > 100 {
+		return ErrInvalidName
+	}
+	if math.IsNaN(suggestedAdjustment) || math.IsInf(suggestedAdjustment, 0) ||
+		suggestedAdjustment < 0 || suggestedAdjustment > 100 {
+		return ErrInvalidAdjustment
 	}
 	return validateDates(startDate, endDate)
 }

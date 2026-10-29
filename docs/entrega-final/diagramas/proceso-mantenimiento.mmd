@@ -1,0 +1,13 @@
+flowchart TD
+    A["Propietario ingresa fechas y motivo"] --> B["Ver reservas afectadas"]
+    B --> C["Crear bloqueo en transacción"]
+    C --> D["Reservas afectadas: por_mantenimiento\nGuardar estado anterior y decisión pendiente"]
+    D --> E["Avisar al huésped en su buzón"]
+    E --> F{"Decisión del huésped"}
+    F -->|Nuevas fechas| G["Validar misma cabaña y noches\nSin conflictos de cabaña, huésped ni mantenimiento"]
+    G --> H["Conservar precio_total y pagos\nRestituir pendiente o confirmada y notificar"]
+    F -->|Devolución total| I["Devolver lo pagado aún no devuelto\nCancelar reserva y notificar"]
+    C --> J["Propietario cancela mantenimiento en cualquier momento"]
+    J --> K{"¿Sin decisión, fechas utilizables y sin otro bloqueo?"}
+    K -->|Sí| L["Restaurar estado anterior y avisar"]
+    K -->|No| M["Liberar bloqueo y conservar historia o decisión pendiente"]
