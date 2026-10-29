@@ -21,6 +21,7 @@ services:
       retries: 10
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./database:/migrations:ro
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
   # Servicio del Backend (Go)
   backend-api:
