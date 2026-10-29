@@ -6,15 +6,6 @@ Esta guía explica cómo usar Casa Del Valle con el rol de **anfitrión**: conve
 
 > Moneda: quetzales (GTQ). Las fechas y horarios se muestran en formato local de Guatemala.
 
-### Cómo usar los espacios para imágenes
-
-En este manual, cada bloque marcado como **[ESPACIO PARA IMAGEN...]** indica el lugar donde debe insertarse una captura de pantalla. Reemplaza el bloque completo por una imagen con el nombre sugerido y conserva el texto alternativo indicado.
-
-Las imágenes deben mostrar únicamente datos de prueba. Oculta correos, teléfonos, DPI, contraseñas, nombres completos y cualquier otro dato personal antes de guardar la captura.
-
-> **Formato recomendado:** PNG o JPG, ancho aproximado de 1200 px, recortada para mostrar la pantalla y los botones relacionados con el paso descrito.
-
-
 ![Barra superior de Casa Del Valle con el menú del anfitrión.](./images/01.png)
 
 
