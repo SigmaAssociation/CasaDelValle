@@ -43,6 +43,8 @@ export interface ReservationsReportResponse {
   cabins: CabinReport[];
   total_cabins: number;
   total_reservations: number;
+  cancelled_reservations: number;
+  cancellation_percentage: number;
   message?: string;
 }
 

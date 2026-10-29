@@ -291,6 +291,10 @@ definitions:
         items:
           $ref: '#/definitions/reportreservations.CabinReport'
         type: array
+      cancellation_percentage:
+        type: number
+      cancelled_reservations:
+        type: integer
       message:
         type: string
       total_cabins:

@@ -114,6 +114,10 @@ swag init -g cmd/api/main.go -o docs
 
 > El CI verifica que `cdv-api/docs/` esté al día y falla si olvidas regenerarlo.
 
+### Manual de usuario
+
+La guía para huéspedes está disponible en [docs/manual-usuario.md](docs/manual-usuario.md).
+
 ## Estilo de diseño
 
 La aplicación usara la siguiente paleta de colores y se puede utilizar con su respectiva clase:
