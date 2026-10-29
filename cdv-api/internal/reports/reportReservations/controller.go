@@ -49,7 +49,7 @@ func writeError(w http.ResponseWriter, status int, message string) {
 // @Param host_id query int false "Filtro por ID de anfitrión"
 // @Param cabin_id query int false "Filtro por ID de cabaña"
 // @Param guest_id query int false "Filtro por ID de huésped"
-// @Param status query string false "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada"
+// @Param status query string false "Estado de la reservación: pendiente, confirmada, en_curso, finalizada, cancelada, por_mantenimiento"
 // @Param created_from query string false "Reservaciones creadas desde esta fecha, inclusive (YYYY-MM-DD)"
 // @Param created_to query string false "Reservaciones creadas hasta esta fecha, inclusive (YYYY-MM-DD)"
 // @Success 200 {object} ReservationsReport "Reporte de reservaciones"

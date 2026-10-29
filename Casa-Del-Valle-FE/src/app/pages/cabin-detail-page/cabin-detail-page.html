@@ -111,7 +111,7 @@
 
           <p class="text-2xl font-semibold text-green mt-2">
             {{ formatPrice(cabin.price) }}
-            <span class="text-sm font-normal text-gray-500">/ noche</span>
+            <span class="text-sm font-normal text-gray-500">/ noche · tarifa base</span>
           </p>
 
           @if (canReserve()) {
@@ -150,6 +150,17 @@
             }
           </dl>
 
+          @if (canEdit()) {
+            <a [routerLink]="['/cabins', cabin.id, 'season-prices']"
+               class="mt-5 flex items-center justify-between gap-3 rounded-lg border border-green/20 bg-green/5 px-4 py-3 text-green hover:bg-green/10 transition-colors">
+              <span>
+                <span class="block text-sm font-semibold">Precios por temporada</span>
+                <span class="block text-xs mt-1">Consulta recomendaciones y configura tus tarifas.</span>
+              </span>
+              <span aria-hidden="true">→</span>
+            </a>
+          }
+
           <div class="mt-6 pt-4 border-t border-gray-100 flex gap-2">
             <a
               [routerLink]="['/cabins', cabin.id, 'edit']"
@@ -185,6 +196,10 @@
         }
       </div>
     </div>
+
+    @if (canMaintain()) {
+      <app-cabin-maintenance [cabinId]="cabin.id" (changed)="onMaintenanceChanged()" />
+    }
 
     @if (canEdit()) {
       <section class="mt-8">

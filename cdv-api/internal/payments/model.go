@@ -92,6 +92,7 @@ type CreatePaymentRequest struct {
 // ReservationPaymentInfo reúne los datos de la reservación y su cabaña que se
 // necesitan para validar un pago y calcular el saldo.
 type ReservationPaymentInfo struct {
+	TotalPrice    *float64
 	ReservationID int
 	UserID        uint
 	HostID        uint

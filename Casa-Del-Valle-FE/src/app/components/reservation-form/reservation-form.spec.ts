@@ -47,6 +47,13 @@ describe('ReservationForm', () => {
     });
   });
 
+  async function quote(total: number, nights: number): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const req = httpMock.expectOne('/cdv-api/seasons/quote');
+    expect(req.request.body).toEqual({ cabinId: 3, startDate: component.startDateValue, endDate: component.endDateValue });
+    req.flush({ cabinId: 3, baseNightly: 150, totalNights: nights, totalPrice: total, averageNightly: total / nights, breakdown: [] });
+  }
+
   afterEach(() => {
     httpMock.verify();
   });
@@ -82,17 +89,19 @@ describe('ReservationForm', () => {
     expect(component.reservationForm.errors?.['endBeforeStart']).toBe(true);
   });
 
-  it('acepta un rango de fechas válido y calcula noches y total', () => {
+  it('usa la cotización de temporadas en vez de multiplicar la tarifa base', async () => {
     component.reservationForm.patchValue({
       start_date: daysFromToday(1),
       end_date: daysFromToday(4),
     });
     expect(component.reservationForm.valid).toBe(true);
     expect(component.nights).toBe(3);
-    expect(component.estimatedTotal).toBe(450);
+    expect(component.estimatedTotal).toBeNull();
+    await quote(525, 3);
+    expect(component.estimatedTotal).toBe(525);
   });
 
-  it('envía user_id y cabin_id automáticamente junto con las fechas', () => {
+  it('envía user_id y cabin_id automáticamente junto con las fechas', async () => {
     const startDate = daysFromToday(1);
     const endDate = daysFromToday(2);
 
@@ -100,6 +109,7 @@ describe('ReservationForm', () => {
       start_date: startDate,
       end_date: endDate,
     });
+    await quote(180, 1);
     component.submit();
 
     const req = httpMock.expectOne('/cdv-api/reservations');
@@ -122,11 +132,12 @@ describe('ReservationForm', () => {
     expect(component.isSubmitting()).toBe(false);
   });
 
-  it('muestra el mensaje del backend cuando hay conflicto de fechas', () => {
+  it('muestra el mensaje del backend cuando hay conflicto de fechas', async () => {
     component.reservationForm.patchValue({
       start_date: daysFromToday(1),
       end_date: daysFromToday(2),
     });
+    await quote(180, 1);
     component.submit();
 
     const req = httpMock.expectOne('/cdv-api/reservations');

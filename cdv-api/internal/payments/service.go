@@ -104,6 +104,9 @@ func (s *Service) CreatePayment(ctx context.Context, reservationID int, actorID 
 		return nil, err
 	}
 	total := round2(float64(nights) * info.NightlyRate)
+	if info.TotalPrice != nil {
+		total = round2(*info.TotalPrice)
+	}
 
 	paidRaw, err := s.repository.GetPaidAmount(ctx, reservationID)
 	if err != nil {
@@ -155,6 +158,9 @@ func (s *Service) buildSummary(ctx context.Context, info *ReservationPaymentInfo
 		return nil, err
 	}
 	total := round2(float64(nights) * info.NightlyRate)
+	if info.TotalPrice != nil {
+		total = round2(*info.TotalPrice)
+	}
 
 	paid, err := s.repository.GetPaidAmount(ctx, info.ReservationID)
 	if err != nil {

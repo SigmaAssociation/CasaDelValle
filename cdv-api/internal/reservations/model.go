@@ -31,11 +31,12 @@ type ErrorResponse struct {
 }
 
 const (
-	StatusPending    = "pendiente"
-	StatusConfirmed  = "confirmada"
-	StatusInProgress = "en_curso"
-	StatusFinished   = "finalizada"
-	StatusCancelled  = "cancelada"
+	StatusPending     = "pendiente"
+	StatusConfirmed   = "confirmada"
+	StatusInProgress  = "en_curso"
+	StatusFinished    = "finalizada"
+	StatusCancelled   = "cancelada"
+	StatusMaintenance = "por_mantenimiento"
 
 	MinCancellationDays = 3
 
@@ -59,6 +60,8 @@ type UpdateReservationRequest struct {
 }
 
 type ReservationDetail struct {
+	TotalPrice  *float64   `json:"precio_total,omitempty"`
+	NightlyRate *float64   `json:"nightly_rate,omitempty"`
 	ID          int        `json:"id"`
 	UserID      uint       `json:"user_id"`
 	CabinID     uint       `json:"cabin_id"`
@@ -109,6 +112,7 @@ type UpdateReservationResponse struct {
 }
 
 type CheckinEligibility struct {
+	TotalPrice    *float64
 	ReservationID int
 	UserID        uint
 	CabinID       uint

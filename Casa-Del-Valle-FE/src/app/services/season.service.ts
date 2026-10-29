@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { PriceQuote } from '../models/price-quote';
 import { RestConstants } from '../components/rest-constants';
 import { CabinSeasonPrice, CabinSeasonPriceRequest, Season } from '../models/season';
 
@@ -9,6 +10,10 @@ export class SeasonService {
   private readonly api = new RestConstants().getApiURL();
 
   constructor(private http: HttpClient) {}
+
+  quote(cabinId: number, startDate: string, endDate: string): Observable<PriceQuote> {
+    return this.http.post<PriceQuote>(`${this.api}seasons/quote`, { cabinId, startDate, endDate });
+  }
 
   list(): Observable<Season[]> {
     return this.http.get<Season[]>(`${this.api}seasons`);

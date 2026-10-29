@@ -137,6 +137,112 @@ definitions:
       total:
         type: integer
     type: object
+  maintenance.AffectedReservation:
+    properties:
+      end_date:
+        type: string
+      guest_id:
+        type: integer
+      guest_name:
+        type: string
+      id:
+        type: integer
+      start_date:
+        type: string
+      status:
+        type: string
+      total_price:
+        type: number
+    type: object
+  maintenance.CreateRequest:
+    properties:
+      end_date:
+        type: string
+      reason:
+        type: string
+      start_date:
+        type: string
+    type: object
+  maintenance.DateRange:
+    properties:
+      end:
+        type: string
+      start:
+        type: string
+    type: object
+  maintenance.DateRequest:
+    properties:
+      end_date:
+        type: string
+      start_date:
+        type: string
+    type: object
+  maintenance.DecisionRequest:
+    properties:
+      action:
+        type: string
+      end_date:
+        type: string
+      start_date:
+        type: string
+    type: object
+  maintenance.DecisionResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  maintenance.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  maintenance.Maintenance:
+    properties:
+      cabin_id:
+        type: integer
+      cancelled_at:
+        type: string
+      created_at:
+        type: string
+      end_date:
+        type: string
+      id:
+        type: integer
+      reason:
+        type: string
+      start_date:
+        type: string
+    type: object
+  maintenance.PendingDecision:
+    properties:
+      blocked_ranges:
+        items:
+          $ref: '#/definitions/maintenance.DateRange'
+        type: array
+      cabin_id:
+        type: integer
+      end_date:
+        type: string
+      nights:
+        type: integer
+      reason:
+        type: string
+      refundable:
+        type: number
+      reservation_id:
+        type: integer
+      start_date:
+        type: string
+      total_price:
+        type: number
+    type: object
+  maintenance.Preview:
+    properties:
+      reservations:
+        items:
+          $ref: '#/definitions/maintenance.AffectedReservation'
+        type: array
+    type: object
   notifications.MarkAllReadResponse:
     properties:
       message:
@@ -402,6 +508,10 @@ definitions:
         type: integer
       id:
         type: integer
+      nightly_rate:
+        type: number
+      precio_total:
+        type: number
       start_date:
         type: string
       status:
@@ -1251,6 +1361,214 @@ paths:
       summary: Iniciar sesión
       tags:
       - Usuarios
+  /maintenance/cabin/{cabinId}:
+    get:
+      parameters:
+      - description: ID de cabaña
+        in: path
+        name: cabinId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/maintenance.Maintenance'
+            type: array
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Listar los mantenimientos de una cabaña propia
+      tags:
+      - Mantenimientos
+    post:
+      consumes:
+      - application/json
+      description: Suspende las reservas afectadas; el huésped elige reprogramar o
+        solicitar el reembolso total.
+      parameters:
+      - description: ID de cabaña
+        in: path
+        name: cabinId
+        required: true
+        type: integer
+      - description: Rango y motivo del mantenimiento
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/maintenance.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/maintenance.Maintenance'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Bloquear por mantenimiento y avisar a los huéspedes
+      tags:
+      - Mantenimientos
+  /maintenance/cabin/{cabinId}/{id}/cancel:
+    patch:
+      description: Restituye las reservas pendientes cuyas fechas originales siguen
+        disponibles. No revierte las decisiones ya realizadas.
+      parameters:
+      - description: ID de cabaña
+        in: path
+        name: cabinId
+        required: true
+        type: integer
+      - description: ID de mantenimiento
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/maintenance.Maintenance'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Cancelar un mantenimiento y liberar sus fechas
+      tags:
+      - Mantenimientos
+  /maintenance/cabin/{cabinId}/preview:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID de cabaña
+        in: path
+        name: cabinId
+        required: true
+        type: integer
+      - description: Rango de mantenimiento [inicio, fin)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/maintenance.DateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/maintenance.Preview'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Consultar las reservas que se notificarán por mantenimiento
+      tags:
+      - Mantenimientos
+  /maintenance/reservation/{id}:
+    get:
+      parameters:
+      - description: ID de reserva
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/maintenance.PendingDecision'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Consultar las opciones de una reserva afectada propia
+      tags:
+      - Mantenimientos
+  /maintenance/reservation/{id}/resolve:
+    post:
+      consumes:
+      - application/json
+      description: Conserva las noches y el total originales al reprogramar. Solo
+        puede decidir el propietario de la reserva.
+      parameters:
+      - description: ID de reserva
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Decisión del huésped
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/maintenance.DecisionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/maintenance.DecisionResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/maintenance.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: El huésped reprograma en la misma cabaña o pide el reembolso total
+      tags:
+      - Mantenimientos
   /notifications:
     get:
       description: 'Devuelve las notificaciones personales del usuario autenticado
@@ -1443,11 +1761,6 @@ paths:
       parameters:
       - description: ID de reservación
         in: path
-        name: id
-        required: true
-        type: integer
-      - description: ID de reservación
-        in: path
         name: reservationId
         required: true
         type: integer
@@ -1519,7 +1832,7 @@ paths:
         name: guest_id
         type: integer
       - description: 'Estado de la reservación: pendiente, confirmada, en_curso, finalizada,
-          cancelada'
+          cancelada, por_mantenimiento'
         in: query
         name: status
         type: string

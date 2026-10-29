@@ -99,9 +99,15 @@ Para consultar el historial:
 docker compose exec postgres-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE public.schema_migrations;"'
 ```
 
-Para agregar un cambio, crea el siguiente archivo consecutivo, por ejemplo `008_descripcion.sql`, en `database/migrations/` y vuelve a ejecutar el script. No modifiques migraciones ya aplicadas. Los archivos deben contener SQL sin `BEGIN`/`COMMIT`, porque el script administra la transacción; tampoco deben usar operaciones incompatibles con transacciones, como `CREATE INDEX CONCURRENTLY`.
-
 `docker compose down` conserva los datos y el historial. **`docker compose down -v` los elimina**; no es necesario borrar el volumen para ejecutar migraciones.
+
+### Gestionar precios por temporada
+
+Desde **Mis Cabañas → Ver detalles → Precios por temporada** se abre un apartado independiente de **Editar cabaña**, reservado al propietario o administrador.
+
+Selecciona una temporada global para completar sus fechas y mostrar el **precio recomendado por noche** calculado sobre la tarifa base de la cabaña. Puedes usar esa recomendación, cambiar el porcentaje o elegir un precio fijo. Para un periodo propio, selecciona **Personalizada** e ingresa la primera y última noche; ambas fechas están incluidas. La vista previa muestra el precio que se guardará, y la lista inferior permite consultar o eliminar las tarifas configuradas.
+
+Los abonos posteriores al anticipo se registran desde **Mis reservaciones → Agregar pago**, con tarjeta, transferencia o efectivo, hasta cubrir el saldo pendiente.
 
 ### Documentación Swagger
 

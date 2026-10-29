@@ -1,4 +1,5 @@
 import { Component, EventEmitter, inject, Input, Output, signal } from '@angular/core';
+import { MaintenanceDecision } from '../maintenance-decision/maintenance-decision';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Reservation } from '../../models/reservation';
@@ -19,7 +20,7 @@ import { FinancialHistoryModal } from '../financial-history-modal/financial-hist
 
 @Component({
   selector: 'app-reservation-card',
-  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RefundModal, FinancialHistoryModal, RouterLink, FormsModule],
+  imports: [CancelReservationModal, PayAnticipoModal, PaymentsModal, RefundModal, FinancialHistoryModal, RouterLink, FormsModule, MaintenanceDecision],
   templateUrl: './reservation-card.html',
 })
 export class ReservationCard {
@@ -30,6 +31,7 @@ export class ReservationCard {
   @Input({ required: true }) reservation!: Reservation;
   @Input() showCheckin = false;
   @Input() showCheckout = false;
+  @Output() maintenanceResolved = new EventEmitter<string>();
   @Output() cancelled = new EventEmitter<CancelReservationResponse>();
   @Output() checkedIn = new EventEmitter<CheckinReservationResponse>();
   @Output() checkedOut = new EventEmitter<CheckoutReservationResponse>();
@@ -287,6 +289,8 @@ export class ReservationCard {
       },
     });
   }
+
+  get isMaintenance(): boolean { return this.reservation.status === 'por_mantenimiento'; }
 
   get isPending(): boolean {
     return this.reservation.status === 'pendiente';

@@ -21,7 +21,7 @@ func (r *Repository) GetSummary(ctx context.Context, reservationID int) (float64
 	query := `
 		SELECT
 			COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago IN ('anticipo', 'pago')), 0)::float8,
-			COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago = 'reembolso'), 0)::float8
+			(COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago = 'reembolso'), 0)+COALESCE((SELECT SUM(cantidad) FROM reembolsos WHERE id_reservacion=$1),0))::float8
 		FROM pagos
 		WHERE id_reservacion = $1
 	`
@@ -72,12 +72,20 @@ func (r *Repository) InsertRefund(ctx context.Context, reservationID int, hostID
 		return nil, err
 	}
 	defer tx.Rollback(ctx)
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(947,1)`); err != nil {
+		return nil, err
+	}
+	// Coordina el saldo reembolsable con la resolución por mantenimiento.
+	var lockedID int
+	if err := tx.QueryRow(ctx, `SELECT id FROM reservaciones WHERE id=$1 FOR UPDATE`, reservationID).Scan(&lockedID); err != nil {
+		return nil, err
+	}
 
 	var totalPaid, totalRefunded float64
 	summary := `
 		SELECT
 			COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago IN ('anticipo', 'pago')), 0)::float8,
-			COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago = 'reembolso'), 0)::float8
+			(COALESCE(SUM(cantidad) FILTER (WHERE tipo_pago = 'reembolso'), 0)+COALESCE((SELECT SUM(cantidad) FROM reembolsos WHERE id_reservacion=$1),0))::float8
 		FROM pagos
 		WHERE id_reservacion = $1
 	`
