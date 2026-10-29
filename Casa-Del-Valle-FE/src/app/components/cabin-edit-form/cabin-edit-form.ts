@@ -3,10 +3,9 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { Cabin } from '../../models/cabin';
 import { CabinImage } from '../../models/cabin-image';
 import { CabinService } from '../../services/cabin.service';
-import { CabinSeasonPrices } from '../cabin-season-prices/cabin-season-prices';
 
 @Component({
-  imports: [ReactiveFormsModule, CabinSeasonPrices],
+  imports: [ReactiveFormsModule],
   selector: 'app-cabin-edit-form',
   styleUrl: './cabin-edit-form.css',
   templateUrl: './cabin-edit-form.html',

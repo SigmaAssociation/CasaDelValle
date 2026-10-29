@@ -22,7 +22,7 @@ export class ReservationsReportPage implements OnInit {
   loading = signal(false);
   error = signal('');
 
-  statuses: ReservationStatus[] = ['pendiente', 'confirmada', 'en_curso', 'finalizada', 'cancelada'];
+  statuses: ReservationStatus[] = ['pendiente', 'confirmada', 'en_curso', 'finalizada', 'cancelada', 'por_mantenimiento'];
 
   constructor(
     private formBuilder: FormBuilder,
@@ -84,7 +84,7 @@ export class ReservationsReportPage implements OnInit {
   }
 
   statusLabel(status: string): string {
-    return status.replace('_', ' ');
+    return status === 'por_mantenimiento' ? 'Afectada por mantenimiento' : status.replace('_', ' ');
   }
 
   statusClass(status: string): string {
@@ -94,6 +94,7 @@ export class ReservationsReportPage implements OnInit {
       en_curso: 'bg-blue-100 text-blue-800',
       finalizada: 'bg-gray-100 text-gray-600',
       cancelada: 'bg-red-100 text-red-800',
+      por_mantenimiento: 'bg-orange/10 text-orange',
     };
     return classes[status] ?? 'bg-gray-100 text-gray-600';
   }

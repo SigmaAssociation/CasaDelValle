@@ -71,6 +71,7 @@
       @for (r of visible(); track r.id) {
         <app-reservation-card
           [reservation]="r"
+          (maintenanceResolved)="onMaintenanceResolved($event)"
           (cancelled)="onCancelled($event)"
           (paid)="onPaid($event)"
           (paymentRegistered)="onPaymentRegistered($event)"

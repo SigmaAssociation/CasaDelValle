@@ -1,0 +1,26 @@
+<div class="max-w-6xl mx-auto px-4 pb-8 font-sans">
+  @if (cabin(); as c) {
+    <a [routerLink]="['/cabins', c.id]" class="inline-flex items-center gap-2 text-sm text-brown/70 hover:text-orange mb-6 transition-colors">
+      <span aria-hidden="true">←</span> Volver a {{ c.name }}
+    </a>
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
+      <div>
+        <p class="text-sm text-green font-medium mb-2">Tarifas de tu cabaña</p>
+        <h1 class="text-3xl text-brown">Precios por temporada</h1>
+        <p class="text-sm text-brown/70 mt-2">{{ c.name }} · Define cuánto cobrar por noche en fechas especiales.</p>
+      </div>
+      <div class="rounded-xl bg-white border border-brown/10 px-5 py-3 shadow-sm shrink-0">
+        <p class="text-xs text-brown/70 mb-1">Tarifa base actual</p>
+        <p class="font-semibold text-xl text-green">{{ c.price | currency:'GTQ':'symbol-narrow':'1.2-2' }} <span class="text-xs font-normal text-brown/60">/ noche</span></p>
+      </div>
+    </div>
+    <app-cabin-season-prices [cabinId]="c.id" [basePrice]="c.price" />
+  } @else if (loading()) {
+    <p class="text-center text-brown/60 py-16" role="status">Cargando precios de la cabaña…</p>
+  } @else {
+    <div class="bg-white border border-brown/10 rounded-xl p-8 text-center">
+      <p role="alert" class="text-brown mb-4">{{ error() }}</p>
+      <a routerLink="/mis-cabanas" class="text-orange hover:underline">Volver a Mis Cabañas</a>
+    </div>
+  }
+</div>

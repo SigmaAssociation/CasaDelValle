@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { PriceQuote } from '../models/price-quote';
 import { RestConstants } from '../components/rest-constants';
 import { CabinSeasonPrice, CabinSeasonPriceRequest, Season, SeasonRequest } from '../models/season';
 
@@ -13,6 +14,10 @@ export class SeasonService {
   list(includeInactive = false): Observable<Season[]> {
     const url = includeInactive ? `${this.api}seasons?all=true` : `${this.api}seasons`;
     return this.http.get<Season[]>(url);
+  }
+
+  quote(cabinId: number, startDate: string, endDate: string): Observable<PriceQuote> {
+    return this.http.post<PriceQuote>(`${this.api}seasons/quote`, { cabinId, startDate, endDate });
   }
 
   create(request: SeasonRequest): Observable<Season> {

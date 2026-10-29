@@ -1,16 +1,13 @@
 #!/bin/sh
 set -eu
 
-# La ejecución exterior usa siempre el Compose de desarrollo del repositorio.
 script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 if [ "${1:-}" != "--container" ]; then
     if [ "$#" -ne 0 ] && [ "$#" -ne 2 ]; then
         printf 'Uso: %s [USUARIO BASE_DE_DATOS]\n' "$0" >&2
         exit 1
     fi
-    exec docker compose --project-directory "$script_dir/.." \
-        -f "$script_dir/../docker-compose.yml" exec -T postgres-db \
-        sh /migrations/migrate.sh --container "$@"
+    exec docker exec -i postgres_db sh /migrations/migrate.sh --container "$@"
 fi
 shift
 if [ "$#" -ne 0 ] && [ "$#" -ne 2 ]; then

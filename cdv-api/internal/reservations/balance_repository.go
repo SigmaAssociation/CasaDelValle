@@ -23,7 +23,7 @@ func (r *Repository) GetReservationLedger(ctx context.Context, reservationID int
 		Refunds:      []Refund{},
 	}
 
-	if err := tx.QueryRow(ctx, `SELECT precio FROM cabanas WHERE id = $1`, cabinID).Scan(&ledger.NightlyRate); err != nil {
+	if err := tx.QueryRow(ctx, `SELECT r.precio_total/(r.fecha_fin-r.fecha_inicio),r.precio_total FROM reservaciones r JOIN cabanas c ON c.id=r.id_cabana WHERE r.id=$1 AND c.id=$2`, reservationID, cabinID).Scan(&ledger.NightlyRate, &ledger.TotalPrice); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrCabinNotFound
 		}
