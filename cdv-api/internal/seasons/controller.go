@@ -27,6 +27,23 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, map[string]string{"message": message})
 }
 
+func writeSeasonError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, ErrSeasonNotFound):
+		writeError(w, http.StatusNotFound, "Temporada no encontrada")
+	case errors.Is(err, ErrSeasonOverlap):
+		writeError(w, http.StatusConflict, "Ya existe una temporada con fechas cruzadas")
+	case errors.Is(err, ErrInvalidName):
+		writeError(w, http.StatusBadRequest, "El nombre es obligatorio y debe tener máximo 100 caracteres")
+	case errors.Is(err, ErrInvalidAdjustment):
+		writeError(w, http.StatusBadRequest, "El porcentaje de ajuste debe estar entre 0 y 100")
+	case errors.Is(err, ErrInvalidDates):
+		writeError(w, http.StatusBadRequest, "Fechas inválidas: usa el formato AAAA-MM-DD y una fecha fin mayor o igual al inicio")
+	default:
+		writeError(w, http.StatusInternalServerError, "Error al procesar la temporada")
+	}
+}
+
 // ListSeasons lista las temporadas globales
 // @Summary Listar temporadas
 // @Tags Temporadas
@@ -77,11 +94,7 @@ func (c *Controller) CreateSeason(w http.ResponseWriter, r *http.Request) {
 	}
 	season, err := c.service.CreateSeason(r.Context(), req)
 	if err != nil {
-		if errors.Is(err, ErrSeasonOverlap) {
-			writeError(w, http.StatusConflict, "Ya existe una temporada con fechas cruzadas")
-			return
-		}
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeSeasonError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, season)
@@ -122,22 +135,15 @@ func (c *Controller) UpdateSeason(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := c.service.UpdateSeason(r.Context(), id, req); err != nil {
-		if errors.Is(err, ErrSeasonNotFound) {
-			writeError(w, http.StatusNotFound, "Temporada no encontrada")
-			return
-		}
-		if errors.Is(err, ErrSeasonOverlap) {
-			writeError(w, http.StatusConflict, "Ya existe una temporada con fechas cruzadas")
-			return
-		}
-		writeError(w, http.StatusBadRequest, err.Error())
+		writeSeasonError(w, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Temporada actualizada"})
 }
 
-// DeleteSeason elimina una temporada global
-// @Summary Eliminar temporada
+// DeactivateSeason desactiva una temporada global sin eliminarla.
+// @Summary Desactivar temporada
+// @Description Marca la temporada como inactiva. Las temporadas inactivas no se aplican al cotizar y no bloquean la creación de nuevas temporadas con fechas cruzadas.
 // @Tags Temporadas
 // @Accept json
 // @Produce json
@@ -148,14 +154,14 @@ func (c *Controller) UpdateSeason(w http.ResponseWriter, r *http.Request) {
 // @Failure 403 {object} ErrorResponse
 // @Failure 404 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
-// @Router /seasons/{id} [delete]
-func (c *Controller) DeleteSeason(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodDelete {
+// @Router /seasons/{id}/deactivate [patch]
+func (c *Controller) DeactivateSeason(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPatch {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
 		return
 	}
 	if !middleware.IsAdmin(r) {
-		writeError(w, http.StatusForbidden, "Solo administradores pueden eliminar temporadas")
+		writeError(w, http.StatusForbidden, "Solo administradores pueden desactivar temporadas")
 		return
 	}
 	idParam := r.PathValue("id")
@@ -164,15 +170,11 @@ func (c *Controller) DeleteSeason(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "ID inválido")
 		return
 	}
-	if err := c.service.DeleteSeason(r.Context(), id); err != nil {
-		if errors.Is(err, ErrSeasonNotFound) {
-			writeError(w, http.StatusNotFound, "Temporada no encontrada")
-			return
-		}
-		writeError(w, http.StatusInternalServerError, "Error al eliminar temporada")
+	if err := c.service.DeactivateSeason(r.Context(), id); err != nil {
+		writeSeasonError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"message": "Temporada eliminada"})
+	writeJSON(w, http.StatusOK, map[string]string{"message": "Temporada desactivada"})
 }
 
 // ListCabinSeasonPrices lista precios por temporada de una cabaña

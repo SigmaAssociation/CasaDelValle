@@ -1813,13 +1813,16 @@ const docTemplate = `{
                         }
                     }
                 }
-            },
-            "delete": {
+            }
+        },
+        "/seasons/{id}/deactivate": {
+            "patch": {
                 "security": [
                     {
                         "BearerAuth": []
                     }
                 ],
+                "description": "Marca la temporada como inactiva. Las temporadas inactivas no se aplican al cotizar y no bloquean la creación de nuevas temporadas con fechas cruzadas.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1829,7 +1832,7 @@ const docTemplate = `{
                 "tags": [
                     "Temporadas"
                 ],
-                "summary": "Eliminar temporada",
+                "summary": "Desactivar temporada",
                 "parameters": [
                     {
                         "type": "integer",

@@ -55,7 +55,8 @@ func (r *Repository) CreateSeason(ctx context.Context, req CreateSeasonRequest) 
 		VALUES ($1,$2,$3,$4,$5)
 		RETURNING id
 	`
-	err := r.pool.QueryRow(ctx, query, req.Name, req.SuggestedAdjustment, req.Active, req.StartDate, req.EndDate).Scan(&id)
+	active := req.IsActive()
+	err := r.pool.QueryRow(ctx, query, req.Name, req.SuggestedAdjustment, active, req.StartDate, req.EndDate).Scan(&id)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
@@ -68,7 +69,7 @@ func (r *Repository) CreateSeason(ctx context.Context, req CreateSeasonRequest) 
 		ID:                  id,
 		Name:                req.Name,
 		SuggestedAdjustment: req.SuggestedAdjustment,
-		Active:              req.Active,
+		Active:              active,
 		StartDate:           req.StartDate,
 		EndDate:             req.EndDate,
 	}, nil
@@ -94,9 +95,13 @@ func (r *Repository) UpdateSeason(ctx context.Context, id int, req UpdateSeasonR
 	return nil
 }
 
-func (r *Repository) DeleteSeason(ctx context.Context, id int) error {
-	tag, err := r.pool.Exec(ctx, `DELETE FROM temporada WHERE id=$1`, id)
+func (r *Repository) SetSeasonActive(ctx context.Context, id int, active bool) error {
+	tag, err := r.pool.Exec(ctx, `UPDATE temporada SET activo=$1 WHERE id=$2`, active, id)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
+			return ErrSeasonOverlap
+		}
 		return err
 	}
 	if tag.RowsAffected() == 0 {

@@ -150,7 +150,7 @@ func main() {
 	mux.HandleFunc("GET /cdv-api/seasons", seasonController.ListSeasons)
 	mux.HandleFunc("POST /cdv-api/seasons", seasonController.CreateSeason)
 	mux.HandleFunc("PUT /cdv-api/seasons/{id}", seasonController.UpdateSeason)
-	mux.HandleFunc("DELETE /cdv-api/seasons/{id}", seasonController.DeleteSeason)
+	mux.HandleFunc("PATCH /cdv-api/seasons/{id}/deactivate", seasonController.DeactivateSeason)
 	mux.HandleFunc("GET /cdv-api/cabin-season-prices/cabin/{cabinId}", seasonController.ListCabinSeasonPrices)
 	mux.HandleFunc("POST /cdv-api/cabin-season-prices/cabin/{cabinId}", seasonController.SetCabinSeasonPrice)
 	mux.HandleFunc("DELETE /cdv-api/cabin-season-prices/{id}", seasonController.DeleteCabinSeasonPrice)

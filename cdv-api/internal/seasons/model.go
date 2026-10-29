@@ -28,9 +28,17 @@ type CabinSeasonPrice struct {
 type CreateSeasonRequest struct {
 	Name                string  `json:"name"`
 	SuggestedAdjustment float64 `json:"suggestedAdjustmentPercent"`
-	Active              bool    `json:"active"`
+	Active              *bool   `json:"active,omitempty"`
 	StartDate           string  `json:"startDate"`
 	EndDate             string  `json:"endDate"`
+}
+
+// IsActive devuelve el estado solicitado; si se omite, la temporada nace activa.
+func (r CreateSeasonRequest) IsActive() bool {
+	if r.Active == nil {
+		return true
+	}
+	return *r.Active
 }
 
 type UpdateSeasonRequest struct {
@@ -81,6 +89,8 @@ var (
 	ErrCabinSeasonNotFound = errors.New("cabin season price not found")
 	ErrInvalidDates        = errors.New("invalid dates")
 	ErrInvalidPrice        = errors.New("invalid seasonal price")
+	ErrInvalidName         = errors.New("invalid season name")
+	ErrInvalidAdjustment   = errors.New("invalid suggested adjustment")
 )
 
 type ErrorResponse struct {

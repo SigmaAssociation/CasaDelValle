@@ -7,6 +7,14 @@ export interface Season {
   endDate: string;
 }
 
+export interface SeasonRequest {
+  name: string;
+  suggestedAdjustmentPercent: number;
+  active: boolean;
+  startDate: string;
+  endDate: string;
+}
+
 export interface CabinSeasonPrice {
   id: number;
   cabinId: number;
