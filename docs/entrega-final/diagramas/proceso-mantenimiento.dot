@@ -1,0 +1,32 @@
+digraph G {
+graph [bgcolor="#EFE6D2",pad="0.25",nodesep="0.55",ranksep="0.8",fontname="Open Sans",fontsize=14];
+node [shape=box,style="rounded,filled",fillcolor="white",color="#4F5D2F",fontname="Open Sans",fontsize=14,margin="0.15,0.12"];
+edge [color="#4F5D2F",fontname="Open Sans",fontsize=11,arrowsize=0.7];
+rankdir=TB;
+a [label="Propietario ingresa fechas y motivo",shape=box];
+b [label="Ver reservas afectadas",shape=box];
+c [label="Crear bloqueo en transacción",shape=box];
+dd [label="Suspender reservas: por_mantenimiento\nGuardar estado anterior y decisión pendiente",shape=box];
+e [label="Avisar al huésped",shape=box];
+f [label="Decisión del huésped",shape=diamond];
+g [label="Validar nuevas fechas: misma cabaña/noches\nSin cruces de huésped, reserva ni mantenimiento",shape=box];
+h [label="Conservar total y pagos\nRestituir pendiente o confirmada y avisar",shape=box];
+i [label="Devolver lo pagado aún no devuelto\nCancelar reserva y avisar",shape=box];
+j [label="Propietario cancela mantenimiento\nen cualquier momento",shape=box];
+k [label="¿Sin decisión, fechas útiles\ny sin otro bloqueo?",shape=diamond];
+l [label="Restaurar estado anterior y avisar",shape=box];
+mm [label="Liberar bloqueo y conservar\nhistoria o decisión pendiente",shape=box];
+a -> b [label=""];
+b -> c [label=""];
+c -> dd [label=""];
+dd -> e [label=""];
+e -> f [label=""];
+f -> g [label="Cambiar fechas"];
+g -> h [label=""];
+f -> i [label="Devolución total"];
+c -> j [label="Cancelación del bloqueo"];
+j -> k [label=""];
+k -> l [label="Sí"];
+k -> mm [label="No"];
+
+}

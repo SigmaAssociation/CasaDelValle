@@ -1,0 +1,13 @@
+stateDiagram-v2
+    [*] --> pendiente: creación
+    pendiente --> confirmada: anticipo mínimo y disponibilidad
+    pendiente --> cancelada: cancelación válida
+    confirmada --> cancelada: cancelación válida
+    confirmada --> en_curso: check-in y alojamiento pagado
+    confirmada --> en_curso: avance automático por fecha
+    pendiente --> finalizada: avance automático al vencer
+    confirmada --> finalizada: avance automático al vencer
+    en_curso --> finalizada: check-out con check-in registrado
+    en_curso --> finalizada: tarea periódica al vencer periodo
+    finalizada --> [*]
+    cancelada --> [*]

@@ -1,0 +1,16 @@
+flowchart TD
+    A["Usuario autenticado consulta cabaña y disponibilidad"] --> B["Ingresa fechas: inicio menor que fin, desde hoy"]
+    B --> C{"¿Fechas y disponibilidad válidas?"}
+    C -->|No| X["Mostrar error y conservar formulario"]
+    C -->|Sí| D["Crear reserva pendiente y aviso"]
+    D --> E["Pagar anticipo mínimo 30 %"]
+    E --> F{"¿Monto válido y sigue disponible?"}
+    F -->|No| X
+    F -->|Sí| G["Registrar anticipo y confirmar"]
+    G --> H["Registrar abonos y consultar saldo"]
+    H --> I{"¿Dentro del periodo y alojamiento pagado?"}
+    I -->|No| J["Completar saldo o esperar fecha de llegada"]
+    J --> H
+    I -->|Sí| K["Anfitrión registra check-in: en_curso"]
+    K --> L["Anfitrión registra check-out: finalizada"]
+    G --> Q["Cancelar según reglas y registrar reembolso aplicable"]
