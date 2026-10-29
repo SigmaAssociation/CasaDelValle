@@ -22,7 +22,6 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-      - ./database/migrate_reservas_estados_pagos.sql:/docker-entrypoint-initdb.d/02-migrate.sql:ro
   # Servicio del Backend (Go)
   backend-api:
     build:

@@ -2,8 +2,6 @@
 -- Los usuarios que ya publicaron cabañas se convierten en anfitriones;
 -- el resto queda como huésped. Solo para BDs creadas antes de este cambio
 -- (init.sql ya incluye los roles nuevos para BDs frescas).
--- Uso: docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_roles.sql
-
 INSERT INTO roles (id, tipo) VALUES (3, 'Anfitrión')
 ON CONFLICT (id) DO NOTHING;
 
