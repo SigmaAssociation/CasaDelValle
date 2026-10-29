@@ -30,20 +30,6 @@ func writeError(w http.ResponseWriter, status int, message string) {
 	writeJSON(w, status, ErrorResponse{Message: message})
 }
 
-// CreateReservation registra una nueva reservación.
-// @Summary Crear reservación
-// @Description Crea una reservación en estado pendiente. Para clientes el usuario se toma del token; para administradores puede indicarse. Valida solape de cabaña y de usuario. Requiere token.
-// @Tags Reservaciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param reservation body ReservationRequest true "Datos de la reservación"
-// @Success 201 {object} CreateReservationResponse "Reservación registrada exitosamente"
-// @Failure 400 {object} map[string]string "Datos inválidos"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Cabaña o usuario no existe"
-// @Failure 409 {object} map[string]string "Conflicto de fechas"
-// @Router /reservations [post]
 func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -93,19 +79,6 @@ func (c *Controller) CreateReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// CancelReservation cancela una reservación y registra el reembolso automático.
-// @Summary Cancelar reservación
-// @Description Cancela una reservación pendiente o confirmada y registra el reembolso según días de anticipación (100% ≥7 días, 70% 3–7 días, 0% <3 días). Puede cancelar quien reservó, el dueño o un admin. Requiere token.
-// @Tags Reservaciones
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de reservación"
-// @Success 200 {object} CancelReservationResponse "Reservación cancelada exitosamente"
-// @Failure 400 {object} map[string]string "ID de reservación inválido"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Failure 409 {object} map[string]string "No cancelable o con menos de 3 días de anticipación"
-// @Router /reservations/{id}/cancel [patch]
 func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -160,21 +133,6 @@ func (c *Controller) CancelReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// PayAnticipo registra el pago del anticipo y confirma la reservación.
-// @Summary Pagar anticipo y confirmar reservación
-// @Description Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'. Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin. Requiere token.
-// @Tags Reservaciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de reservación"
-// @Param payment body PayAnticipoRequest false "Monto y método (opcionales)"
-// @Success 200 {object} PayAnticipoResponse "Anticipo registrado y reservación confirmada"
-// @Failure 400 {object} map[string]string "Datos o monto/método inválidos"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Reservación o cabaña no encontrada"
-// @Failure 409 {object} map[string]string "La reservación no está pendiente de anticipo"
-// @Router /reservations/{id}/payment [post]
 func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -230,6 +188,8 @@ func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "Reservación no encontrada")
 		case errors.Is(err, ErrCabinNotFound):
 			writeError(w, http.StatusNotFound, "Cabaña no encontrada")
+		case err.Error() == "La cabaña no está disponible en el rango de fechas seleccionado":
+			writeError(w, http.StatusConflict, err.Error())
 		case err.Error() == "Método de pago inválido: usa tarjeta, transferencia o efectivo" ||
 			err.Error() == "El anticipo debe ser al menos el 30% del total" ||
 			err.Error() == "El monto no puede superar el total de la reservación":
@@ -246,18 +206,6 @@ func (c *Controller) PayAnticipo(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetReservationByID retorna el detalle de una reservación.
-// @Summary Obtener reservación por ID
-// @Description Retorna el detalle de una reservación. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.
-// @Tags Reservaciones
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de reservación"
-// @Success 200 {object} ReservationDetail "Detalle de la reservación"
-// @Failure 400 {object} map[string]string "ID de reservación inválido"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Router /reservations/{id} [get]
 func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -295,21 +243,6 @@ func (c *Controller) GetReservationByID(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, reservation)
 }
 
-// Checkin registra el inicio de la estadía de una reservación.
-// @Summary Registrar check-in
-// @Description Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva confirmada dentro de su periodo y con el pago total completado. Acepta cash_amount opcional para que el anfitrión registre en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.
-// @Tags Reservaciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de reservación"
-// @Param checkin body CheckinRequest false "Efectivo a registrar (opcional)"
-// @Success 200 {object} CheckinReservationResponse "Check-in registrado"
-// @Failure 400 {object} map[string]string "ID de reservación inválido"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Failure 409 {object} map[string]string "No cumple requisitos (estado, fechas o pago)"
-// @Router /reservations/{id}/checkin [patch]
 func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPatch {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -375,17 +308,6 @@ func (c *Controller) Checkin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetReservationsByUser lista las reservaciones de un usuario.
-// @Summary Listar reservaciones por usuario
-// @Description Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.
-// @Tags Reservaciones
-// @Produce json
-// @Security BearerAuth
-// @Param userId path int true "ID de usuario"
-// @Success 200 {array} ReservationCard "Listado de reservaciones"
-// @Failure 400 {object} map[string]string "ID de usuario inválido"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Router /reservations/user/{userId} [get]
 func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -413,18 +335,6 @@ func (c *Controller) GetReservationsByUser(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, cards)
 }
 
-// GetReservationsByCabin lista las reservaciones de una cabaña.
-// @Summary Listar reservaciones por cabaña
-// @Description Retorna las reservaciones de la cabaña indicada, incluyendo quién reservó. Solo el anfitrión de la cabaña o un admin. Requiere token.
-// @Tags Reservaciones
-// @Produce json
-// @Security BearerAuth
-// @Param cabinId path int true "ID de cabaña"
-// @Success 200 {array} ReservationCard "Listado de reservaciones"
-// @Failure 400 {object} map[string]string "ID de cabaña inválido"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Cabaña no encontrada"
-// @Router /reservations/cabin/{cabinId} [get]
 func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -462,21 +372,6 @@ func (c *Controller) GetReservationsByCabin(w http.ResponseWriter, r *http.Reque
 	writeJSON(w, http.StatusOK, cards)
 }
 
-// UpdateReservation actualiza una reservación.
-// @Summary Actualizar reservación
-// @Description Actualiza la cabaña y las fechas de una reservación pendiente o confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.
-// @Tags Reservaciones
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Param id path int true "ID de reservación"
-// @Param reservation body UpdateReservationRequest true "Datos a actualizar"
-// @Success 200 {object} UpdateReservationResponse "Reservación actualizada exitosamente"
-// @Failure 400 {object} map[string]string "Datos inválidos"
-// @Failure 403 {object} map[string]string "Sin permisos"
-// @Failure 404 {object} map[string]string "Reservación no encontrada"
-// @Failure 409 {object} map[string]string "Conflicto de fechas o reservación no editable"
-// @Router /reservations/{id} [put]
 func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")
@@ -541,15 +436,6 @@ func (c *Controller) UpdateReservation(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// GetCabinAvailability retorna los rangos de fechas ocupados de una cabaña.
-// @Summary Obtener disponibilidad de una cabaña
-// @Description Retorna los rangos de fechas ocupados por reservaciones pendientes, confirmadas o en curso. Público.
-// @Tags Reservaciones
-// @Produce json
-// @Param cabinId path int true "ID de cabaña"
-// @Success 200 {object} CabinAvailabilityResponse "Disponibilidad de la cabaña"
-// @Failure 400 {object} map[string]string "ID de cabaña inválido"
-// @Router /cabins/availability/{cabinId} [get]
 func (c *Controller) GetCabinAvailability(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeError(w, http.StatusMethodNotAllowed, "Método no permitido")

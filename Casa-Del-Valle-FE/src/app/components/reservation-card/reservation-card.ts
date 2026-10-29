@@ -28,9 +28,7 @@ export class ReservationCard {
   private auth = inject(AuthService);
 
   @Input({ required: true }) reservation!: Reservation;
-  // Muestra la acción de check-in (solo tiene sentido para el anfitrión).
   @Input() showCheckin = false;
-  // Muestra la acción de check-out (solo tiene sentido para el anfitrión).
   @Input() showCheckout = false;
   @Output() cancelled = new EventEmitter<CancelReservationResponse>();
   @Output() checkedIn = new EventEmitter<CheckinReservationResponse>();
@@ -214,8 +212,6 @@ export class ReservationCard {
     return this.showCheckin && this.isConfirmed && this.isWithinStay && !this.isCheckingIn();
   }
 
-  // El check-in solo se ofrece dentro del periodo de la reserva: ni días
-  // antes del inicio ni días después del fin.
   get isWithinStay(): boolean {
     const start = this.parse(this.reservation.startDate);
     const end = this.parse(this.reservation.endDate);
@@ -229,7 +225,6 @@ export class ReservationCard {
     return today >= start && today <= end;
   }
 
-  // Saldo pendiente según lo reportado por el backend (0 si no viene).
   get remainingBalance(): number {
     const paid = Number(this.reservation.paidTotal ?? 0);
     return Math.max(0, Math.round((this.reservation.totalPrice - paid) * 100) / 100);
@@ -266,7 +261,6 @@ export class ReservationCard {
     });
   }
 
-  // El check-out solo aplica a una reservación en curso
   get canCheckout(): boolean {
     return this.showCheckout && this.isInProgress && !this.isCheckingOut();
   }
@@ -298,7 +292,6 @@ export class ReservationCard {
     return this.reservation.status === 'pendiente';
   }
 
-  // Se puede consultar el historial de pagos salvo en reservaciones canceladas.
   get canViewPayments(): boolean {
     return !this.isCancelled;
   }
@@ -333,10 +326,19 @@ export class ReservationCard {
     return this.isPending && this.isOwnReservation;
   }
 
-  // Agregar pago (abono): reservación confirmada o en curso con saldo
-  // pendiente. Lo permite el backend a quien reservó, al anfitrión o admin.
   get canAddPayment(): boolean {
-    return (this.isConfirmed || this.isInProgress) && this.remainingBalance > 0;
+    if (!(this.isConfirmed || this.isInProgress)) {
+      return false;
+    }
+    if (this.remainingBalance <= 0) {
+      return false;
+    }
+    const paid = Number(this.reservation.paidTotal ?? 0);
+    const total = Number(this.reservation.totalPrice ?? 0);
+    if (total > 0 && paid >= total - 0.01) {
+      return false;
+    }
+    return true;
   }
 
   get canRefund(): boolean {
