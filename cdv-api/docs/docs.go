@@ -559,6 +559,74 @@ const docTemplate = `{
                 }
             }
         },
+        "/cabins/{cabinId}/season-prices/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Elimina un registro de precios_temporada de la cabaña indicada. Si era una tarifa sobre una temporada global, la cabaña vuelve al ajuste sugerido; si era una temporada propia, esas fechas vuelven al precio normal. No modifica las temporadas globales. Solo el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios de temporada"
+                ],
+                "summary": "Eliminar tarifa o temporada personalizada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de precio de temporada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tarifa eliminada exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/seasonprices.DeleteSeasonPriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Cabaña o tarifa no encontrada",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/cabins/{id}": {
             "get": {
                 "security": [
@@ -2676,6 +2744,14 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "integer"
+                }
+            }
+        },
+        "seasonprices.DeleteSeasonPriceResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
                 }
             }
         },
