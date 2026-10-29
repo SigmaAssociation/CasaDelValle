@@ -85,9 +85,11 @@
       }
 
       @if (data.cabins.length > 0) {
-        <p class="text-sm text-gray-500 mb-4">
-          {{ data.total_cabins }} cabaña(s) · {{ data.total_reservations }} reservación(es)
-        </p>
+        <div class="grid sm:grid-cols-3 gap-3 mb-4">
+          <div class="bg-white border border-gray-100 rounded-xl p-4 text-sm text-gray-500">{{ data.total_cabins }} cabaña(s) · {{ data.total_reservations }} reservación(es)</div>
+          <div class="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">{{ data.cancelled_reservations }} cancelada(s)</div>
+          <div class="bg-orange/10 border border-orange/20 rounded-xl p-4 text-sm text-gray-800"><strong>{{ data.cancellation_percentage }}%</strong> de cancelación</div>
+        </div>
 
         <div class="space-y-4">
           @for (cabin of data.cabins; track cabin.id) {

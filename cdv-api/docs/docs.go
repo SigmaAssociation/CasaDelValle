@@ -2572,6 +2572,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/reportreservations.CabinReport"
                     }
                 },
+                "cancellation_percentage": {
+                    "type": "number"
+                },
+                "cancelled_reservations": {
+                    "type": "integer"
+                },
                 "message": {
                     "type": "string"
                 },
