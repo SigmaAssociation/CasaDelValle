@@ -405,6 +405,11 @@ definitions:
       user_id:
         type: integer
     type: object
+  seasonprices.DeleteSeasonPriceResponse:
+    properties:
+      message:
+        type: string
+    type: object
   seasons.CabinSeasonPrice:
     properties:
       adjustmentPercent:
@@ -527,11 +532,6 @@ definitions:
         type: string
       suggestedAdjustmentPercent:
         type: number
-    type: object
-  seasonprices.DeleteSeasonPriceResponse:
-    properties:
-      message:
-        type: string
     type: object
   users.RegisterRequest:
     properties:

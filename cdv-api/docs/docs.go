@@ -2747,6 +2747,14 @@ const docTemplate = `{
                 }
             }
         },
+        "seasonprices.DeleteSeasonPriceResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "seasons.CabinSeasonPrice": {
             "type": "object",
             "properties": {
@@ -2933,14 +2941,6 @@ const docTemplate = `{
                 },
                 "suggestedAdjustmentPercent": {
                     "type": "number"
-                }
-            }
-        },
-        "seasonprices.DeleteSeasonPriceResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
                 }
             }
         },
