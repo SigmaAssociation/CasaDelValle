@@ -81,7 +81,7 @@ El esquema inicial se crea con `database/init.sql` solamente cuando el volumen d
    ./database/migrate.sh
    ```
 
-   El script usa el servicio `postgres-db` de `docker-compose.yml` y las credenciales `POSTGRES_USER` y `POSTGRES_DB` del contenedor. No requiere instalar `psql` en tu equipo. También puedes invocarlo desde otra carpeta usando su ruta absoluta. Si tu instalación requiere `sudo` para acceder a Docker, usa `sudo ./database/migrate.sh`.
+   El script usa directamente el contenedor `postgres_db` y las credenciales `POSTGRES_USER` y `POSTGRES_DB` del contenedor. Funciona con Compose de desarrollo y producción, sin instalar `psql` en el equipo. También puedes invocarlo desde otra carpeta usando su ruta absoluta. Si tu instalación requiere `sudo` para acceder a Docker, usa `sudo ./database/migrate.sh`.
 
    Opcionalmente puedes indicar ambos valores: `./database/migrate.sh USUARIO BASE_DE_DATOS`.
 
