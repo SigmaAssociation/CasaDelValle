@@ -1,0 +1,27 @@
+digraph G {
+graph [bgcolor="#EFE6D2",pad="0.25",nodesep="0.55",ranksep="0.8",fontname="Open Sans",fontsize=14];
+node [shape=box,style="rounded,filled",fillcolor="white",color="#4F5D2F",fontname="Open Sans",fontsize=14,margin="0.15,0.12"];
+edge [color="#4F5D2F",fontname="Open Sans",fontsize=11,arrowsize=0.7];
+rankdir=TB;
+u [label="Usuario: huésped, anfitrión o administrador",shape=box];
+b [label="Navegador: Angular",shape=box];
+n [label="Nginx: HTTPS 443 / redirección 80\nSirve archivos Angular y proxy API",shape=box];
+a [label="API Go :8080\nJWT, permisos, controladores\nservicios y repositorios",shape=box];
+p [label="PostgreSQL 16 :5432",shape=cylinder];
+v [label="Volumen pgdata",shape=cylinder];
+i [label="Volumen uploads_data",shape=cylinder];
+g [label="GitHub: PR main/develop",shape=box];
+ci [label="CI: Go, Angular y Swagger",shape=box];
+m [label="Push main",shape=box];
+cd [label="CD: imágenes en GHCR\nSSH: pull y compose up",shape=box];
+u -> b [label=""];
+b -> n [label="HTTPS / JSON"];
+n -> a [label="/cdv-api · cdv-net"];
+a -> p [label="pgx / SQL"];
+p -> v [label="persistencia"];
+a -> i [label="imágenes"];
+g -> ci [label=""];
+m -> cd [label=""];
+cd -> n [label="actualiza VM"];
+subgraph cluster_vm {label="VM de Azure / Docker Compose";labelloc="b";color="#4F5D2F";n;a;p;v;i;}
+}

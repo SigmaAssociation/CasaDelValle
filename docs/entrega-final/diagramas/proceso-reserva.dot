@@ -1,0 +1,36 @@
+digraph G {
+graph [bgcolor="#EFE6D2",pad="0.25",nodesep="0.55",ranksep="0.8",fontname="Open Sans",fontsize=14];
+node [shape=box,style="rounded,filled",fillcolor="white",color="#4F5D2F",fontname="Open Sans",fontsize=14,margin="0.15,0.12"];
+edge [color="#4F5D2F",fontname="Open Sans",fontsize=11,arrowsize=0.7];
+rankdir=TB;
+a [label="Consultar cabaña y disponibilidad",shape=box];
+b [label="Ingresar fechas desde hoy\ninicio anterior a fin",shape=box];
+c [label="¿Válidas y disponibles?",shape=diamond];
+x [label="Mostrar error",shape=box];
+d [label="Crear reserva pendiente y aviso",shape=box];
+e [label="Pagar anticipo mínimo 30 %",shape=box];
+f [label="¿Monto válido y sigue disponible?",shape=diamond];
+g [label="Registrar anticipo y confirmar",shape=box];
+h [label="Registrar abonos y consultar saldo",shape=box];
+ii [label="¿Periodo válido y alojamiento pagado?",shape=diamond];
+j [label="Completar saldo o esperar llegada",shape=box];
+k [label="Anfitrión registra check-in: en_curso",shape=box];
+l [label="Anfitrión registra check-out: finalizada",shape=box];
+qq [label="Cancelar y registrar devolución aplicable",shape=box];
+a -> b [label=""];
+b -> c [label=""];
+c -> x [label="No"];
+c -> d [label="Sí"];
+d -> e [label=""];
+e -> f [label=""];
+f -> x [label="No"];
+f -> g [label="Sí"];
+g -> h [label=""];
+h -> ii [label=""];
+ii -> j [label="No"];
+j -> h [label=""];
+ii -> k [label="Sí"];
+k -> l [label=""];
+g -> qq [label="Cancelación válida"];
+
+}

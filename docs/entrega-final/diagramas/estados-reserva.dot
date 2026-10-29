@@ -1,0 +1,19 @@
+digraph G {
+graph [bgcolor="#EFE6D2",pad="0.25",nodesep="0.55",ranksep="0.8",fontname="Open Sans",fontsize=14];
+node [shape=box,style="rounded,filled",fillcolor="white",color="#4F5D2F",fontname="Open Sans",fontsize=14,margin="0.15,0.12"];
+edge [color="#4F5D2F",fontname="Open Sans",fontsize=11,arrowsize=0.7];
+rankdir=LR;
+p [label="pendiente",shape=box];
+c [label="confirmada",shape=box];
+e [label="en_curso",shape=box];
+f [label="finalizada",shape=box];
+x [label="cancelada",shape=box];
+p -> c [label="Anticipo y disponibilidad"];
+p -> x [label="Cancelación"];
+c -> x [label="Cancelación"];
+c -> e [label="Check-in manual o avance por fecha"];
+e -> f [label="Check-out o avance al vencer"];
+p -> f [label="Avance al vencer"];
+c -> f [label="Avance al vencer"];
+
+}
