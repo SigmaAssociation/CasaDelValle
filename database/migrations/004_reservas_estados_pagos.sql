@@ -1,6 +1,3 @@
-BEGIN;
-
-
 ALTER TABLE reservaciones
     DROP CONSTRAINT IF EXISTS chk_estado;
 
@@ -145,5 +142,3 @@ BEGIN
         );
     END IF;
 END $$;
-
-COMMIT;
