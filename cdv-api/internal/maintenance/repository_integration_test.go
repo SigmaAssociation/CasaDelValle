@@ -391,3 +391,40 @@ func TestIntegrationAbonosAfterAnticipoThroughHTTP(t *testing.T) {
 		t.Fatalf("saldo final: %d %+v", response.Code, summary)
 	}
 }
+
+func TestIntegrationAdministratorCanMaintainOwnCabin(t *testing.T) {
+	p := fixture(t)
+	t.Setenv("JWT_SECRET", "maintenance-admin-test")
+	exec(t, p, `UPDATE usuarios SET id_rol=1 WHERE id=10`)
+	controller := maintenance.NewController(maintenance.NewService(maintenance.NewRepository(p)))
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /cdv-api/maintenance/cabin/{cabinId}", controller.Create)
+	mux.HandleFunc("PATCH /cdv-api/maintenance/cabin/{cabinId}/{id}/cancel", controller.Cancel)
+	handler := middleware.Auth(mux)
+	send := func(method, path, body string, actor int) *httptest.ResponseRecorder {
+		token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{"sub": actor, "role": 1}).SignedString([]byte("maintenance-admin-test"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.Header.Set("Authorization", "Bearer "+token)
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		return res
+	}
+	payload := `{"start_date":"2099-02-01","end_date":"2099-02-05","reason":"Reparación"}`
+	if res := send("POST", "/cdv-api/maintenance/cabin/100", payload, 1); res.Code != http.StatusForbidden {
+		t.Fatalf("administrador ajeno: %d %s", res.Code, res.Body)
+	}
+	res := send("POST", "/cdv-api/maintenance/cabin/100", payload, 10)
+	if res.Code != http.StatusCreated {
+		t.Fatalf("administrador propietario: %d %s", res.Code, res.Body)
+	}
+	var created maintenance.Maintenance
+	if err := json.Unmarshal(res.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if res := send("PATCH", "/cdv-api/maintenance/cabin/100/"+strconv.Itoa(created.ID)+"/cancel", `{}`, 10); res.Code != http.StatusOK {
+		t.Fatalf("cancelar mantenimiento propio: %d %s", res.Code, res.Body)
+	}
+}

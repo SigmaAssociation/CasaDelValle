@@ -42,9 +42,8 @@ func actor(w http.ResponseWriter, r *http.Request) (int, uint, bool) {
 		respond(w, 401, ErrorResponse{"Usuario no autenticado"})
 		return 0, 0, false
 	}
-	role, _ := middleware.RoleFromContext(r.Context())
-	if role != middleware.RoleHost {
-		respond(w, 403, ErrorResponse{"Solo un anfitrión puede gestionar mantenimientos"})
+	if !middleware.IsHostOrAdmin(r) {
+		respond(w, 403, ErrorResponse{"Solo un anfitrión o administrador puede gestionar mantenimientos"})
 		return 0, 0, false
 	}
 	id, err := strconv.Atoi(r.PathValue("cabinId"))

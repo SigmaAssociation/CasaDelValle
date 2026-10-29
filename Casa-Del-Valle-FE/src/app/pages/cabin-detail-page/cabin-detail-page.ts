@@ -24,6 +24,7 @@ import { ReservationCard } from '../../components/reservation-card/reservation-c
   templateUrl: './cabin-detail-page.html',
 })
 export class CabinDetailPage implements OnInit {
+  @ViewChild('maintenanceSection') maintenanceSection?: ElementRef<HTMLElement>;
   @ViewChild('reservationSection') reservationSection?: ElementRef<HTMLElement>;
 
   cabin: Cabin | null = null;
@@ -149,7 +150,11 @@ export class CabinDetailPage implements OnInit {
   }
 
   canMaintain(): boolean {
-    return !!this.cabin && this.authService.user()?.role === 3 && this.cabin.host_id === this.currentUserId;
+    return !!this.cabin && this.authService.isHostOrAdmin() && this.cabin.host_id === this.currentUserId;
+  }
+
+  openMaintenance(): void {
+    this.maintenanceSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   onMaintenanceChanged(): void {

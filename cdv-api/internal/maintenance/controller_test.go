@@ -11,12 +11,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func TestControllerRequiresHostRole(t *testing.T) {
+func TestControllerAllowsHostAndAdminRoles(t *testing.T) {
 	t.Setenv("JWT_SECRET", "maintenance-test")
 	for _, tt := range []struct {
 		role int
 		code int
-	}{{0, 401}, {1, 403}, {2, 403}, {3, 200}} {
+	}{{0, 401}, {1, 200}, {2, 403}, {3, 200}} {
 		repo := &stubRepository{}
 		controller := NewController(NewService(repo))
 		mux := http.NewServeMux()
@@ -34,7 +34,7 @@ func TestControllerRequiresHostRole(t *testing.T) {
 		if response.Code != tt.code {
 			t.Fatalf("role %d: %d %s", tt.role, response.Code, response.Body)
 		}
-		if repo.called != (tt.role == 3) {
+		if repo.called != (tt.role == 3 || tt.role == 1) {
 			t.Fatalf("acceso a repositorio sin permisos: %d", tt.role)
 		}
 	}

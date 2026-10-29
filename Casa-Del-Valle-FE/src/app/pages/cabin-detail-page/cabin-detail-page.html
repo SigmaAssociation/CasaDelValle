@@ -161,6 +161,17 @@
             </a>
           }
 
+          @if (canMaintain()) {
+            <button type="button" (click)="openMaintenance()" aria-controls="cabin-maintenance-section"
+                    class="mt-3 w-full flex items-center justify-between gap-3 rounded-lg border border-orange/25 bg-orange/5 px-4 py-3 text-left text-orange hover:bg-orange/10 transition-colors">
+              <span>
+                <span class="block text-sm font-semibold">Poner en mantenimiento</span>
+                <span class="block text-xs mt-1 text-brown/70">Bloquea fechas y gestiona los mantenimientos de tu cabaña.</span>
+              </span>
+              <span aria-hidden="true">↓</span>
+            </button>
+          }
+
           <div class="mt-6 pt-4 border-t border-gray-100 flex gap-2">
             <a
               [routerLink]="['/cabins', cabin.id, 'edit']"
@@ -198,7 +209,9 @@
     </div>
 
     @if (canMaintain()) {
-      <app-cabin-maintenance [cabinId]="cabin.id" (changed)="onMaintenanceChanged()" />
+      <div #maintenanceSection id="cabin-maintenance-section" class="scroll-mt-24">
+        <app-cabin-maintenance [cabinId]="cabin.id" (changed)="onMaintenanceChanged()" />
+      </div>
     }
 
     @if (canEdit()) {
