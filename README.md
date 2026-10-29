@@ -101,14 +101,6 @@ docker compose exec postgres-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB
 
 `docker compose down` conserva los datos y el historial. **`docker compose down -v` los elimina**; no es necesario borrar el volumen para ejecutar migraciones.
 
-### Gestionar precios por temporada
-
-Desde **Mis Cabañas → Ver detalles → Precios por temporada** se abre un apartado independiente de **Editar cabaña**, reservado al propietario o administrador.
-
-Selecciona una temporada global para completar sus fechas y mostrar el **precio recomendado por noche** calculado sobre la tarifa base de la cabaña. Puedes usar esa recomendación, cambiar el porcentaje o elegir un precio fijo. Para un periodo propio, selecciona **Personalizada** e ingresa la primera y última noche; ambas fechas están incluidas. La vista previa muestra el precio que se guardará, y la lista inferior permite consultar o eliminar las tarifas configuradas.
-
-Los abonos posteriores al anticipo se registran desde **Mis reservaciones → Agregar pago**, con tarjeta, transferencia o efectivo, hasta cubrir el saldo pendiente.
-
 ### Documentación Swagger
 
 La UI de Swagger está en `http://localhost:8080/swagger/index.html` (solo con el backend en ejecución). Los archivos de `cdv-api/docs/` se generan a partir de las anotaciones del código, **no se editan a mano**. Cada vez que agregues o modifiques un endpoint, regenéralos desde `cdv-api/`:
@@ -119,31 +111,3 @@ swag init -g cmd/api/main.go -o docs
 ```
 
 > El CI verifica que `cdv-api/docs/` esté al día y falla si olvidas regenerarlo.
-
-### Manual de usuario
-
-La guía para huéspedes está disponible en [docs/manual-usuario.md](docs/manual-usuario.md).
-
-## Estilo de diseño
-
-La aplicación usara la siguiente paleta de colores y se puede utilizar con su respectiva clase:
-- #4F5D2F -----> bg-green
-- #423629 -----> bg-brown
-- #EC4E20 -----> bg-orange
-- #EFE6D2 -----> bg-cream
-- #151515 -----> bg-black
-
-Se utilizará la siguiente fuente para titulos y encabezados: Serif ---> font-serif
-
-Se utilizará la siguiente fuente para cuerpo de texto, formularios, etc: Sans ---> font-sans
-
-## Guias
-
-Se habilitaron paginas temporales con una guía más detallada de como cumplir con los requerimientos manteniendo un mismo estándar.
-
-Se podran encontrar en las siguientes rutas del proyecto FE:
-- guide
-- guide/user-story
-- guide/model
-- guide/design
-- guide/backend
