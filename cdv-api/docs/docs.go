@@ -1340,6 +1340,71 @@ const docTemplate = `{
                 }
             }
         },
+        "/reports/income": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Devuelve los pagos, anticipos y reembolsos registrados en el rango de fechas indicado, junto con el total recaudado neto. Los reembolsos se devuelven con monto negativo. Las fechas se interpretan en hora de Guatemala. Los administradores ven todas las cabañas; los anfitriones solo las propias. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Reportes"
+                ],
+                "summary": "Reporte de ingresos por rango de fechas",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Fecha de inicio del rango, inclusive (YYYY-MM-DD)",
+                        "name": "start_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Fecha de fin del rango, inclusive (YYYY-MM-DD)",
+                        "name": "end_date",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Filtro por ID de cabaña",
+                        "name": "cabin_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Reporte de ingresos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.IncomeReport"
+                        }
+                    },
+                    "400": {
+                        "description": "Parámetros inválidos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Error al generar el reporte",
+                        "schema": {
+                            "$ref": "#/definitions/reportincome.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/reports/reservations": {
             "get": {
                 "security": [
@@ -2496,6 +2561,78 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "reportincome.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportincome.IncomeMovement": {
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number"
+                },
+                "cabin_id": {
+                    "type": "integer"
+                },
+                "cabin_name": {
+                    "type": "string"
+                },
+                "date": {
+                    "type": "string"
+                },
+                "guest_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "method": {
+                    "type": "string"
+                },
+                "reservation_id": {
+                    "type": "integer"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "reportincome.IncomeReport": {
+            "type": "object",
+            "properties": {
+                "end_date": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "movements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/reportincome.IncomeMovement"
+                    }
+                },
+                "start_date": {
+                    "type": "string"
+                },
+                "total_income": {
+                    "type": "number"
+                },
+                "total_movements": {
+                    "type": "integer"
+                },
+                "total_payments": {
+                    "type": "number"
+                },
+                "total_refunds": {
                     "type": "number"
                 }
             }
