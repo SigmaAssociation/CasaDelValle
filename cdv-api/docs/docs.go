@@ -15,6 +15,158 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/cabin-season-prices/cabin/{cabinId}": {
+            "get": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios por temporada"
+                ],
+                "summary": "Listar precios por temporada de una cabaña",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/seasons.CabinSeasonPrice"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios por temporada"
+                ],
+                "summary": "Configurar precio por temporada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Configuración de precio",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seasons.SetCabinSeasonPriceRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.CabinSeasonPrice"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/cabin-season-prices/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios por temporada"
+                ],
+                "summary": "Eliminar configuración de precio por temporada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la configuración",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/cabins": {
             "get": {
                 "security": [
@@ -397,6 +549,74 @@ const docTemplate = `{
                     },
                     "403": {
                         "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/cabins/{cabinId}/season-prices/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Elimina un registro de precios_temporada de la cabaña indicada. Si era una tarifa sobre una temporada global, la cabaña vuelve al ajuste sugerido; si era una temporada propia, esas fechas vuelven al precio normal. No modifica las temporadas globales. Solo el anfitrión de la cabaña o un admin. Requiere token.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios de temporada"
+                ],
+                "summary": "Eliminar tarifa o temporada personalizada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de cabaña",
+                        "name": "cabinId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "ID de precio de temporada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Tarifa eliminada exitosamente",
+                        "schema": {
+                            "$ref": "#/definitions/seasonprices.DeleteSeasonPriceResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID inválido",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Sin permisos",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Cabaña o tarifa no encontrada",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1120,146 +1340,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/refunds/reservation/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna pagos, reembolsos y totales de la reservación. Puede verlo quien reservó, el dueño o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reembolsos"
-                ],
-                "summary": "Historial financiero",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Historial financiero",
-                        "schema": {
-                            "$ref": "#/definitions/refunds.RefundsHistoryResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Registra un reembolso total o parcial sobre lo pagado. Solo el anfitrión de la cabaña o un admin. Sin monto se reembolsa todo lo disponible. Requiere token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reembolsos"
-                ],
-                "summary": "Registrar reembolso",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Monto parcial (opcional)",
-                        "name": "refund",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/refunds.CreateRefundRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Reembolso registrado",
-                        "schema": {
-                            "$ref": "#/definitions/refunds.CreateRefundResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos o monto inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "No cancelada, sin monto disponible o excede disponible",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/reports/reservations": {
             "get": {
                 "security": [
@@ -1341,81 +1421,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/reservations": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Crea una reservación en estado pendiente. Para clientes el usuario se toma del token; para administradores puede indicarse. Valida solape de cabaña y de usuario. Requiere token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Crear reservación",
-                "parameters": [
-                    {
-                        "description": "Datos de la reservación",
-                        "name": "reservation",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/reservations.ReservationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "201": {
-                        "description": "Reservación registrada exitosamente",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.CreateReservationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Cabaña o usuario no existe",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Conflicto de fechas",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/reservations/balance/{id}": {
             "get": {
                 "security": [
@@ -1467,417 +1472,6 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/cabin/{cabinId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna las reservaciones de la cabaña indicada, incluyendo quién reservó. Solo el anfitrión de la cabaña o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Listar reservaciones por cabaña",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de cabaña",
-                        "name": "cabinId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Listado de reservaciones",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/reservations.ReservationCard"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ID de cabaña inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Cabaña no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/user/{userId}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna las reservaciones del usuario indicado. Puede verlas el mismo usuario o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Listar reservaciones por usuario",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de usuario",
-                        "name": "userId",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Listado de reservaciones",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/reservations.ReservationCard"
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ID de usuario inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/{id}": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Retorna el detalle de una reservación. Puede verla quien reservó, el dueño de la cabaña o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Obtener reservación por ID",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Detalle de la reservación",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.ReservationDetail"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Actualiza la cabaña y las fechas de una reservación pendiente o confirmada. Puede editar quien reservó, el dueño de la cabaña o un admin. Requiere token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Actualizar reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Datos a actualizar",
-                        "name": "reservation",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/reservations.UpdateReservationRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Reservación actualizada exitosamente",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.UpdateReservationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Datos inválidos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "Conflicto de fechas o reservación no editable",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/{id}/cancel": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Cancela una reservación pendiente o confirmada y registra el reembolso según días de anticipación (100% ≥7 días, 70% 3–7 días, 0% \u003c3 días). Puede cancelar quien reservó, el dueño o un admin. Requiere token.",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Cancelar reservación",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Reservación cancelada exitosamente",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.CancelReservationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "No cancelable o con menos de 3 días de anticipación",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/reservations/{id}/checkin": {
-            "patch": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Registra fecha y hora del check-in. Solo el anfitrión de la cabaña o un admin. Requiere reserva confirmada dentro de su periodo y con el pago total completado. Acepta cash_amount opcional para que el anfitrión registre en efectivo el saldo pendiente exacto al momento del check-in. Requiere token.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Reservaciones"
-                ],
-                "summary": "Registrar check-in",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Efectivo a registrar (opcional)",
-                        "name": "checkin",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.CheckinRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Check-in registrado",
-                        "schema": {
-                            "$ref": "#/definitions/reservations.CheckinReservationResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "ID de reservación inválido",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Sin permisos",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Reservación no encontrada",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
-                        }
-                    },
-                    "409": {
-                        "description": "No cumple requisitos (estado, fechas o pago)",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -1958,14 +1552,8 @@ const docTemplate = `{
                 }
             }
         },
-        "/reservations/{id}/payment": {
-            "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Registra el anticipo y pasa la reservación de 'pendiente' a 'confirmada'. Acepta monto (por defecto 30% del total, mínimo 30%, máximo el total) y método simulado (tarjeta, transferencia o efectivo). Solo quien reservó o un admin. Requiere token.",
+        "/seasons": {
+            "get": {
                 "consumes": [
                     "application/json"
                 ],
@@ -1973,53 +1561,222 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Reservaciones"
+                    "Temporadas"
                 ],
-                "summary": "Pagar anticipo y confirmar reservación",
+                "summary": "Listar temporadas",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "ID de reservación",
-                        "name": "id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Monto y método (opcionales)",
-                        "name": "payment",
-                        "in": "body",
+                        "type": "boolean",
+                        "description": "Incluir inactivas (solo admin)",
+                        "name": "all",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/reservations.PayAnticipoRequest"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/seasons.Season"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temporadas"
+                ],
+                "summary": "Crear temporada",
+                "parameters": [
+                    {
+                        "description": "Datos de la temporada",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seasons.CreateSeasonRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.Season"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/seasons/quote": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Precios por temporada"
+                ],
+                "summary": "Cotizar precio por temporada",
+                "parameters": [
+                    {
+                        "description": "Datos para cotización",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seasons.PriceQuoteRequest"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Anticipo registrado y reservación confirmada",
+                        "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/reservations.PayAnticipoResponse"
+                            "$ref": "#/definitions/seasons.PriceQuoteResponse"
                         }
                     },
                     "400": {
-                        "description": "Datos o monto/método inválidos",
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/seasons/{id}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temporadas"
+                ],
+                "summary": "Actualizar temporada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la temporada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Datos de la temporada",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/seasons.UpdateSeasonRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
                                 "type": "string"
                             }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
                         }
                     },
                     "403": {
-                        "description": "Sin permisos",
+                        "description": "Forbidden",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/seasons.ErrorResponse"
                         }
                     },
                     "404": {
-                        "description": "Reservación o cabaña no encontrada",
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Temporadas"
+                ],
+                "summary": "Eliminar temporada",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID de la temporada",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {
@@ -2027,13 +1784,28 @@ const docTemplate = `{
                             }
                         }
                     },
-                    "409": {
-                        "description": "La reservación no está pendiente de anticipo",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/seasons.ErrorResponse"
                         }
                     }
                 }
@@ -2728,91 +2500,6 @@ const docTemplate = `{
                 }
             }
         },
-        "refunds.CreateRefundRequest": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                }
-            }
-        },
-        "refunds.CreateRefundResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "refund": {
-                    "$ref": "#/definitions/refunds.Refund"
-                }
-            }
-        },
-        "refunds.FinancialMovement": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "method": {
-                    "type": "string"
-                },
-                "subtype": {
-                    "type": "string"
-                },
-                "type": {
-                    "type": "string"
-                }
-            }
-        },
-        "refunds.Refund": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "hostId": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "method": {
-                    "type": "string"
-                },
-                "reservationId": {
-                    "type": "integer"
-                }
-            }
-        },
-        "refunds.RefundsHistoryResponse": {
-            "type": "object",
-            "properties": {
-                "movements": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/refunds.FinancialMovement"
-                    }
-                },
-                "refundableAvailable": {
-                    "type": "number"
-                },
-                "totalPaid": {
-                    "type": "number"
-                },
-                "totalRefunded": {
-                    "type": "number"
-                }
-            }
-        },
         "reportreservations.CabinReport": {
             "type": "object",
             "properties": {
@@ -2885,6 +2572,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/reportreservations.CabinReport"
                     }
                 },
+                "cancellation_percentage": {
+                    "type": "number"
+                },
+                "cancelled_reservations": {
+                    "type": "integer"
+                },
                 "message": {
                     "type": "string"
                 },
@@ -2907,53 +2600,6 @@ const docTemplate = `{
                 }
             }
         },
-        "reservations.CancelRefund": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "kind": {
-                    "type": "string"
-                },
-                "percent": {
-                    "type": "number"
-                }
-            }
-        },
-        "reservations.CancelReservationResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "refund": {
-                    "$ref": "#/definitions/reservations.CancelRefund"
-                },
-                "reservation": {
-                    "$ref": "#/definitions/reservations.ReservationDetail"
-                }
-            }
-        },
-        "reservations.CheckinRequest": {
-            "type": "object",
-            "properties": {
-                "cash_amount": {
-                    "type": "number"
-                }
-            }
-        },
-        "reservations.CheckinReservationResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "reservation": {
-                    "$ref": "#/definitions/reservations.ReservationDetail"
-                }
-            }
-        },
         "reservations.CheckoutReservationResponse": {
             "type": "object",
             "properties": {
@@ -2962,17 +2608,6 @@ const docTemplate = `{
                 },
                 "reservation": {
                     "$ref": "#/definitions/reservations.ReservationDetail"
-                }
-            }
-        },
-        "reservations.CreateReservationResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
-                },
-                "reservation_id": {
-                    "type": "integer"
                 }
             }
         },
@@ -2990,31 +2625,6 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "integer"
-                }
-            }
-        },
-        "reservations.PayAnticipoRequest": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "method": {
-                    "type": "string"
-                }
-            }
-        },
-        "reservations.PayAnticipoResponse": {
-            "type": "object",
-            "properties": {
-                "amount": {
-                    "type": "number"
-                },
-                "message": {
-                    "type": "string"
-                },
-                "reservation": {
-                    "$ref": "#/definitions/reservations.ReservationDetail"
                 }
             }
         },
@@ -3114,53 +2724,6 @@ const docTemplate = `{
                 }
             }
         },
-        "reservations.ReservationCard": {
-            "type": "object",
-            "properties": {
-                "cabinId": {
-                    "type": "integer"
-                },
-                "cabinImageUrl": {
-                    "type": "string"
-                },
-                "cabinName": {
-                    "type": "string"
-                },
-                "cancelledAt": {
-                    "type": "string"
-                },
-                "createdAt": {
-                    "type": "string"
-                },
-                "endDate": {
-                    "type": "string"
-                },
-                "guestId": {
-                    "type": "integer"
-                },
-                "guestName": {
-                    "type": "string"
-                },
-                "hostId": {
-                    "type": "integer"
-                },
-                "id": {
-                    "type": "integer"
-                },
-                "paidTotal": {
-                    "type": "number"
-                },
-                "startDate": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "totalPrice": {
-                    "type": "number"
-                }
-            }
-        },
         "reservations.ReservationDetail": {
             "type": "object",
             "properties": {
@@ -3190,45 +2753,200 @@ const docTemplate = `{
                 }
             }
         },
-        "reservations.ReservationRequest": {
-            "type": "object",
-            "properties": {
-                "cabin_id": {
-                    "type": "integer"
-                },
-                "end_date": {
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "reservations.UpdateReservationRequest": {
-            "type": "object",
-            "properties": {
-                "cabin_id": {
-                    "type": "integer"
-                },
-                "end_date": {
-                    "type": "string"
-                },
-                "start_date": {
-                    "type": "string"
-                }
-            }
-        },
-        "reservations.UpdateReservationResponse": {
+        "seasonprices.DeleteSeasonPriceResponse": {
             "type": "object",
             "properties": {
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "seasons.CabinSeasonPrice": {
+            "type": "object",
+            "properties": {
+                "adjustmentPercent": {
+                    "type": "number"
                 },
-                "reservation": {
-                    "$ref": "#/definitions/reservations.ReservationDetail"
+                "cabinId": {
+                    "type": "integer"
+                },
+                "createdAt": {
+                    "type": "string"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "fixedPrice": {
+                    "type": "number"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "seasonId": {
+                    "type": "integer"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "seasons.CreateSeasonRequest": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "suggestedAdjustmentPercent": {
+                    "type": "number"
+                }
+            }
+        },
+        "seasons.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "seasons.PriceBreakdown": {
+            "type": "object",
+            "properties": {
+                "appliedNightly": {
+                    "type": "number"
+                },
+                "baseNightly": {
+                    "type": "number"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "nights": {
+                    "type": "integer"
+                },
+                "seasonName": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "number"
+                }
+            }
+        },
+        "seasons.PriceQuoteRequest": {
+            "type": "object",
+            "properties": {
+                "cabinId": {
+                    "type": "integer"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "seasons.PriceQuoteResponse": {
+            "type": "object",
+            "properties": {
+                "averageNightly": {
+                    "type": "number"
+                },
+                "baseNightly": {
+                    "type": "number"
+                },
+                "breakdown": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/seasons.PriceBreakdown"
+                    }
+                },
+                "cabinId": {
+                    "type": "integer"
+                },
+                "totalNights": {
+                    "type": "integer"
+                },
+                "totalPrice": {
+                    "type": "number"
+                }
+            }
+        },
+        "seasons.Season": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "suggestedAdjustmentPercent": {
+                    "type": "number"
+                }
+            }
+        },
+        "seasons.SetCabinSeasonPriceRequest": {
+            "type": "object",
+            "properties": {
+                "adjustmentPercent": {
+                    "type": "number"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "fixedPrice": {
+                    "type": "number"
+                },
+                "seasonId": {
+                    "type": "integer"
+                },
+                "startDate": {
+                    "type": "string"
+                }
+            }
+        },
+        "seasons.UpdateSeasonRequest": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "endDate": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "startDate": {
+                    "type": "string"
+                },
+                "suggestedAdjustmentPercent": {
+                    "type": "number"
                 }
             }
         },

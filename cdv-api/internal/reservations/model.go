@@ -149,3 +149,13 @@ type PayAnticipoRequest struct {
 type CheckinRequest struct {
 	CashAmount float64 `json:"cash_amount,omitempty"`
 }
+
+type DateRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+type CabinAvailabilityResponse struct {
+	CabinID       uint        `json:"cabinId"`
+	BlockedRanges []DateRange `json:"blockedRanges"`
+}

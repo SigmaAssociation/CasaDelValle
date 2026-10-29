@@ -271,6 +271,7 @@ describe('ReservationCard', () => {
       startDate: iso,
       endDate: iso,
       totalPrice: 1500,
+      paidTotal: 450,
     };
     fixture.detectChanges();
 

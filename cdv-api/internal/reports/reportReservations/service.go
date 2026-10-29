@@ -3,6 +3,7 @@ package reportreservations
 import (
 	"context"
 	"errors"
+	"math"
 )
 
 const noDataMessage = "No reservations found for the selected filters."
@@ -35,6 +36,14 @@ func (s *Service) GenerateReport(ctx context.Context, filter ReportFilter) (*Res
 	}
 	for _, c := range cabins {
 		report.TotalReservations += c.TotalReservations
+		for _, reservation := range c.Reservations {
+			if reservation.Status == "cancelada" {
+				report.CancelledReservations++
+			}
+		}
+	}
+	if report.TotalReservations > 0 {
+		report.CancellationPercentage = math.Round(float64(report.CancelledReservations)*10000/float64(report.TotalReservations)) / 100
 	}
 
 	if report.TotalReservations == 0 {

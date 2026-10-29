@@ -37,10 +37,12 @@ type CabinReport struct {
 }
 
 type ReservationsReport struct {
-	Cabins            []CabinReport `json:"cabins"`
-	TotalCabins       int           `json:"total_cabins"`
-	TotalReservations int           `json:"total_reservations"`
-	Message           string        `json:"message,omitempty"`
+	Cabins                 []CabinReport `json:"cabins"`
+	TotalCabins            int           `json:"total_cabins"`
+	TotalReservations      int           `json:"total_reservations"`
+	CancelledReservations  int           `json:"cancelled_reservations"`
+	CancellationPercentage float64       `json:"cancellation_percentage"`
+	Message                string        `json:"message,omitempty"`
 }
 
 type ErrorResponse struct {

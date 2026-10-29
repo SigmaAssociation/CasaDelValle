@@ -54,7 +54,7 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 3. **Acceder a los servicios:**
    - Frontend: `http://localhost:4200`
    - Backend API: `http://localhost:8080`
-   - PostgreSQL: `localhost:5432`
+   - PostgreSQL: `postgres-db:5432` dentro de la red de Docker (sin puerto publicado al equipo local)
 
 4. **Detener el entorno:**
 
@@ -64,30 +64,44 @@ Todo el entorno (Base de Datos, Backend y Frontend) se puede levantar con **Dock
 
 ### Migraciones de base de datos
 
-`database/init.sql` contiene el esquema completo (incluida la tabla `notificaciones` y el rol de **Anfitrión**), por lo que las bases **nuevas** no necesitan nada extra. Para una base **existente** que se creó antes de estas funcionalidades, se deben aplicar en orden los siguientes scripts (son idempotentes y se pueden repetir):
+El esquema inicial se crea con `database/init.sql` solamente cuando el volumen de PostgreSQL está vacío. Después, tanto para una instalación nueva como para una base existente, aplica las migraciones de `database/migrations/` con el script de desarrollo.
+
+1. Configura `POSTGRES_USER`, `POSTGRES_PASSWORD` y `POSTGRES_DB` en el archivo `.env` de la raíz (y las variables `DB_*` correspondientes para la API).
+2. Levanta PostgreSQL y espera a que esté listo:
+
+   ```bash
+   docker compose up -d --build --wait postgres-db
+   ```
+
+   Si ya tenías el contenedor creado, este comando también incorpora el montaje de los archivos de migraciones.
+
+3. Ejecuta desde la raíz del repositorio:
+
+   ```bash
+   ./database/migrate.sh
+   ```
+
+   El script usa el servicio `postgres-db` de `docker-compose.yml` y las credenciales `POSTGRES_USER` y `POSTGRES_DB` del contenedor. No requiere instalar `psql` en tu equipo. También puedes invocarlo desde otra carpeta usando su ruta absoluta. Si tu instalación requiere `sudo` para acceder a Docker, usa `sudo ./database/migrate.sh`.
+
+   Opcionalmente puedes indicar ambos valores: `./database/migrate.sh USUARIO BASE_DE_DATOS`.
+
+4. Inicia los demás servicios:
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+Los archivos se ejecutan en orden alfabético. El historial se guarda en la tabla `public.schema_migrations` de cada base de datos, dentro del mismo volumen que sus datos. Puedes volver a ejecutar el script: omite las migraciones registradas. Un bloqueo en PostgreSQL evita ejecuciones simultáneas. Si una migración falla, se revierten sus cambios y su registro, el script termina con error y las migraciones posteriores no se ejecutan; las anteriores permanecen aplicadas.
+
+Para consultar el historial:
 
 ```bash
-# 1. Agrega el rol "Anfitrión" (necesario para registrar anfitriones).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_roles.sql
-
-# 2. Crea el buzón de notificaciones personales.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications.sql
-
-# 3. Habilita el tipo de notificación "reserva_finalizada" (finalización automática).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_notifications_reserva_finalizada.sql
-
-# 4. Migra estados de reservaciones, pagos/abonos y tipos de notificación
-# (pendiente/confirmada/en_curso + anticipo 30% + pago_registrado/reserva_checkin).
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservas_estados_pagos.sql
-
-# 5. Crea las tablas de cargos adicionales y reembolsos para el saldo.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_reservation_balance.sql
-
-# 6. Habilita el tipo de pago reembolso para el historial.
-docker exec -i postgres_db psql -U devuser -d appdb < database/migrate_refunds.sql
+docker compose exec postgres-db sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "TABLE public.schema_migrations;"'
 ```
 
-Los nombres del contenedor (`postgres_db`), usuario (`devuser`) y base (`appdb`) corresponden a la configuración de Docker Compose en `.env`.
+Para agregar un cambio, crea el siguiente archivo consecutivo, por ejemplo `008_descripcion.sql`, en `database/migrations/` y vuelve a ejecutar el script. No modifiques migraciones ya aplicadas. Los archivos deben contener SQL sin `BEGIN`/`COMMIT`, porque el script administra la transacción; tampoco deben usar operaciones incompatibles con transacciones, como `CREATE INDEX CONCURRENTLY`.
+
+`docker compose down` conserva los datos y el historial. **`docker compose down -v` los elimina**; no es necesario borrar el volumen para ejecutar migraciones.
 
 ### Documentación Swagger
 
@@ -99,6 +113,10 @@ swag init -g cmd/api/main.go -o docs
 ```
 
 > El CI verifica que `cdv-api/docs/` esté al día y falla si olvidas regenerarlo.
+
+### Manual de usuario
+
+La guía para huéspedes está disponible en [docs/manual-usuario.md](docs/manual-usuario.md).
 
 ## Estilo de diseño
 

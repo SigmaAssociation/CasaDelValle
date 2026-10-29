@@ -6,38 +6,33 @@
   </p>
 
   <form [formGroup]="reservationForm" (ngSubmit)="submit()" class="space-y-5">
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de inicio</label>
-        <input
-          type="date"
-          formControlName="start_date"
-          [attr.min]="minStartDate"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-          [class.border-red-500]="isInvalid('start_date') || !!startRangeError"
-        />
-        @if (fieldError('start_date'); as message) {
-          <p class="text-xs text-red-500 mt-1">{{ message }}</p>
-        } @else if (startRangeError) {
-          <p class="text-xs text-red-500 mt-1">{{ startRangeError }}</p>
-        }
-      </div>
+    <div class="space-y-2">
+      <app-availability-calendar
+        [blockedRanges]="blockedRanges()"
+        [minDate]="minStartDate"
+        [startDate]="startDateValue"
+        [endDate]="endDateValue"
+        (rangeChange)="onRangeChange($event)"
+      />
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Fecha de fin</label>
-        <input
-          type="date"
-          formControlName="end_date"
-          [attr.min]="minEndDate"
-          class="w-full rounded-md border-gray-300 shadow-sm focus:border-orange focus:ring-orange sm:text-sm"
-          [class.border-red-500]="isInvalid('end_date') || !!endRangeError"
-        />
-        @if (fieldError('end_date'); as message) {
-          <p class="text-xs text-red-500 mt-1">{{ message }}</p>
-        } @else if (endRangeError) {
-          <p class="text-xs text-red-500 mt-1">{{ endRangeError }}</p>
-        }
-      </div>
+      @if (isLoadingAvailability()) {
+        <p class="text-xs text-gray-500">Cargando disponibilidad…</p>
+      } @else if (availabilityError()) {
+        <p class="text-xs text-amber-600">{{ availabilityError() }}</p>
+      }
+
+      @if (!startDateValue && reservationForm.get('start_date')?.touched) {
+        <p class="text-xs text-red-500">Selecciona la fecha de entrada.</p>
+      } @else if (startDateValue && !endDateValue && reservationForm.get('end_date')?.touched) {
+        <p class="text-xs text-red-500">Selecciona la fecha de salida.</p>
+      }
+
+      @if (startRangeError; as message) {
+        <p class="text-xs text-red-500">{{ message }}</p>
+      }
+      @if (endRangeError; as message) {
+        <p class="text-xs text-red-500">{{ message }}</p>
+      }
     </div>
 
     @if (nights !== null && estimatedTotal !== null) {

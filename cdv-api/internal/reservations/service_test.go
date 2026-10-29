@@ -93,6 +93,10 @@ func (m *mockReservationRepository) HasUserOverlap(ctx context.Context, userID u
 	return m.hasUserOverlap, m.hasUserOverlapErr
 }
 
+func (m *mockReservationRepository) GetBlockedDateRanges(ctx context.Context, cabinID uint) ([]DateRange, error) {
+	return []DateRange{}, nil
+}
+
 func (m *mockReservationRepository) GetReservationByID(ctx context.Context, id int) (*ReservationDetail, error) {
 	return m.getByIDReturn, m.getByIDErr
 }

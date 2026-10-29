@@ -40,6 +40,11 @@ describe('ReservationForm', () => {
     component.cabinId = 3;
     component.nightlyPrice = 150;
     fixture.detectChanges();
+
+    httpMock.expectOne('/cdv-api/cabins/availability/3').flush({
+      cabinId: 3,
+      blockedRanges: [],
+    });
   });
 
   afterEach(() => {
@@ -107,6 +112,11 @@ describe('ReservationForm', () => {
     });
 
     req.flush({ message: 'Reservación registrada exitosamente', reservation_id: 10 });
+    httpMock.expectOne('/cdv-api/cabins/availability/3').flush({
+      cabinId: 3,
+      blockedRanges: [],
+    });
+
     expect(component.isSuccess()).toBe(true);
     expect(component.reservationId()).toBe(10);
     expect(component.isSubmitting()).toBe(false);
@@ -128,5 +138,35 @@ describe('ReservationForm', () => {
     expect(component.isError()).toBe(true);
     expect(component.errorMessage()).toBe('La cabaña no está disponible en el rango de fechas seleccionado');
     expect(component.isSuccess()).toBe(false);
+  });
+
+  it('permite la entrada el mismo día en que termina otra reservación', () => {
+    component.blockedRanges.set([
+      { start: daysFromToday(2), end: daysFromToday(5) },
+    ]);
+
+    component.reservationForm.patchValue({
+      start_date: daysFromToday(5),
+      end_date: daysFromToday(7),
+    });
+
+    expect(component.reservationForm.errors?.['datesBlocked']).toBeFalsy();
+    expect(component.reservationForm.valid).toBe(true);
+  });
+
+  it('rechaza un rango que ocupa una noche ya reservada', () => {
+    component.blockedRanges.set([
+      { start: daysFromToday(2), end: daysFromToday(5) },
+    ]);
+
+    component.reservationForm.patchValue({
+      start_date: daysFromToday(1),
+      end_date: daysFromToday(4),
+    });
+
+    expect(component.reservationForm.errors?.['datesBlocked']).toBe(true);
+    expect(component.endRangeError).toBe(
+      'Algunas fechas seleccionadas ya no están disponibles. Por favor, elige otras fechas.',
+    );
   });
 });
